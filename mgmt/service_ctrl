@@ -1,0 +1,48 @@
+#!/bin/bash
+
+ACTION=
+
+usage()
+{
+    echo "usage:`basename $0` [-a ACTION] [-h]"
+    exit 1
+}
+
+parse_args()
+{
+    while getopts :ha: c $@
+    do
+        case $c in
+        a)
+            ACTION=$OPTARG
+            ;;
+        h)
+            usage
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG"
+            exit 1
+            ;;
+        esac
+    done
+
+    if [ "$ACTION" = "" ]; then
+        usage
+    fi
+}
+
+take_action()
+{
+    if [ "$ACTION" = "start" ]; then
+        echo "Action: $ACTION"
+    elif [ "$ACTION" = "stop" ]; then
+        echo "Action: $ACTION"
+    elif [ "$ACTION" = "restart" ]; then
+        echo "Action: $ACTION"
+    else
+        echo "Invalid action: $ACTION"
+    fi
+}
+
+parse_args $*
+take_action
