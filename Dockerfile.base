@@ -1,12 +1,12 @@
 FROM ubuntu
 MAINTAINER zhangzhentao
 
-EXPOSE 80
 
-apt-get update
-apt-get install -y python-pip
-pip install --upgrade pip
-pip install Flask
-pip install Flask-JSONRPC
-python -m pip install pymongo
+RUN apt-get update
+RUN apt-get install -y python-pip
+RUN apt-get install -y nginx
+RUN pip install --upgrade pip
+RUN pip install Flask
+RUN pip install Flask-JSONRPC
+RUN python -m pip install pymongo
 
