@@ -8,5 +8,5 @@ COPY mgmt/service_ctrl /var/www/html/service_ctrl
 COPY service /var/www/html
 RUN chmod +x /var/www/html/service_ctrl
 
-ENTRYPOINT /var/www/html/service_ctrl start
+ENTRYPOINT /var/www/html/service_ctrl -a start
 
