@@ -31,10 +31,19 @@ parse_args()
     fi
 }
 
+start_service()
+{
+    /etc/init.d/nginx start
+    [ -d /var/www/html/logs ] || mkdir /var/www/html/logs
+    cd /var/www/html
+    exec gunicorn -c gunicorn.conf app:app
+}
+
 take_action()
 {
     if [ "$ACTION" = "start" ]; then
         echo "Action: $ACTION"
+        start_service
     elif [ "$ACTION" = "stop" ]; then
         echo "Action: $ACTION"
     elif [ "$ACTION" = "restart" ]; then
