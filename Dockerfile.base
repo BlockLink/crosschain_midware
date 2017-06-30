@@ -8,6 +8,7 @@ RUN apt-get install -y nginx
 RUN pip install --upgrade pip
 RUN pip install Flask
 RUN pip install Flask-JSONRPC
+RUN pip install gevent
 RUN pip install gunicorn
 RUN python -m pip install pymongo
 
