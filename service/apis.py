@@ -2,6 +2,7 @@
 
 from service import jsonrpc
 from config import logger
+from service import db
 
 @jsonrpc.method('Zchain.Transaction.History')
 def index():
@@ -43,9 +44,34 @@ def index():
     }
 
 
+@jsonrpc.method('Zchain.Address.Setup(chainId=str, data=list)')
+def index(chainId, data):
+    logger.info('Zchain.Address.Setup')
+    addresses = db.b_chain_account
+    if type(data) != list:
+        return { "error_code": '00001', "error_message": "Addresses should be stored in ARRAY." }
+
+    num = 0
+    for addr in data:
+        if type(addr) == dict and addr.has_key('address'):
+            addr["chainId"] = chainId
+            try:
+                addresses.insert_one(addr) 
+                num += 1
+            except Exception, e:
+                logger.error(str(e))
+        else:
+            logger.warn("Invalid chain address: " + str(addr))
+    return {
+        "valid_num": num
+    }
+
+
 @jsonrpc.method('Zchain.Address.List')
 def index():
     logger.info('Zchain.Address.List')
+    addresses = db.b_chain_account
+
     return {
         "addresses": [
             "124",
@@ -68,7 +94,7 @@ def zchain_create_address(coin):
 
 
 
-@jsonrpc.method('Zchain.Collection.Amount(coin=String,address=String,amount=double)')
+@jsonrpc.method('Zchain.Collection.Amount(coin=String,address=String,amount=Number)')
 def zchain_collection_amount(coin,address,amount):
     logger.info('Create_address coin: %s'%(coin))
     if coin == 'eth':

@@ -22,19 +22,20 @@ class DevelopmentConfig(Config):
     MAIL_USE_TLS = True
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    # SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
-    #     'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
-    SQLALCHEMY_TRACK_MODIFICATIONS = True
-    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://chain_monitor:time.9818@52.80.29.33/chaindb?charset=utf8'
-
+    MONGO_HOST = '192.168.10.208'
+    MONGO_PORT = 27017
+    MONGO_NAME = 'chaindb'
+    
 class TestingConfig(Config):
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')
+    MONGO_HOST = '192.168.10.208'
+    MONGO_PORT = 27017
+    MONGO_NAME = 'chaindb'
 
 class ProductionConfig(Config):
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, 'data.sqlite')
+    MONGO_HOST = '192.168.10.208'
+    MONGO_PORT = 27017
+    MONGO_NAME = 'chaindb'
 
 config = {
     'development': DevelopmentConfig,
