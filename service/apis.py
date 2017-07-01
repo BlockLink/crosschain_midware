@@ -2,6 +2,7 @@
 
 from service import jsonrpc
 from config import logger
+from utils import eth_utils
 
 @jsonrpc.method('Zchain.Transaction.History')
 def index():
@@ -60,8 +61,11 @@ def index():
 def zchain_create_address(coin):
     logger.info('Create_address coin: %s'%(coin))
     if coin == 'eth':
-        address = ''
-        return {'coin':coin,'address':address}
+        address = eth_utils.eth_create_address()
+        if address !=  "":
+            return {'coin':coin,'address':address}
+        else:
+            return {'coin':coin,'error':'创建地址失败'}
     elif coin == 'btc':
         address = ''
         return {'coin':coin,'address':address}

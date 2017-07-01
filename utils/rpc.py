@@ -10,7 +10,7 @@ class RpcConnection(object):
     request_template = '''{"jsonrpc":"2.0","id":"1","method":"%s","params":%s}'''
     ReadBufSize = 4096
 
-    def __init__(self, ip, port,request_template):
+    def __init__(self, ip, port):
         self.rpc_server_ip = ip
         self.rpc_server_port = port
         #self.request_template = request_template
@@ -50,12 +50,12 @@ def create_btc_rpc_client():
     conn = RpcConnection('127.0.0.1', port)
     conn.request("login", [user, password])
     return conn
+
+
 def create_eth_rpc_client():
-    port = 10086
-    user = 'admin'
-    password = 'admin'
-    conn = RpcConnection('127.0.0.1', port)
-    conn.request("login", [user, password])
+    port = 8545
+
+    conn = RpcConnection('192.168.10.208', port)
     return conn
 
 if __name__ == '__main__':

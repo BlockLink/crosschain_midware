@@ -9,6 +9,7 @@ class Config:
     FLASKY_MAIL_SUBJECT_PREFIX = '[Flasky]'
     FLASKY_MAIL_SENDER = 'Flasky Admin <flasky@example.com>'
     FLASKY_ADMIN = os.environ.get('FLASKY_ADMIN')
+    ETH_SECRET_KEY = 'Q!wert123@'
 
     @staticmethod
     def init_app(app):
@@ -26,6 +27,9 @@ class DevelopmentConfig(Config):
     #     'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
     SQLALCHEMY_TRACK_MODIFICATIONS = True
     SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://chain_monitor:time.9818@52.80.29.33/chaindb?charset=utf8'
+    ETH_SECRET_KEY = 'Q!wert123@'
+    ETH_URL = '192.168.10.208'
+    ETH_PORT = 8546
 
 class TestingConfig(Config):
     TESTING = True
