@@ -4,6 +4,7 @@ import rpc
 import requests
 import json
 from config import config
+from service import db
 
 def eth_request(method, args):
     url = "http://%s:%s/rpc"%(config["development"].ETH_URL,config["development"].ETH_PORT)
@@ -21,23 +22,14 @@ def eth_request(method, args):
 
 def eth_create_address():
     address = ''
-    print "start"
-    result = eth_request("personal_newAccount",[config["development"].ETH_SECRET_KEY])
-    print type(result)
-    json_result = json.loads(result)
-    if json_result.has_key("result"):
-        address = json_result["result"]
-        return address
-    return address
-
-def eth_create_address():
-    address = ''
     #写入数据库待做
     result = eth_request("personal_newAccount",[config["development"].ETH_SECRET_KEY])
     print type(result)
     json_result = json.loads(result)
     if json_result.has_key("result"):
         address = json_result["result"]
+        chain_account = db.b_chain_account(chainId="eth",address=address,pubKey="")
+        chain_account[""]
         return address
     return address
 
