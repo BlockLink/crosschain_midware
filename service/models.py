@@ -1,21 +1,25 @@
 # coding: utf-8
 
-# from service import db
-from mongoengine import *
+from service import db
+from utils import enums
 from datetime import datetime, timedelta
 
-#
-# class BChainAccount(Document):
-#   meta = {'collection': 'b_chain_account'}
-#   chainId = StringField(max_length=100, required=True)
-#   name = StringField(max_length=100, required=True)
-#   address = StringField(max_length=200, required=True)
-#   securedPrivateKey = StringField(max_length=500, required=False)
-#   creatorUserId = ObjectIdField(required=False)
-#   balance = DictField(required=True)
-#   memo = StringField(max_length=1000, default='', required=False)
-#   createTime = DateTimeField(default=datetime.now, required=True)
-#   updateTime = DateTimeField(default=datetime.now, required=True)
-
-
-
+def get_root_user():
+  user = db.s_user.find_one({}, {'username': 'root'})
+  if user is None:
+    user = {
+      'username': 'root',
+      'email': 'root@root',
+      'password': '123456', # TODO
+      'realName': 'root',
+      'phone': 'root',
+      'address': '',
+      'returnAddress': '',
+      'userType': enums.UserTypes.SUPER_ADMIN,
+      'deleted': False,
+      'lastLoginTime': datetime.utcnow(),
+      'createTime': datetime.utcnow(),
+    }
+    db.s_user.insert_one(user)
+    user = db.s_user.find_one({}, {'username': 'root'})
+  return user
