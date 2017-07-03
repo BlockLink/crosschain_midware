@@ -10,3 +10,6 @@ def error_response(msg, code=40999):
 
 def mismatched_parameter_type(v, t):
     return error_response(u'%s should be stored in %s.' % (v, t), 40001)
+
+def invalid_trx_type(v):
+    return error_response(u'invalid transaction type: %s.' % v, 40002)
