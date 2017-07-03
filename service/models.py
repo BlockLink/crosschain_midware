@@ -14,8 +14,8 @@ class BChainAccount(Document):
   creatorUserId = ObjectIdField(required=False)
   balance = DictField(required=True)
   memo = StringField(max_length=1000, default='', required=False)
-  createTime = DateTimeField(default=datetime.datetime.now, required=True)
-  updateTime = DateTimeField(default=datetime.datetime.now, required=True)
+  createTime = DateTimeField(default=datetime.now, required=True)
+  updateTime = DateTimeField(default=datetime.now, required=True)
 
 
 

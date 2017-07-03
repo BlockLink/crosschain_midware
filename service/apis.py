@@ -7,6 +7,8 @@ from utils import eth_utils
 from service import models
 # from service import db
 from utils import error_utils
+from bson import json_util as jsonb
+import json
 
 @jsonrpc.method('Zchain.Transaction.History')
 def index():
@@ -53,13 +55,14 @@ def index(chainId, data):
     logger.info('Zchain.Address.Setup')
     # addresses = db.b_chain_account
     if type(chainId) != str:
+    # if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
     if type(data) != list:
         return error_utils.mismatched_parameter_type('data', 'ARRAY')
 
     num = 0
     for addr in data:
-        if type(addr) == dict and addr.has_key('address'):
+        if type(addr) == dict and 'address' in addr:
             addr["chainId"] = chainId
             try:
                 addr_account = models.BChainAccount()
@@ -79,19 +82,20 @@ def index(chainId, data):
     }
 
 
-@jsonrpc.method('Zchain.Address.List')
-def index():
+@jsonrpc.method('Zchain.Address.List(chainId=str)')
+def index(chainId=str):
     logger.info('Zchain.Address.List')
     # addresses = db.b_chain_account
     chain_accounts = models.BChainAccount.objects()
     print(chain_accounts)
+    if type(chainId) != str:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
-    return {
-        "addresses": [
-            "124",
-            "234"
-        ]
-    }
+    addresses = models.BChainAccount.objects(_id=0)
+    json_addrs = jsonb.dumps(list(addresses))
+
+    #return json.loads(json_addrs)
+    return { "addresses": json.loads(json_addrs) }
 
 
 
