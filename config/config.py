@@ -9,6 +9,7 @@ class Config:
     FLASKY_MAIL_SUBJECT_PREFIX = '[Flasky]'
     FLASKY_MAIL_SENDER = 'Flasky Admin <flasky@example.com>'
     FLASKY_ADMIN = os.environ.get('FLASKY_ADMIN')
+    ETH_SECRET_KEY = 'Q!wert123@'
 
     @staticmethod
     def init_app(app):
@@ -25,7 +26,10 @@ class DevelopmentConfig(Config):
     MONGO_HOST = '192.168.10.208'
     MONGO_PORT = 27017
     MONGO_NAME = 'chaindb'
-    
+    ETH_SECRET_KEY = 'Q!wert123@'
+    ETH_URL = '192.168.10.208'
+    ETH_PORT = 8546
+
 class TestingConfig(Config):
     TESTING = True
     MONGO_HOST = '192.168.10.208'
