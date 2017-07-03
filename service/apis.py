@@ -23,12 +23,12 @@ def index(chainId, trxType):
         tbl = db.b_deposit_transaction
     elif trxType == "withdraw":
         tbl = db.b_withdraw_transaction
+    else:
+        return error_utils.invalid_trx_type(trxType)
+
+    trxs = tbl.find({}, {"_id": 0})
     return {
-        'last_block_num': 0,
-        'from_block_num': 0,
-        'transactions': [
-            'test'
-        ]
+        'data': jsonb.loads(jsonb.dumps(list(trxs)))
     }
 
 
@@ -97,7 +97,6 @@ def index(chainId=str):
     addresses = addresses.find({}, {'_id': 0})
     json_addrs = jsonb.dumps(list(addresses))
 
-    #return json.loads(json_addrs)
     return { "addresses": json.loads(json_addrs) }
 
 
