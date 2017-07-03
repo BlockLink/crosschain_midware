@@ -24,4 +24,6 @@ db = client[app.config['MONGO_NAME']]
 
 # connect(db=app.config['MONGO_NAME'], host=app.config['MONGO_HOST'], port=app.config['MONGO_PORT'])
 
+from . import init_db
+
 from service import apis
