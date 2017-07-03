@@ -10,9 +10,19 @@ from utils import error_utils
 from bson import json_util as jsonb
 import json
 
-@jsonrpc.method('Zchain.Transaction.History')
-def index():
+@jsonrpc.method('Zchain.Transaction.History(chainId=str, trxType=str)')
+def index(chainId, trxType):
     logger.info('Zchain.Transaction.History')
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+    if type(trxType) != unicode:
+        return error_utils.mismatched_parameter_type('trxType', 'STRING')
+
+    tbl = None
+    if trxType == "deposit":
+        tbl = db.b_deposit_transaction
+    elif trxType == "withdraw":
+        tbl = db.b_withdraw_transaction
     return {
         'last_block_num': 0,
         'from_block_num': 0,

@@ -3,4 +3,4 @@
 from config import config
 from .logging_config import logger
 
-config_info = config.config
+# config_info = config.config
