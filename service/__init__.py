@@ -19,9 +19,9 @@ jsonrpc = JSONRPC(app, '/api', enable_web_browsable_api=True)
 
 app.config.from_object(config_info['development'])   # 载入配置文件
 
-# client = MongoClient(app.config['MONGO_HOST'], app.config['MONGO_PORT'])
-# db = client[app.config['MONGO_NAME']]
+client = MongoClient(app.config['MONGO_HOST'], app.config['MONGO_PORT'])
+db = client[app.config['MONGO_NAME']]
 
-connect(db=app.config['MONGO_NAME'], host=app.config['MONGO_HOST'], port=app.config['MONGO_PORT'])
+# connect(db=app.config['MONGO_NAME'], host=app.config['MONGO_HOST'], port=app.config['MONGO_PORT'])
 
 from service import apis

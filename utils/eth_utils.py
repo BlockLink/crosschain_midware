@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
-import rpc
+from . import rpc
 import requests
 import json
 from config import config
 from service import db
+# from service import models
 
 def eth_request(method, args):
     url = "http://%s:%s/rpc"%(config["development"].ETH_URL,config["development"].ETH_PORT)

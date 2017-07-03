@@ -4,8 +4,8 @@ from __future__ import print_function
 from service import jsonrpc
 from config import logger
 from utils import eth_utils
-from service import models
-# from service import db
+# from service import models
+from service import db
 from utils import error_utils
 from bson import json_util as jsonb
 import json
@@ -53,7 +53,7 @@ def index():
 @jsonrpc.method('Zchain.Address.Setup(chainId=str, data=list)')
 def index(chainId, data):
     logger.info('Zchain.Address.Setup')
-    # addresses = db.b_chain_account
+    addresses = db.b_chain_account
     if type(chainId) != str:
     # if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
@@ -65,13 +65,7 @@ def index(chainId, data):
         if type(addr) == dict and 'address' in addr:
             addr["chainId"] = chainId
             try:
-                addr_account = models.BChainAccount()
-                addr_account.address = addr['address']
-                addr_account.chainId = chainId
-                addr_account.balance = {}
-                addr_account.name = addr.get('name', '')
-                # addresses.insert_one(addr)
-                addr_account.save()
+                addresses.insert_one(addr)
                 num += 1
             except Exception as e:
                 logger.error(str(e))
@@ -85,13 +79,13 @@ def index(chainId, data):
 @jsonrpc.method('Zchain.Address.List(chainId=str)')
 def index(chainId=str):
     logger.info('Zchain.Address.List')
-    # addresses = db.b_chain_account
-    chain_accounts = models.BChainAccount.objects()
-    print(chain_accounts)
+    addresses = db.b_chain_account
+    # chain_accounts = models.BChainAccount.objects()
+    # print(chain_accounts)
     if type(chainId) != str:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
-    addresses = models.BChainAccount.objects(_id=0)
+    addresses = addresses.find({}, {'_id': 0})
     json_addrs = jsonb.dumps(list(addresses))
 
     #return json.loads(json_addrs)
