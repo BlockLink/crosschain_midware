@@ -5,6 +5,8 @@ from config import logger
 from utils import eth_utils
 from service import db
 from utils import error_utils
+from bson import json_util as jsonb
+import json
 
 @jsonrpc.method('Zchain.Transaction.History')
 def index():
@@ -50,7 +52,7 @@ def index():
 def index(chainId, data):
     logger.info('Zchain.Address.Setup')
     addresses = db.b_chain_account
-    if type(chainId) != str:
+    if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
     if type(data) != list:
         return error_utils.mismatched_parameter_type('data', 'ARRAY')
@@ -71,17 +73,17 @@ def index(chainId, data):
     }
 
 
-@jsonrpc.method('Zchain.Address.List')
-def index():
+@jsonrpc.method('Zchain.Address.List(chainId=str)')
+def index(chainId=str):
     logger.info('Zchain.Address.List')
-    addresses = db.b_chain_account
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
-    return {
-        "addresses": [
-            "124",
-            "234"
-        ]
-    }
+    addresses = db.b_chain_account.find({}, {"_id": 0})
+    json_addrs = jsonb.dumps(list(addresses))
+
+    #return json.loads(json_addrs)
+    return { "addresses": json.loads(json_addrs) }
 
 
 
