@@ -3,6 +3,7 @@
 from service import jsonrpc
 from config import logger
 from service import db
+from utils import error_utils
 
 @jsonrpc.method('Zchain.Transaction.History')
 def index():
@@ -48,8 +49,10 @@ def index():
 def index(chainId, data):
     logger.info('Zchain.Address.Setup')
     addresses = db.b_chain_account
+    if type(chainId) != str:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
     if type(data) != list:
-        return { "error_code": '00001', "error_message": "Addresses should be stored in ARRAY." }
+        return error_utils.mismatched_parameter_type('data', 'ARRAY')
 
     num = 0
     for addr in data:
