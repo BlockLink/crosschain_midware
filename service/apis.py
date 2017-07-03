@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
 from service import jsonrpc
 from config import logger
 from utils import eth_utils
-from service import db
+from service import models
+# from service import db
 from utils import error_utils
 from bson import json_util as jsonb
 import json
@@ -61,20 +63,27 @@ def index():
 @jsonrpc.method('Zchain.Address.Setup(chainId=str, data=list)')
 def index(chainId, data):
     logger.info('Zchain.Address.Setup')
-    addresses = db.b_chain_account
-    if type(chainId) != unicode:
+    # addresses = db.b_chain_account
+    if type(chainId) != str:
+    # if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
     if type(data) != list:
         return error_utils.mismatched_parameter_type('data', 'ARRAY')
 
     num = 0
     for addr in data:
-        if type(addr) == dict and addr.has_key('address'):
+        if type(addr) == dict and 'address' in addr:
             addr["chainId"] = chainId
             try:
-                addresses.insert_one(addr)
+                addr_account = models.BChainAccount()
+                addr_account.address = addr['address']
+                addr_account.chainId = chainId
+                addr_account.balance = {}
+                addr_account.name = addr.get('name', '')
+                # addresses.insert_one(addr)
+                addr_account.save()
                 num += 1
-            except Exception, e:
+            except Exception as e:
                 logger.error(str(e))
         else:
             logger.warn("Invalid chain address: " + str(addr))
@@ -86,10 +95,13 @@ def index(chainId, data):
 @jsonrpc.method('Zchain.Address.List(chainId=str)')
 def index(chainId=str):
     logger.info('Zchain.Address.List')
-    if type(chainId) != unicode:
+    # addresses = db.b_chain_account
+    chain_accounts = models.BChainAccount.objects()
+    print(chain_accounts)
+    if type(chainId) != str:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
-    addresses = db.b_chain_account.find({}, {"_id": 0})
+    addresses = models.BChainAccount.objects(_id=0)
     json_addrs = jsonb.dumps(list(addresses))
 
     #return json.loads(json_addrs)
