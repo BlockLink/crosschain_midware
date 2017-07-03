@@ -4,11 +4,13 @@ from __future__ import print_function
 from service import jsonrpc
 from config import logger
 from utils import eth_utils
-# from service import models
+from service import models
 from service import db
 from utils import error_utils
 from bson import json_util as jsonb
 import json
+
+print(models.get_root_user())
 
 @jsonrpc.method('Zchain.Transaction.History(chainId=str, trxType=str)')
 def index(chainId, trxType):
