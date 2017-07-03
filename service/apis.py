@@ -64,8 +64,7 @@ def index():
 def index(chainId, data):
     logger.info('Zchain.Address.Setup')
     addresses = db.b_chain_account
-    if type(chainId) != str:
-    # if type(chainId) != unicode:
+    if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
     if type(data) != list:
         return error_utils.mismatched_parameter_type('data', 'ARRAY')
@@ -92,7 +91,7 @@ def index(chainId=str):
     addresses = db.b_chain_account
     # chain_accounts = models.BChainAccount.objects()
     # print(chain_accounts)
-    if type(chainId) != str:
+    if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
     addresses = addresses.find({}, {'_id': 0})
