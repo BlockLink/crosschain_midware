@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
 import rpc
 import requests
 import json
@@ -24,7 +25,7 @@ def eth_create_address():
     address = ''
     #写入数据库待做
     result = eth_request("personal_newAccount",[config["development"].ETH_SECRET_KEY])
-    print type(result)
+    print(type(result))
     json_result = json.loads(result)
     if json_result.has_key("result"):
         address = json_result["result"]
@@ -36,8 +37,8 @@ def eth_create_address():
 def get_account_list_from_wallet():
     addressList = []
     result = eth_request("personal_listAccounts", [])
-    print type(result)
-    print result
+    print(type(result))
+    print(result)
     json_result = json.loads(result)
     if json_result.has_key("result"):
         addressList = json_result["result"]
