@@ -43,22 +43,15 @@ def index():
     }
 
 
-@jsonrpc.method('Zchain.CashSweep.History')
-def index():
+@jsonrpc.method('Zchain.CashSweep.History(chainId=str, startTime=str, endTime=str)')
+def index(chainId, startTime, endTime):
     logger.info('Zchain.CashSweep.History')
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+    trxs = db.b_cash_sweep.find({}, {'_id': 0})
+
     return {
-        "history": [
-            {
-                "date_time": "2011-1-1 00:00:00",
-                "transactions": [
-                    {
-                        "from_address": "123",
-                        "to_address": "234",
-                        "amount": 1
-                    }
-                ]
-            }
-        ]
+        'data': jsonb.loads(jsonb.dumps(list(trxs)))
     }
 
 
