@@ -1,0 +1,7 @@
+*.pyc
+/logs
+/out
+/dist
+/build
+*~
+/.idea
