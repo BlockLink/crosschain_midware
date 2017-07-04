@@ -58,7 +58,8 @@ def index(chainId, startTime, endTime):
     logger.info('Zchain.CashSweep.History')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
-    trxs = db.b_cash_sweep.find({}, {'_id': 0})
+
+    trxs = db.b_cash_sweep.find({"sweepDoneTime": {"$ge": startTime}, "sweepDoneTime": {"$lt": endTime}}, {'_id': 0})
 
     return {
         'data': jsonb.loads(jsonb.dumps(list(trxs)))
