@@ -121,3 +121,33 @@ def zchain_collection_amount(coin,address,amount):
         return {'coin':coin,'result':True}
 
 
+@jsonrpc.method('Zchain.CashSweep.QueryHistory(chainId=String)')
+def zchain_query_cash_sweep_history(chainId):
+  """
+  查询归账历史
+  :param chainId:
+  :return:
+  """
+  logger.info("query cash sweep history of chain %s" % chainId)
+  return {
+    'chainId': chainId,
+    'history': [
+    ],
+  }
+
+@jsonrpc.method('Zchain.CashSweep.QueryHistoryDetails(cash_sweep_id=String,offset=int,limit=int)')
+def zchain_query_cash_sweep_details(cash_sweep_id, offset, limit):
+  """
+  查询某次归账操作记录的具体明细
+  :param cash_sweep_id:
+  :param offset
+  :param limit
+  :return:
+  """
+  return {
+    'cash_sweep_id': cash_sweep_id,
+    'total': 0,
+    'result': [
+      # TODO:每一项是一条归账操作计划的一条需要转账的记录
+    ],
+  }
