@@ -12,31 +12,26 @@ import json
 
 print(models.get_root_user())
 
-@jsonrpc.method('Zchain.Transaction.History(chainId=str, trxType=str)')
-def index(chainId, trxType):
+@jsonrpc.method('Zchain.Transaction.History(chainId=str, blockNum=str)')
+def index(chainId, blockNum):
     logger.info('Zchain.Transaction.History')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
-    if type(trxType) != unicode:
-        return error_utils.mismatched_parameter_type('trxType', 'STRING')
+    if type(blockNum) != int:
+        return error_utils.mismatched_parameter_type('blockNum', 'STRING')
 
-    tbl = None
-    if trxType == "deposit":
-        tbl = db.b_deposit_transaction
-    elif trxType == "withdraw":
-        tbl = db.b_withdraw_transaction
-    else:
-        return error_utils.invalid_trx_type(trxType)
+    depositTrxs = db.b_deposit_transaction.find({"blockNum": {"$ge": blockNum}}, {"_id": 0})
+    withdrawTrxs = db.b_withdraw_transaction.find({"blockNum": {"$ge": blockNum}}, {"_id": 0})
+    depositTrxs.extend(withdrawTrxs)
 
-    trxs = tbl.find({}, {"_id": 0})
     return {
-        'data': jsonb.loads(jsonb.dumps(list(trxs)))
+        'data': jsonb.loads(jsonb.dumps(list(depositTrxs)))
     }
 
 
 
-@jsonrpc.method('Zchain.Configure')
-def index():
+@jsonrpc.method('Zchain.Configure(chainId=str, key=str, value=str)')
+def index(chainId, key, value):
     logger.info('Zchain.Configure')
     return {
         "result": True
