@@ -10,5 +10,6 @@ db.createCollection("b_raw_transaction_output");
 db.createCollection("b_chain_account");
 db.createCollection("b_deposit_transaction");
 db.createCollection("b_withdraw_transaction");
+db.createCollection("s_configuration");
 
 db.b_chain_account.ensureIndex({"chainId":1, "address": 1}, {"unique":true});

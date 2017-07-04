@@ -30,12 +30,27 @@ def index(chainId, blockNum):
 
 
 
-@jsonrpc.method('Zchain.Configure(chainId=str, key=str, value=str)')
+@jsonrpc.method('Zchain.Configuration.Set(chainId=str, key=str, value=str)')
 def index(chainId, key, value):
     logger.info('Zchain.Configure')
-    return {
-        "result": True
-    }
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+    if type(key) != unicode:
+        return error_utils.mismatched_parameter_type('key', 'STRING')
+    if type(value) != unicode:
+        return error_utils.mismatched_parameter_type('value', 'STRING')
+    tbl = db.s_configuration
+    data = { "chainId": chainId, "key": key, "value": value }
+    result = True
+    try:
+        tbl.insert_one(data)
+    except Exception as e:
+        logger.error(str(e))
+        result = False
+    finally:
+        return {
+            "result": result
+        }
 
 
 @jsonrpc.method('Zchain.CashSweep.History(chainId=str, startTime=str, endTime=str)')
