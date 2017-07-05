@@ -146,6 +146,7 @@ def zchain_query_cash_sweep_history(chainId):
     ],
   }
 
+
 @jsonrpc.method('Zchain.CashSweep.QueryHistoryDetails(cash_sweep_id=String,offset=int,limit=int)')
 def zchain_query_cash_sweep_details(cash_sweep_id, offset, limit):
   """
