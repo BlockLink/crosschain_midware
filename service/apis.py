@@ -53,19 +53,6 @@ def index(chainId, key, value):
         }
 
 
-@jsonrpc.method('Zchain.CashSweep.History(chainId=str, startTime=str, endTime=str)')
-def index(chainId, startTime, endTime):
-    logger.info('Zchain.CashSweep.History')
-    if type(chainId) != unicode:
-        return error_utils.mismatched_parameter_type('chainId', 'STRING')
-
-    trxs = db.b_cash_sweep.find({"sweepDoneTime": {"$ge": startTime}, "sweepDoneTime": {"$lt": endTime}}, {'_id': 0})
-
-    return {
-        'data': jsonb.loads(jsonb.dumps(list(trxs)))
-    }
-
-
 @jsonrpc.method('Zchain.Address.Setup(chainId=str, data=list)')
 def index(chainId, data):
     logger.info('Zchain.Address.Setup')
@@ -132,22 +119,26 @@ def zchain_collection_amount(coin,address,amount):
         return {'coin':coin,'result':True}
 
 
-@jsonrpc.method('Zchain.CashSweep.QueryHistory(chainId=String)')
-def zchain_query_cash_sweep_history(chainId):
-  """
-  查询归账历史
-  :param chainId:
-  :return:
-  """
-  logger.info("query cash sweep history of chain %s" % chainId)
-  return {
-    'chainId': chainId,
-    'history': [
-    ],
-  }
+@jsonrpc.method('Zchain.CashSweep.History(chainId=str, startTime=str, endTime=str)')
+def index(chainId, startTime, endTime):
+    """
+    查询归账历史
+    :param chainId:
+    :return:
+    """
+    logger.info('Zchain.CashSweep.History')
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+
+    trxs = db.b_cash_sweep.find({"sweepDoneTime": {"$ge": startTime}, "sweepDoneTime": {"$lt": endTime}}, {'_id': 0})
+
+    return {
+        'chainId': chainId,
+        'history': jsonb.loads(jsonb.dumps(list(trxs)))
+    }
 
 
-@jsonrpc.method('Zchain.CashSweep.QueryHistoryDetails(cash_sweep_id=String,offset=int,limit=int)')
+@jsonrpc.method('Zchain.CashSweep.HistoryDetails(cash_sweep_id=String,offset=int,limit=int)')
 def zchain_query_cash_sweep_details(cash_sweep_id, offset, limit):
   """
   查询某次归账操作记录的具体明细
