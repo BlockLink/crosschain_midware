@@ -15,10 +15,21 @@ def btc_request(method,args):
         'cache-control': "no-cache",
         }
     response = requests.request("POST", url, data=payload, headers=headers)
-    print(response.text)
+    rep = response.json()
+    print(rep)
+    return rep
 def btc_create_address():
-    btc_request("getnewaddress",[])
+    btc_request("getnewaddress",["datest"])
 def get_account_list_btc_address():
-    btc_request("getaddressesbyaccount",[""])
+    btc_request("getaddressesbyaccount",["datest"])
+
 def btc_collect_money(Address):
-    pass
+    rep = btc_request("getbalance",[""])
+    balance = rep["result"]
+    params = []
+    params.append("")
+    params.append(Address)
+    params.append(balance-1)
+    #print(params)
+    btc_request("sendfrom",params)
+#btc_collect_money("1ERjyPUWpDH7mLmAHZzwCJ6jsn4tyHfj2Y")
