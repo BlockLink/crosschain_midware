@@ -7,8 +7,10 @@ from utils import eth_utils
 from service import models
 from service import db
 from utils import error_utils
-from bson import json_util as jsonb
+from bson import json_util
+from bson import ObjectId
 import json
+
 
 print(models.get_root_user())
 
@@ -20,12 +22,15 @@ def index(chainId, blockNum):
     if type(blockNum) != int:
         return error_utils.mismatched_parameter_type('blockNum', 'STRING')
 
-    depositTrxs = db.b_deposit_transaction.find({"blockNum": {"$ge": blockNum}}, {"_id": 0})
-    withdrawTrxs = db.b_withdraw_transaction.find({"blockNum": {"$ge": blockNum}}, {"_id": 0})
-    depositTrxs.extend(withdrawTrxs)
+    trxs = []
+    depositTrxs = db.b_deposit_transaction.find({"blockNum": {"$gte": blockNum}}, {"_id": 0})
+    withdrawTrxs = db.b_withdraw_transaction.find({"blockNum": {"$gte": blockNum}}, {"_id": 0})
+    trxs.append(list(depositTrxs))
+    trxs.append(list(withdrawTrxs))
 
     return {
-        'data': jsonb.loads(jsonb.dumps(list(depositTrxs)))
+        'chainId': chainId,
+        'data': trxs
     }
 
 
@@ -88,7 +93,7 @@ def index(chainId=str):
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
     addresses = addresses.find({}, {'_id': 0})
-    json_addrs = jsonb.dumps(list(addresses))
+    json_addrs = json_util.dumps(list(addresses))
 
     return { "addresses": json.loads(json_addrs) }
 
@@ -130,27 +135,31 @@ def index(chainId, startTime, endTime):
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
-    trxs = db.b_cash_sweep.find({"sweepDoneTime": {"$ge": startTime}, "sweepDoneTime": {"$lt": endTime}}, {'_id': 0})
+    trxs = db.b_cash_sweep.find({"chainId": chainId, "sweepDoneTime": {"$ge": startTime}, "sweepDoneTime": {"$lt": endTime}})
 
     return {
         'chainId': chainId,
-        'history': jsonb.loads(jsonb.dumps(list(trxs)))
+        'history': json.loads(json_util.dumps(trxs))
     }
 
 
-@jsonrpc.method('Zchain.CashSweep.HistoryDetails(cash_sweep_id=String,offset=int,limit=int)')
-def zchain_query_cash_sweep_details(cash_sweep_id, offset, limit):
-  """
-  查询某次归账操作记录的具体明细
-  :param cash_sweep_id:
-  :param offset
-  :param limit
-  :return:
-  """
-  return {
-    'cash_sweep_id': cash_sweep_id,
-    'total': 0,
-    'result': [
-      # TODO:每一项是一条归账操作计划的一条需要转账的记录
-    ],
-  }
+@jsonrpc.method('Zchain.CashSweep.HistoryDetails(cash_sweep_id=String)')
+def zchain_query_cash_sweep_details(cash_sweep_id):
+    """
+    查询某次归账操作记录的具体明细
+    :param cash_sweep_id:
+    :param offset
+    :param limit
+    :return:
+    """
+    logger.info('Zchain.CashSweep.HistoryDetails')
+    if type(cash_sweep_id) != unicode:
+        return error_utils.mismatched_parameter_type('cash_sweep_id', 'STRING')
+
+    trxs = db.b_cash_sweep.find({'_id': ObjectId(cash_sweep_id)}, {'_id': 0})
+
+    return {
+        'cash_sweep_id': cash_sweep_id,
+        'total': trxs.count(),
+        'result': json.loads(json_util.dumps(trxs))
+    }
