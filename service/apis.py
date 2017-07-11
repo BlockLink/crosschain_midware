@@ -4,6 +4,7 @@ from __future__ import print_function
 from service import jsonrpc
 from config import logger
 from utils import eth_utils
+from utils import btc_utils
 from service import models
 from service import db
 from utils import error_utils
@@ -110,7 +111,7 @@ def zchain_create_address(coin):
         else:
             return {'coin':coin,'error':'创建地址失败'}
     elif coin == 'btc':
-        address = ''
+        address = btc_utils.btc_create_address()
         return {'coin':coin,'address':address}
 
 

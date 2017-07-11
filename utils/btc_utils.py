@@ -21,14 +21,27 @@ def btc_request(method,args):
     rep = response.json()
     return rep
 def btc_create_address():
-    print btc_request("getnewaddress",["1"])
+    btc_request("getnewaddress",["btc_test"])
+def btc_create_withdraw_address():
+    btc_request("getnewaddress",["btc_withdraw_test"])
+def btc_withdraw_to_address(amount,address):
+    rep = btc_request("getbalance",["btc_withdraw_test"])
+    balance = rep["result"]
+    if balance <= amount:
+        raise Exception("Amount error")
+    params = []
+    params.append("btc_test")
+    params.append(address)
+    params.append(amount)
+    #print(params)
+    btc_request("sendfrom",params)
 def get_account_list_btc_address():
-    btc_request("getaddressesbyaccount",["datest"])
+    btc_request("getaddressesbyaccount",["btc_test"])
 def btc_collect_money(Address):
-    rep = btc_request("getbalance",[""])
+    rep = btc_request("getbalance",["btc_test"])
     balance = rep["result"]
     params = []
-    params.append("")
+    params.append("btc_test")
     params.append(Address)
     params.append(balance-1)
     #print(params)
