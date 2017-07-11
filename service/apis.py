@@ -111,7 +111,8 @@ def zchain_create_address(coin):
         else:
             return {'coin':coin,'error':'创建地址失败'}
     elif coin == 'btc':
-        address = btc_utils.btc_create_address()
+        address= ""
+        #address = btc_utils.btc_create_address()
         return {'coin':coin,'address':address}
 
 
