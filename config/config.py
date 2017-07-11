@@ -23,21 +23,21 @@ class DevelopmentConfig(Config):
     MAIL_USE_TLS = True
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    MONGO_HOST = '192.168.10.208'
+    MONGO_HOST = 'chaindb'
     MONGO_PORT = 27017
     MONGO_NAME = 'chaindb'
     ETH_SECRET_KEY = 'Q!wert123@'
-    ETH_URL = '192.168.10.208'
+    ETH_URL = 'eth_wallet'
     ETH_PORT = 8546
 
 class TestingConfig(Config):
     TESTING = True
-    MONGO_HOST = '192.168.10.208'
+    MONGO_HOST = 'chaindb'
     MONGO_PORT = 27017
     MONGO_NAME = 'chaindb'
 
 class ProductionConfig(Config):
-    MONGO_HOST = '192.168.10.208'
+    MONGO_HOST = 'chaindb'
     MONGO_PORT = 27017
     MONGO_NAME = 'chaindb'
 
