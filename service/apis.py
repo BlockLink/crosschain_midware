@@ -117,13 +117,13 @@ def zchain_create_address(coin):
 
 
 
-@jsonrpc.method('Zchain.Collection.Amount(coin=String,address=String,amount=Number)')
-def zchain_collection_amount(coin,address,amount):
-    logger.info('Create_address coin: %s'%(coin))
-    if coin == 'eth':
-        return {'coin':coin,'result':True}
-    elif coin == 'btc':
-        return {'coin':coin,'result':True}
+@jsonrpc.method('Zchain.CashSweep(chainId=String)')
+def zchain_collection_amount(chainId):
+    logger.info('Create_address coin: %s'%(chainId))
+    if chainId == 'eth':
+        return {'coin':chainId,'result':True}
+    elif chainId == 'btc':
+        return {'coin':chainId,'result':True}
 
 
 @jsonrpc.method('Zchain.CashSweep.History(chainId=str, startTime=str, endTime=str)')

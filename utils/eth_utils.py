@@ -6,10 +6,12 @@ import requests
 import json
 from config import config
 from service import db
-# from service import models
+from datetime import datetime
+
+temp_config = config["development"]
 
 def eth_request(method, args):
-    url = "http://%s:%s/rpc"%(config["development"].ETH_URL,config["development"].ETH_PORT)
+    url = "http://%s:%s/rpc"%(config["development"].ETH_URL,temp_config.ETH_PORT)
     request_template = '''{"jsonrpc":"2.0","id":"1","method":"%s","params":%s}'''
     args_str = ''.join(['[', ','.join(['"' + str(arg) + '"' for arg in args]), ']'])
     data_to_send = request_template % (method, args_str)
@@ -24,22 +26,40 @@ def eth_request(method, args):
 
 def eth_create_address():
     address = ''
+    data = {}
     #写入数据库待做
-    result = eth_request("personal_newAccount",[config["development"].ETH_SECRET_KEY])
-    print(type(result))
+    result = eth_request("personal_newAccount",[temp_config.ETH_SECRET_KEY])
+    print type(result)
     json_result = json.loads(result)
     if json_result.has_key("result"):
         address = json_result["result"]
-        chain_account = db.b_chain_account(chainId="eth",address=address,pubKey="")
-        chain_account[""]
+        data["address"] = address
+        data["chainId"] = "eth"
+        data["creatorUserId"] = 0
+        data["balance"] = {"eth":0}
+        data["pubKey"] = ""
+        data["createTime"] = datetime.now()
+        chain_account = db.b_chain_account
+        chain_account.insert(data)
         return address
     return address
+
+
+def eth_get_base_balance(address):
+
+    result = eth_request("eth_getBalance", [address,"latest"])
+    print result
+    json_result = json.loads(result)
+    amount =  long(json_result["result"],16)
+    return float(amount/pow(10,18))
+
+
 
 def get_account_list_from_wallet():
     addressList = []
     result = eth_request("personal_listAccounts", [])
-    print(type(result))
-    print(result)
+    print type(result)
+    print result
     json_result = json.loads(result)
     if json_result.has_key("result"):
         addressList = json_result["result"]
@@ -48,6 +68,11 @@ def get_account_list_from_wallet():
 
 def get_account_list_from_db():
     addressList = []
+    chain_account = db.b_chain_account
+    resultData = chain_account.find({"chainId":"eth"})
+    for one_data in resultData:
+        print one_data
+        addressList.append(one_data["address"])
 
     return addressList
 
@@ -58,10 +83,25 @@ def eth_collect_money(mode,Address):
         accountList = get_account_list_from_wallet()
     elif mode == 2:
         accountList = get_account_list_from_db()
+    print accountList
+    for account in accountList:
+        amount = eth_get_base_balance(Address)
+        print amount
+        if amount > temp_config.ETH_Minimum:
+            #转账给目标账户
+            result = eth_request("personal_unlockAccount",[account,temp_config.ETH_SECRET_KEY])
+            print result
+            pass
+    return
+
+
 
 
 
 
 if __name__ == '__main__':
-    get_account_list_from_wallet()
+    #get_account_list_from_wallet()
+    #eth_create_address()
+    #get_account_list_from_db()
+    eth_collect_money(2,"0x085aa94b764316d5e608335d13d926c6c6911e56")
 

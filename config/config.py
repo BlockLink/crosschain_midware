@@ -29,6 +29,7 @@ class DevelopmentConfig(Config):
     ETH_SECRET_KEY = 'Q!wert123@'
     ETH_URL = 'eth_wallet'
     ETH_PORT = 8546
+    ETH_Minimum = 1
 
 class TestingConfig(Config):
     TESTING = True
