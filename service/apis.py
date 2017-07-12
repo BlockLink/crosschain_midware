@@ -15,13 +15,13 @@ import json
 
 print(models.get_root_user())
 
-@jsonrpc.method('Zchain.Transaction.History(chainId=str, blockNum=str)')
+@jsonrpc.method('Zchain.Transaction.History(chainId=str, blockNum=int)')
 def index(chainId, blockNum):
     logger.info('Zchain.Transaction.History')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
     if type(blockNum) != int:
-        return error_utils.mismatched_parameter_type('blockNum', 'STRING')
+        return error_utils.mismatched_parameter_type('blockNum', 'INTEGER')
 
     trxs = []
     depositTrxs = db.b_deposit_transaction.find({"blockNum": {"$gte": blockNum}}, {"_id": 0})
@@ -101,22 +101,23 @@ def index(chainId=str):
 
 
 
-@jsonrpc.method('Zchain.Create.Address(coin=String)')
-def zchain_create_address(coin):
-    logger.info('Create_address coin: %s'%(coin))
-    if coin == 'eth':
+@jsonrpc.method('Zchain.Address.Create(chainId=String)')
+def zchain_address_create(chainId):
+    logger.info('Create_address coin: %s'%(chainId))
+    if chainId == 'eth':
         address = eth_utils.eth_create_address()
         if address !=  "":
-            return {'coin':coin,'address':address}
+            return {'coin':chainId,'address':address}
         else:
-            return {'coin':coin,'error':'创建地址失败'}
-    elif coin == 'btc':
+            return {'coin':chainId,'error':'创建地址失败'}
+    elif chainId == 'btc':
         address= ""
         #address = btc_utils.btc_create_address()
-        return {'coin':coin,'address':address}
+        return {'coin':chainId,'address':address}
 
 
 
+#TODO, 要返回opId
 @jsonrpc.method('Zchain.CashSweep(chainId=String)')
 def zchain_collection_amount(chainId):
     logger.info('CashSweep coin: %s'%(chainId))
@@ -126,9 +127,9 @@ def zchain_collection_amount(chainId):
     elif chainId == 'btc':
         return {'coin':chainId,'result':True}
 
-
-@jsonrpc.method('Zchain.CashSweep.History(chainId=str, startTime=str, endTime=str)')
-def index(chainId, startTime, endTime):
+#TODO, 实现与接口不符
+@jsonrpc.method('Zchain.CashSweep.History(chainId=str, opId=str, startTime=str, endTime=str)')
+def index(chainId, opId, startTime, endTime):
     """
     查询归账历史
     :param chainId:
@@ -137,8 +138,15 @@ def index(chainId, startTime, endTime):
     logger.info('Zchain.CashSweep.History')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
+    if type(opId) != unicode:
+        return error_utils.mismatched_parameter_type('opId', 'STRING')
 
-    trxs = db.b_cash_sweep.find({"chainId": chainId, "sweepDoneTime": {"$ge": startTime}, "sweepDoneTime": {"$lt": endTime}})
+    if opId == "":
+        trxs = db.b_cash_sweep.find(
+            {"chainId": chainId, "sweepDoneTime": {"$ge": startTime}, "sweepDoneTime": {"$lt": endTime}})
+    else:
+        trxs = db.b_cash_sweep.find(
+            {"chainId": chainId, "opId": opId, "sweepDoneTime": {"$ge": startTime}, "sweepDoneTime": {"$lt": endTime}})
 
     return {
         'chainId': chainId,
@@ -146,13 +154,12 @@ def index(chainId, startTime, endTime):
     }
 
 
+#TODO, 可能不需要了，需要确认
 @jsonrpc.method('Zchain.CashSweep.HistoryDetails(cash_sweep_id=String)')
 def zchain_query_cash_sweep_details(cash_sweep_id):
     """
     查询某次归账操作记录的具体明细
     :param cash_sweep_id:
-    :param offset
-    :param limit
     :return:
     """
     logger.info('Zchain.CashSweep.HistoryDetails')
@@ -165,4 +172,49 @@ def zchain_query_cash_sweep_details(cash_sweep_id):
         'cash_sweep_id': cash_sweep_id,
         'total': trxs.count(),
         'result': json.loads(json_util.dumps(trxs))
+    }
+
+
+
+#TODO, 待实现
+@jsonrpc.method('Zchain.Withdraw.GetInfo(chainId=str)')
+def zchain_withdraw_getinfo(chainId):
+    """
+    查询提现账户的信息
+    :param chainId:
+    :return:
+    """
+    logger.info('Zchain.Withdraw.GetInfo')
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+
+    trxs = db.b_cash_sweep.find({'_id': ObjectId(chainId)}, {'_id': 0})
+
+    return {
+        'chainId': chainId,
+        'address': "1234565",
+        'balance': "101.1"
+    }
+
+
+#TODO, 待实现
+@jsonrpc.method('Zchain.Withdraw.Execute(chainId=str, address=str, amount=Number)')
+def zchain_withdraw_execute(chainId, address, amount):
+    """
+    查询某次归账操作记录的具体明细
+    :param cash_sweep_id:
+    :return:
+    """
+    logger.info('Zchain.CashSweep.HistoryDetails')
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+    if type(address) != unicode:
+        return error_utils.mismatched_parameter_type('address', 'STRING')
+    if type(amount) != float and type(amount) != int:
+        return error_utils.mismatched_parameter_type('amount', 'FLOAT/INTEGER')
+
+    return {
+        'amount': 1.03,
+        'fee': 0.01,
+        'trxId': "0xa31dcef"
     }
