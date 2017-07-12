@@ -2,6 +2,7 @@
 import requests
 from base64 import encodestring
 import json
+from datetime import datetime
 def btc_request(method,args):
     url = "http://127.0.0.1:60011/"
     user = 'a'
@@ -20,8 +21,15 @@ def btc_request(method,args):
     response = requests.request("POST", url, data=payload, headers=headers)
     rep = response.json()
     return rep
-def btc_create_address():
-    btc_request("getnewaddress",["btc_test"])
+def btc_create_address(db):
+    resp = btc_request("getnewaddress",["btc_test"])
+    address = resp["result"]
+    mongo_data = db.find_one({"chainId":"btc","address":address})
+    if mongo_data == None:
+        db.insert({"chainId":"btc","address":address,"createTime":datetime.now()})
+    else:
+        db.update({"chainId":"btc","address":address})
+
 def btc_create_withdraw_address():
     btc_request("getnewaddress",["btc_withdraw_test"])
 def btc_withdraw_to_address(amount,address):
@@ -46,4 +54,6 @@ def btc_collect_money(Address):
     params.append(balance-1)
     #print(params)
     btc_request("sendfrom",params)
+def btc_withdraw_info():
+    pass
 #btc_collect_money("1ERjyPUWpDH7mLmAHZzwCJ6jsn4tyHfj2Y")
