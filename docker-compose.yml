@@ -1,7 +1,13 @@
 version: '3'
 
 services:
-  chain_midware:
+  python_web:
+    build:
+      context: .
+      dockerfile: Dockerfile.base
+    image: 'yqr/python_web'
+
+chain_midware:
     build:
       context: .
       dockerfile: Dockerfile
@@ -38,8 +44,3 @@ services:
       - "30303:30303"
 
 
-  python_web:
-    build:
-      context: .
-      dockerfile: Dockerfile.base
-    image: 'yqr/python_web'
