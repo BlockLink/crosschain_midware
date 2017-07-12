@@ -9,7 +9,11 @@ services:
     ports:
       - "80:80"
     links:
+      - chaindb:chaindb
+      - btc_wallet:btc_wallet
+    depends_on:
       - chaindb
+      - btc_wallet
 
   chaindb:
     image: 'mongo'
@@ -21,3 +25,9 @@ services:
       context: .
       dockerfile: Dockerfile.btc_wallet
     image: yqr/btc_wallet
+
+  python_web:
+    build:
+      context: .
+      dockerfile: Dockerfile.base
+    image: 'yqr/python_web'

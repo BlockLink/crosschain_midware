@@ -1,4 +1,4 @@
-FROM chain_master/python_web:1.0
+FROM yqr/python_web
 MAINTAINER zhangzhentao
 
 EXPOSE 80
