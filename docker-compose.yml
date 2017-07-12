@@ -1,21 +1,23 @@
+version: '3'
 
-chain_midware:
-  build:
-    context: .
-    dockerfile: Dockerfile
-  image: yqr/midware
-  ports:
-    - "80:80"
-  links:
-    - chaindb
+services:
+  chain_midware:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: 'yqr/midware'
+    ports:
+      - "80:80"
+    links:
+      - chaindb
 
-chaindb:
-  image: 'mongo'
-  ports:
-    - "27017:27017"
+  chaindb:
+    image: 'mongo'
+    ports:
+      - "27017:27017"
 
-btc_wallet:
-  build:
-    context: .
-    dockerfile: Dockerfile.btc_wallet
-  image: yqr/btc_wallet
+  btc_wallet:
+    build:
+      context: .
+      dockerfile: Dockerfile.btc_wallet
+    image: yqr/btc_wallet

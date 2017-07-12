@@ -1,6 +1,7 @@
 FROM ubuntu
 MAINTAINER zhangzhentao
 
+RUN apt-get update
 RUN apt-get install -y python-software-properties software-properties-common
 RUN add-apt-repository -y ppa:bitcoin/bitcoin
 RUN apt-get update
