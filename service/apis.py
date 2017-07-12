@@ -119,8 +119,9 @@ def zchain_create_address(coin):
 
 @jsonrpc.method('Zchain.CashSweep(chainId=String)')
 def zchain_collection_amount(chainId):
-    logger.info('Create_address coin: %s'%(chainId))
+    logger.info('CashSweep coin: %s'%(chainId))
     if chainId == 'eth':
+        eth_utils.eth_collect_money(2)
         return {'coin':chainId,'result':True}
     elif chainId == 'btc':
         return {'coin':chainId,'result':True}
