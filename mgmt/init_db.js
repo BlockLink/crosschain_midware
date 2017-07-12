@@ -1,6 +1,3 @@
-conn = new Mongo();
-db = conn.getDB("chaindb");
-
 db.createCollection("s_user");
 db.createCollection("b_chain_info");
 db.createCollection("b_block");

@@ -34,7 +34,7 @@ parse_args()
 start_service()
 {
     if [ -f /var/www/html/init_db.js ]; then
-        mongo --host chaindb /var/www/html/init_db.js
+        mongo --host chaindb  chaindb /var/www/html/init_db.js
         mv /var/www/html/init_db.js /var/www/html/init_db.js.imported
     fi
     /etc/init.d/nginx start
