@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile.base
     image: 'yqr/python_web'
 
-chain_midware:
+  chain_midware:
     build:
       context: .
       dockerfile: Dockerfile
