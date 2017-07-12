@@ -1,31 +1,27 @@
-chain_common_api
-
-# setup
-## mongo
-* get mongo image
+# 部署
+## 准备工作
+* 获取 mongo 镜像
   ```
   docker pull mongo
   ```
-* run mongo container
-  ```
-  docker run --name chaindb -p 27017:27017 -d mongo
-  ```
-* reference
-  https://hub.docker.com/_/mongo/
-
-## app
-* get ubuntu base image
+* 获取Ubuntu镜像
   ```
   docker pull ubuntu
-  docker build -f Dockerfile.base -t chain_master/python_web:1.0 .
   ```
-* build app image
+## 安装部署
+* 制作镜像
   ```
-  docker build -t chain_master/midware:1.0 .
+  docker-compose build
   ```
-* run app container
+* 启动服务
   ```
-  docker run -d --name chain_midware -p 80:80 chain_master/midware:1.0
+  docker-compose up -d chain_midware
   ```
-* reference
-  https://hub.docker.com/_/ubuntu/
+* 停止服务
+  ```
+  docker-compose down
+  ```
+
+## 参考
+* https://hub.docker.com/_/mongo/
+* https://hub.docker.com/_/ubuntu/
