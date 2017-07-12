@@ -4,6 +4,7 @@ from __future__ import print_function
 from service import jsonrpc
 from config import logger
 from utils import eth_utils
+from utils import btc_utils
 from service import models
 from service import db
 from utils import error_utils
@@ -110,18 +111,20 @@ def zchain_create_address(coin):
         else:
             return {'coin':coin,'error':'创建地址失败'}
     elif coin == 'btc':
-        address = ''
+        address= ""
+        #address = btc_utils.btc_create_address()
         return {'coin':coin,'address':address}
 
 
 
-@jsonrpc.method('Zchain.Collection.Amount(coin=String,address=String,amount=Number)')
-def zchain_collection_amount(coin,address,amount):
-    logger.info('Create_address coin: %s'%(coin))
-    if coin == 'eth':
-        return {'coin':coin,'result':True}
-    elif coin == 'btc':
-        return {'coin':coin,'result':True}
+@jsonrpc.method('Zchain.CashSweep(chainId=String)')
+def zchain_collection_amount(chainId):
+    logger.info('CashSweep coin: %s'%(chainId))
+    if chainId == 'eth':
+        eth_utils.eth_collect_money(2)
+        return {'coin':chainId,'result':True}
+    elif chainId == 'btc':
+        return {'coin':chainId,'result':True}
 
 
 @jsonrpc.method('Zchain.CashSweep.History(chainId=str, startTime=str, endTime=str)')

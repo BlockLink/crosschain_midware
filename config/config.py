@@ -29,6 +29,24 @@ class DevelopmentConfig(Config):
     ETH_SECRET_KEY = 'Q!wert123@'
     ETH_URL = 'eth_wallet'
     ETH_PORT = 8546
+    ETH_Minimum = 1
+
+
+class SunnyConfig(Config):
+    DEBUG = True
+
+    MAIL_SERVER = 'smtp.googlemail.com'
+    MAIL_PORT = 587
+    MAIL_USE_TLS = True
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+    MONGO_HOST = '192.168.1.115'
+    MONGO_PORT = 27017
+    MONGO_NAME = 'chaindb'
+    ETH_SECRET_KEY = 'Q!wert123@'
+    ETH_URL = '192.168.1.115'
+    ETH_PORT = 8546
+    ETH_Minimum = 1
 
 class TestingConfig(Config):
     TESTING = True
@@ -45,5 +63,6 @@ config = {
     'development': DevelopmentConfig,
     'testing': TestingConfig,
     'production': ProductionConfig,
-    'default': DevelopmentConfig
+    'default': DevelopmentConfig,
+    'Sunny' : SunnyConfig
 }
