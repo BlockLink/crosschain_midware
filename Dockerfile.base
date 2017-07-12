@@ -5,6 +5,7 @@ MAINTAINER zhangzhentao
 RUN apt-get update
 RUN apt-get install -y python-pip
 RUN apt-get install -y nginx
+RUN apt-get install -y mongodb-clients
 RUN pip install --upgrade pip
 RUN pip install Flask
 RUN pip install Flask-JSONRPC

@@ -1,0 +1,10 @@
+FROM ubuntu
+MAINTAINER zhangzhentao
+
+RUN apt-get install -y python-software-properties software-properties-common
+RUN add-apt-repository -y ppa:bitcoin/bitcoin
+RUN apt-get update
+RUN apt-get install -y bitcoind
+RUN mkdir /var/btc_data
+
+ENTRYPOINT bitcoind --datadir=/var/btc_data --rpcuser=a --rpcpassword=b --rpcport=60011 --server
