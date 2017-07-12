@@ -8,4 +8,4 @@ RUN apt-get update
 RUN apt-get install -y ethereum
 RUN mkdir /var/eth_data
 
-ENTRYPOINT geth --datadir /eth/btc_data --rpcapi eth,web3,personal,debug,admin --cache 1024 --syncmode=full --port 30303 --rpc --rpcport 8545 --rpcaddr 0.0.0.0 console
+ENTRYPOINT geth --datadir /var/eth_data --rpcapi eth,web3,personal,debug,admin --cache 1024 --syncmode=full --port 30303 --rpc --rpcport 8545 --rpcaddr 0.0.0.0
