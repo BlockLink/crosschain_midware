@@ -9,6 +9,8 @@ import shutil
 import os
 from math import pow
 import time
+from service import logger
+import traceback
 
 temp_config = config["Sunny"]
 
@@ -68,6 +70,8 @@ def eth_get_base_balance(address):
     result = eth_request("eth_getBalance", [address,"latest"])
     print result
     json_result = json.loads(result)
+    if json_result.get("result") is None:
+        return 0
     amount = long(json_result["result"],16)
     return amount
     #return float(amount/pow(10,18))
@@ -125,44 +129,37 @@ def get_transaction_data(trx_id):
 
 
 def eth_collect_money(cash_sweep_account,accountList):
+    try:
+        result_data = {}
+        result_data["errdata"] = []
+        result_data["data"] = []
 
-    result_data = {}
-    result_data["errdata"] = []
-    result_data["data"] = []
+        #存储创建成功的交易单号
+        for account in accountList:
+            amount = eth_get_base_balance(account)
+            if float(amount)/pow(10,18) > temp_config.ETH_Minimum:
+                #转账给目标账户
+                result = eth_request("personal_unlockAccount",[account,temp_config.ETH_SECRET_KEY,10000])
+                if json.loads(result).get("result") is None:
+                    result_data["errdata"].append({"address":account,"error_reason":u"账户解锁失败"})
+                    #写入归账失败的列表
+                    continue
 
-    #存储创建成功的交易单号
-    mid_data = []
-    for account in accountList:
-        amount = eth_get_base_balance(account)
-        print amount
-        if float(amount)/pow(10,18) > temp_config.ETH_Minimum:
-            #转账给目标账户
-            result = eth_request("personal_unlockAccount",[account,temp_config.ETH_SECRET_KEY,10000])
-            if json.loads(result).get("result") is None:
-                result_data["errdata"].append({"address":account,"error_reason":u"账户解锁失败"})
-                #写入归账失败的列表
-                continue
-
-            ret = eth_request("eth_sendTransaction",[{"from": account, "to": cash_sweep_account,
-                                                      "value": hex(int((amount - pow(10,16)))).replace('L',''),
-                                                      "gas": "0x76c0", "gasPrice": "0x1dcd6500"}])
-            if json.loads(result).get("result") is None:
-                result_data["errdata"].append({"from_addr": account,"to_addr":cash_sweep_account,"amount":float(amount)/pow(10,18), "error_reason": u"账户创建交易失败"})
-                #写入归账失败的列表
-                continue
-            else:
-                mid_data.append({"address":account,"trx_id":json.loads(result).get("result")})
-                #获取交易详情按笔计入details
-                #写入归账成功返回
-    for data in mid_data:
-        #解析每笔交易结果
-        base_data,receipt_data = get_transaction_data(data["trx_id"])
-        if base_data is None:
-            result_data["errdata"].append({"from_addr": account,"to_addr":cash_sweep_account,"amount":float(amount)/pow(10,18), "error_reason": u"交易创建成功查询出现异常，交易单号：%s"%str(data["trx_id"])})
-        else:
-            result_data["data"].append({"from_addr":receipt_data["from"],"to_addr":receipt_data["to"],"amount" : float(int(base_data["value"],16))/pow(10,18)})
-
-    return result_data
+                ret = eth_request("eth_sendTransaction",[{"from": account, "to": cash_sweep_account,
+                                                          "value": hex(int((amount - pow(10,16)))).replace('L',''),
+                                                          "gas": "0x76c0", "gasPrice": "0x1dcd6500"}])
+                if json.loads(result).get("result") is None:
+                    result_data["errdata"].append({"from_addr": account,"to_addr":cash_sweep_account,"amount":float(amount)/pow(10,18), "error_reason": u"账户创建交易失败"})
+                    #写入归账失败的列表
+                    continue
+                else:
+                    result_data["data"].append({"from_addr": account,"to_addr":cash_sweep_account,"amount":float(amount)/pow(10,18),"trx_id":json.loads(result).get("result")})
+                    #获取交易详情按笔计入details
+                    #写入归账成功返回
+        return result_data
+    except Exception, ex:
+        logger.info(traceback.format_exc())
+        return None, ex.message
 
 
 

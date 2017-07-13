@@ -3,6 +3,7 @@ import requests
 from base64 import encodestring
 import json
 from datetime import datetime
+from service import db
 def btc_request(method,args):
     url = "http://127.0.0.1:60011/"
     user = 'a'
@@ -23,37 +24,58 @@ def btc_request(method,args):
     return rep
 def btc_create_address(db):
     resp = btc_request("getnewaddress",["btc_test"])
-    address = resp["result"]
-    mongo_data = db.find_one({"chainId":"btc","address":address})
-    if mongo_data == None:
-        db.insert({"chainId":"btc","address":address,"createTime":datetime.now()})
-    else:
-        db.update({"chainId":"btc","address":address})
+    address = ""
+    if resp["result"] != None:
+        address = resp["result"]
+        mongo_data = db.find_one({"chainId":"btc","address":address})
+        if mongo_data == None:
+            db.insert({"chainId":"btc","address":address,"createTime":datetime.now()})
+            btc_backup_wallet()
+        else:
+            db.update({"chainId":"btc","address":address})
+    return address
 
 def btc_create_withdraw_address():
-    btc_request("getnewaddress",["btc_withdraw_test"])
+    resp = btc_request("getnewaddress",["btc_withdraw_test"])
+    address = ""
+    if resp["result"] != None:
+        address = resp["result"]
+    return address
+def btc_collect_money():
+    resp = btc_request("settxfee",[0.0004])
+    if resp["result"] == None:
+        raise Exception("settxfee error")
+    sweep_address = db.b_config.find_one({"key":"btcsweepaddress"})["value"]
+    if sweep_address == None:
+        raise Exception("find sweep address error")
+    safe_block = db.b_config.find_one({"key":"btcsafeblock"})["value"]
+    resp = btc_request("getbalance",["btc_test"],safe_block)
+    if resp["result"] == None:
+        raise Exception("getbalance error")
+    balance = resp["result"]
+    if balance - 0.0004 <= 0:
+        raise Exception("balance is not enough error")
+    params = ["btc_test",sweep_address ,balance-0.0004]
+    resp = btc_request("sendfrom",params)
+    if resp["result"] == None:
+        return ""
+    return resp["result"]
+
 def btc_withdraw_to_address(amount,address):
     rep = btc_request("getbalance",["btc_withdraw_test"])
     balance = rep["result"]
     if balance <= amount:
         raise Exception("Amount error")
-    params = []
-    params.append("btc_test")
-    params.append(address)
-    params.append(amount)
+    params = ["btc_withdraw_test",address,amount]
     #print(params)
     btc_request("sendfrom",params)
+
 def get_account_list_btc_address():
     btc_request("getaddressesbyaccount",["btc_test"])
-def btc_collect_money(Address):
-    rep = btc_request("getbalance",["btc_test"])
-    balance = rep["result"]
-    params = []
-    params.append("btc_test")
-    params.append(Address)
-    params.append(balance-1)
-    #print(params)
-    btc_request("sendfrom",params)
+
+def btc_backup_wallet():
+    btc_request("backupwallet",[])
 def btc_withdraw_info():
+
     pass
 #btc_collect_money("1ERjyPUWpDH7mLmAHZzwCJ6jsn4tyHfj2Y")
