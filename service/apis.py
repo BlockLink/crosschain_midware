@@ -93,7 +93,7 @@ def index(chainId=str):
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
-    addresses = addresses.find({}, {'_id': 0})
+    addresses = addresses.find({"chainId": chainId}, {'_id': 0})
     json_addrs = json_util.dumps(list(addresses))
 
     return { "addresses": json.loads(json_addrs) }
@@ -135,6 +135,7 @@ def zchain_collection_amount(chainId):
         return {'chainId':chainId,'result':True}
     else:
         return error_utils.invalid_chainId_type(chainId)
+
 
 #TODO, 实现与接口不符
 @jsonrpc.method('Zchain.CashSweep.History(chainId=str, opId=str, startTime=str, endTime=str)')
