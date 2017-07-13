@@ -23,10 +23,10 @@ def index(chainId, blockNum):
         return error_utils.mismatched_parameter_type('blockNum', 'INTEGER')
 
     trxs = []
-    depositTrxs = db.b_deposit_transaction.find({"blockNum": {"$gte": blockNum}}, {"_id": 0})
-    withdrawTrxs = db.b_withdraw_transaction.find({"blockNum": {"$gte": blockNum}}, {"_id": 0})
-    trxs.append(list(depositTrxs))
-    trxs.append(list(withdrawTrxs))
+    depositTrxs = db.b_deposit_transaction.find({"chainId": chainId, "blockNum": {"$gte": blockNum}}, {"_id": 0})
+    withdrawTrxs = db.b_withdraw_transaction.find({"chainId": chainId, "blockNum": {"$gte": blockNum}}, {"_id": 0})
+    trxs.extend(list(depositTrxs))
+    trxs.extend(list(withdrawTrxs))
 
     return {
         'chainId': chainId,
@@ -110,9 +110,13 @@ def zchain_address_create(chainId):
         else:
             return {'coin':chainId,'error':'创建地址失败'}
     elif chainId == 'btc':
-        address= ""
-        #address = btc_utils.btc_create_address()
-        return {'coin':chainId,'address':address}
+        address = btc_utils.btc_create_address()
+        if address !=  "":
+            return {'coin':chainId,'address':address}
+        else:
+            return {'coin':chainId,'error':'创建地址失败'}
+    else:
+        return error_utils.invalid_chaind_type(chainId)
 
 
 
@@ -139,13 +143,24 @@ def zchain_collection_amount(chainId):
 
 
     elif chainId == 'btc':
-        pass
+        try:
+            trx_id = btc_utils.btc_collect_money()
+            if trx_id == "":
+                return {'coin':chainId,'result':False}
+            else:
+                return {'coin':chainId,'result':True}
+        except Exception as e:
+            return {'coin':chainId,'result':False}
+    else:
+        return error_utils.invalid_chaind_type(chainId)
     for one_data in resp["data"]:
         one_data[""]
         pass
     for one_data in resp["errdata"]:
         pass
-    return {'chainId': chainId,'result':True}
+    return {'chainId': chainId, 'result': True}
+
+
 
 #TODO, 实现与接口不符
 @jsonrpc.method('Zchain.CashSweep.History(chainId=str, opId=str, startTime=str, endTime=str)')
@@ -207,18 +222,23 @@ def zchain_withdraw_getinfo(chainId):
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
-    records = db.b_config.find({'key': 'withdraw_address'}, {'_id': 0})
+    records = db.b_config.find_one({'key': 'withdrawaddress'}, {'_id': 0})
     address = ""
-    for r in records:
+    if records == None:
+         db.b_config.insert_one({"key":"withdrawaddress","value":[]})
+         records = db.b_config.find_one({'key': 'withdrawaddress'}, {'_id': 0})
+    for r in records["value"]:
         if r['chainId'] == chainId:
             address = r['address']
 
     if address == "":
         if chainId == "eth":
             address = eth_utils.eth_create_address()
+            records["value"].append({"chainId":"eth","address":address})
         elif chainId == "btc":
-            address == "239cadf23"
-
+            address = btc_utils.btc_create_withdraw_address()
+            records["value"].append({"chainId":"btc","address":address})
+    db.b_config.update({"key":"withdrawaddress"},{"$set":{"value":records["value"]}})
     balance = 0.0
     if chainId == "eth":
         balance = eth_utils.eth_get_base_balance(address)
@@ -226,7 +246,7 @@ def zchain_withdraw_getinfo(chainId):
         #TODO, 需调用BTC接口
         balance = 1101.34
     else:
-        return error_utils.invalid_chainId_type(chainId)
+        return error_utils.invalid_chaind_type(chainId)
 
     return {
         'chainId': chainId,

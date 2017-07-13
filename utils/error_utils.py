@@ -14,7 +14,7 @@ def mismatched_parameter_type(v, t):
 def invalid_trx_type(v):
     return error_response(u'invalid transaction type: %s.' % v, 40002)
 
-def invalid_chainId_type(v):
+def invalid_chaind_type(v):
     return error_response(u'invalid chainId type: %s (eth, btc).' % v, 40003)
 
 def mis_cash_sweep_config():
