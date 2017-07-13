@@ -4,7 +4,6 @@
 import requests
 import json
 from config import config
-#from service import db
 from datetime import datetime
 import shutil
 import os
@@ -51,28 +50,15 @@ def eth_backup():
     return True
 
 
-
-
 def eth_create_address():
     address = ''
     data = {}
-    #写入数据库待做
-    result = eth_request("personal_newAccount",[temp_config.ETH_SECRET_KEY])
-    print type(result)
+    # 写入数据库待做
+    result = eth_request("personal_newAccount", [temp_config.ETH_SECRET_KEY])
     json_result = json.loads(result)
     if json_result.has_key("result"):
+
         address = json_result["result"]
-        data["address"] = address
-        data["chainId"] = "eth"
-        data["creatorUserId"] = 0
-        data["balance"] = {"eth":0}
-        data["pubKey"] = ""
-        data["createTime"] = datetime.now()
-        chain_account = db.b_chain_account
-        chain_account.insert(data)
-        if not eth_backup():
-            #写入备份失败表
-            pass
         return address
     return address
 
@@ -99,15 +85,6 @@ def get_account_list_from_wallet():
         return addressList
     return addressList
 
-def get_account_list_from_db():
-    addressList = []
-    chain_account = db.b_chain_account
-    resultData = chain_account.find({"chainId":"eth"})
-    for one_data in resultData:
-        print one_data
-        addressList.append(one_data["address"])
-
-    return addressList
 
 
 def get_transaction_data(trx_id):
@@ -147,20 +124,8 @@ def get_transaction_data(trx_id):
     return resp_data,receipt_data
 
 
-def eth_collect_money(mode):
-    #从钱包获取归账地址列表
-    if mode == 1:
-        accountList = get_account_list_from_wallet()
-    elif mode == 2:
-        accountList = get_account_list_from_db()
-    print accountList
-    mongo_data = db.b_config.find_one({"key":"cash_sweep_address"})
-    if mongo_data is None:
-        return False, u"归账账户地址未设置"
-    for obj in mongo_data["value"]:
-        if obj["chainId"] == "eth":
-            cash_sweep_account = obj["address"]
-            break
+def eth_collect_money(cash_sweep_account,accountList):
+
     result_data = {}
     result_data["errdata"] = []
     result_data["data"] = []
@@ -201,10 +166,8 @@ def eth_collect_money(mode):
 
 
 
-def eth_get_collect_money():
+def eth_get_collect_money(accountList):
     #从钱包获取归账地址列表
-    accountList = get_account_list_from_db()
-    print accountList
     result_data = dict()
     result_data["details"] = []
 

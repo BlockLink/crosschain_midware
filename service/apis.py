@@ -101,30 +101,35 @@ def index(chainId=str):
 
 
 
-@jsonrpc.method('Zchain.Create.Address(coin=String)')
-def zchain_create_address(coin):
-    logger.info('Create_address coin: %s'%(coin))
-    if coin == 'eth':
+@jsonrpc.method('Zchain.Address.Create(chainId=String)')
+def zchain_create_address(chainId):
+    logger.info('Create_address chainId: %s'%(chainId))
+    if chainId == 'eth':
         address = eth_utils.eth_create_address()
         if address !=  "":
-            return {'coin':coin,'address':address}
+            return {'chainId':chainId,'address':address}
         else:
-            return {'coin':coin,'error':'创建地址失败'}
-    elif coin == 'btc':
+            return {'chainId':chainId,'error':'创建地址失败'}
+    elif chainId == 'btc':
         address= ""
         #address = btc_utils.btc_create_address()
-        return {'coin':coin,'address':address}
+        return {'chainId':chainId,'address':address}
 
 
 
 @jsonrpc.method('Zchain.CashSweep(chainId=String)')
 def zchain_collection_amount(chainId):
-    logger.info('CashSweep coin: %s'%(chainId))
+    logger.info('CashSweep chainId: %s'%(chainId))
     if chainId == 'eth':
-        eth_utils.eth_collect_money(2)
-        return {'coin':chainId,'result':True}
+        addressList = []
+        chain_account = db.b_chain_account
+        resultData = chain_account.find({"chainId": "eth"})
+        for one_data in resultData:
+            addressList.append(one_data["address"])
+        eth_utils.eth_collect_money(2,addressList)
+        return {'chainId':chainId,'result':True}
     elif chainId == 'btc':
-        return {'coin':chainId,'result':True}
+        return {'chainId':chainId,'result':True}
 
 
 @jsonrpc.method('Zchain.CashSweep.History(chainId=str, startTime=str, endTime=str)')
@@ -166,3 +171,12 @@ def zchain_query_cash_sweep_details(cash_sweep_id):
         'total': trxs.count(),
         'result': json.loads(json_util.dumps(trxs))
     }
+
+
+@jsonrpc.method('Zchain.Withdraw.GetInfo(chainId=String)')
+def zhcain_withdraw_getinfo(chainId):
+    logger.info('Zchain.CashSweep.History')
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+    if chainId == "eth":
+        eth_create
