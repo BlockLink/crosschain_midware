@@ -8,7 +8,6 @@ from config import logger
 from flask import Flask
 from config import config
 from pymongo import MongoClient
-# from mongoengine import connect
 from flask_jsonrpc import JSONRPC
 
 
@@ -21,9 +20,5 @@ app.config.from_object(config['Sunny'])   # 载入配置文件
 
 client = MongoClient(app.config['MONGO_HOST'], app.config['MONGO_PORT'])
 db = client[app.config['MONGO_NAME']]
-
-# connect(db=app.config['MONGO_NAME'], host=app.config['MONGO_HOST'], port=app.config['MONGO_PORT'])
-
-from . import init_db
 
 from service import apis
