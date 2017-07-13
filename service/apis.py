@@ -245,8 +245,7 @@ def zchain_withdraw_getinfo(chainId):
     if chainId == "eth":
         balance = eth_utils.eth_get_base_balance(address)
     elif chainId == "btc":
-        #TODO, 需调用BTC接口
-        balance = 1101.34
+        balance = btc_utils.btc_get_withdraw_balance()
     else:
         return error_utils.invalid_chaind_type(chainId)
 
