@@ -45,11 +45,11 @@ def index(chainId, key, value):
         return error_utils.mismatched_parameter_type('key', 'STRING')
     if type(value) != unicode:
         return error_utils.mismatched_parameter_type('value', 'STRING')
-    tbl = db.s_configuration
+
     data = { "chainId": chainId, "key": key, "value": value }
     result = True
     try:
-        tbl.insert_one(data)
+        db.b_config.insert_one(data)
     except Exception as e:
         logger.error(str(e))
         result = False
@@ -176,7 +176,6 @@ def zchain_query_cash_sweep_details(cash_sweep_id):
 
 
 
-#TODO, 待实现
 @jsonrpc.method('Zchain.Withdraw.GetInfo(chainId=str)')
 def zchain_withdraw_getinfo(chainId):
     """
@@ -188,12 +187,31 @@ def zchain_withdraw_getinfo(chainId):
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
-    trxs = db.b_cash_sweep.find({'_id': ObjectId(chainId)}, {'_id': 0})
+    records = db.b_config.find({'key': 'withdraw_address'}, {'_id': 0})
+    address = ""
+    for r in records:
+        if r['chainId'] == chainId:
+            address = r['address']
+
+    if address == "":
+        if chainId == "eth":
+            address = eth_utils.eth_create_address()
+        elif chainId == "btc":
+            address == "239cadf23"
+
+    balance = 0.0
+    if chainId == "eth":
+        balance = eth_utils.eth_get_base_balance(address)
+    elif chainId == "btc":
+        #TODO, 需调用BTC接口
+        balance = 1101.34
+    else:
+        return error_utils.invalid_chainId_type(chainId)
 
     return {
         'chainId': chainId,
-        'address': "1234565",
-        'balance': "101.1"
+        'address': address,
+        'balance': balance
     }
 
 
@@ -201,11 +219,11 @@ def zchain_withdraw_getinfo(chainId):
 @jsonrpc.method('Zchain.Withdraw.Execute(chainId=str, address=str, amount=Number)')
 def zchain_withdraw_execute(chainId, address, amount):
     """
-    查询某次归账操作记录的具体明细
-    :param cash_sweep_id:
+    执行提现操作
+    :param chainId:
     :return:
     """
-    logger.info('Zchain.CashSweep.HistoryDetails')
+    logger.info('Zchain.Withdraw.Execute')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
     if type(address) != unicode:
