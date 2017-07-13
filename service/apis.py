@@ -114,6 +114,8 @@ def zchain_address_create(chainId):
         address= ""
         #address = btc_utils.btc_create_address()
         return {'coin':chainId,'address':address}
+    else:
+        return error_utils.invalid_chainId_type(chainId)
 
 
 
@@ -131,6 +133,8 @@ def zchain_collection_amount(chainId):
         return {'chainId':chainId,'result':True}
     elif chainId == 'btc':
         return {'chainId':chainId,'result':True}
+    else:
+        return error_utils.invalid_chainId_type(chainId)
 
 #TODO, 实现与接口不符
 @jsonrpc.method('Zchain.CashSweep.History(chainId=str, opId=str, startTime=str, endTime=str)')
