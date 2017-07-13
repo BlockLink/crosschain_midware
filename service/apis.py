@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
 from service import jsonrpc
 from config import logger
 from utils import eth_utils
@@ -121,16 +120,32 @@ def zchain_address_create(chainId):
 @jsonrpc.method('Zchain.CashSweep(chainId=String)')
 def zchain_collection_amount(chainId):
     logger.info('CashSweep chainId: %s'%(chainId))
+    addressList = []
+    chain_account = db.b_chain_account
+    resultData = chain_account.find({"chainId":chainId})
+    for one_data in resultData:
+        addressList.append(one_data["address"])
+    cash_sweep_data = db.b_config.find_one({"key":"cash_sweep_address"})
+    if cash_sweep_data is None:
+        return error_utils.mis_cash_sweep_config()
+    for data in cash_sweep_data["value"]:
+        if data["chainId"] == chainId:
+            cash_sweep_account = data["address"]
+            break
     if chainId == 'eth':
-        addressList = []
-        chain_account = db.b_chain_account
-        resultData = chain_account.find({"chainId": "eth"})
-        for one_data in resultData:
-            addressList.append(one_data["address"])
-        eth_utils.eth_collect_money(2,addressList)
-        return {'chainId':chainId,'result':True}
+        resp,err = eth_utils.eth_collect_money(cash_sweep_account,addressList)
+        if resp is None:
+            return error_utils.unexcept_error(err)
+
+
     elif chainId == 'btc':
-        return {'chainId':chainId,'result':True}
+        pass
+    for one_data in resp["data"]:
+        one_data[""]
+        pass
+    for one_data in resp["errdata"]:
+        pass
+    return {'chainId': chainId,'result':True}
 
 #TODO, 实现与接口不符
 @jsonrpc.method('Zchain.CashSweep.History(chainId=str, opId=str, startTime=str, endTime=str)')
