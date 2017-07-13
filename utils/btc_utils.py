@@ -66,7 +66,7 @@ def btc_collect_money():
 def btc_withdraw_to_address(amount, address):
     rep = btc_request("getbalance", ["btc_withdraw_test"])
     balance = rep["result"]
-    if balance <= amount:
+    if balance < amount:
         raise Exception("Amount error")
     params = ["btc_withdraw_test", address, amount]
     # print(params)
@@ -82,5 +82,12 @@ def btc_backup_wallet():
 
 
 def btc_withdraw_info():
-    pass
     # btc_collect_money("1ERjyPUWpDH7mLmAHZzwCJ6jsn4tyHfj2Y")
+    btc_request("backupwallet",[])
+
+def btc_get_withdraw_balance():
+    rep = btc_request("getbalance",["btc_withdraw_test"])
+    balance = 0.0
+    if rep["result"] != None:
+        balance = rep["result"]
+    return balance

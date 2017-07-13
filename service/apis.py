@@ -11,7 +11,7 @@ from bson import json_util
 from bson import ObjectId
 import time
 import json
-
+from datetime import datetime
 
 print(models.get_root_user())
 
@@ -35,7 +35,6 @@ def index(chainId, blockNum):
     }
 
 
-
 @jsonrpc.method('Zchain.Configuration.Set(chainId=str, key=str, value=str)')
 def index(chainId, key, value):
     logger.info('Zchain.Configure')
@@ -46,7 +45,7 @@ def index(chainId, key, value):
     if type(value) != unicode:
         return error_utils.mismatched_parameter_type('value', 'STRING')
 
-    data = { "chainId": chainId, "key": key, "value": value }
+    data = {"chainId": chainId, "key": key, "value": value}
     result = True
     try:
         db.b_config.insert_one(data)
@@ -96,9 +95,7 @@ def index(chainId=str):
     addresses = addresses.find({}, {'_id': 0})
     json_addrs = json_util.dumps(list(addresses))
 
-    return { "addresses": json.loads(json_addrs) }
-
-
+    return {"addresses": json.loads(json_addrs)}
 
 
 @jsonrpc.method('Zchain.Address.Create(chainId=String)')
@@ -121,17 +118,16 @@ def zchain_address_create(chainId):
     else:
         return {'coin':chainId,'error':'创建地址失败'}
 
-
-#TODO, 要返回opId
+# TODO, 要返回opId
 @jsonrpc.method('Zchain.CashSweep(chainId=String)')
 def zchain_collection_amount(chainId):
-    logger.info('CashSweep chainId: %s'%(chainId))
+    logger.info('CashSweep chainId: %s' % (chainId))
     addressList = []
     chain_account = db.b_chain_account
-    resultData = chain_account.find({"chainId":chainId})
+    resultData = chain_account.find({"chainId": chainId})
     for one_data in resultData:
         addressList.append(one_data["address"])
-    cash_sweep_data = db.b_config.find_one({"key":"cash_sweep_address"})
+    cash_sweep_data = db.b_config.find_one({"key": "cash_sweep_address"})
     if cash_sweep_data is None:
         return error_utils.mis_cash_sweep_config()
     for data in cash_sweep_data["value"]:
@@ -139,7 +135,7 @@ def zchain_collection_amount(chainId):
             cash_sweep_account = data["address"]
             break
     if chainId == 'eth':
-        resp,err = eth_utils.eth_collect_money(cash_sweep_account,addressList)
+        resp, err = eth_utils.eth_collect_money(cash_sweep_account, addressList)
         if resp is None:
             return error_utils.unexcept_error(err)
 
@@ -148,23 +144,32 @@ def zchain_collection_amount(chainId):
         try:
             trx_id = btc_utils.btc_collect_money()
             if trx_id == "":
-                return {'coin':chainId,'result':False}
+                return {'coin': chainId, 'result': False}
             else:
-                return {'coin':chainId,'result':True}
+                return {'coin': chainId, 'result': True}
         except Exception as e:
-            return {'coin':chainId,'result':False}
+            return {'coin': chainId, 'result': False}
     else:
         return error_utils.invalid_chaind_type(chainId)
+    cash_sweep_op = {"operatorUserId": "1", "chainId": chainId, "sweepAddress": cash_sweep_account,
+                     "status": 0, "memo": "", "errorMessage": resp["errdata"], "createTime": datetime.now()}
+    opId = db.b_cash_sweep.insert(cash_sweep_op)
+
     for one_data in resp["data"]:
-        one_data[""]
-        pass
+        op_data = {"cash_sweep_id": opId, "fromAddress": one_data["from_addr"], "sweepAddress": cash_sweep_account,
+                   "successCoinAmount": one_data["amount"], "success": 0, "trxId": one_data["trx_id"],
+                   "createTime": datetime.now()}
+        db.b_cash_sweep_plan_detail.insert(op_data)
     for one_data in resp["errdata"]:
-        pass
-    return {'chainId': chainId, 'result': True}
+        op_data = {"cash_sweep_id": opId, "fromAddress": one_data["from_addr"], "sweepAddress": cash_sweep_account,
+                   "successCoinAmount": one_data["amount"], "success": -1, "errorMessage": one_data["error_reason"],
+                   "createTime": datetime.now()}
+        db.b_cash_sweep_plan_detail.insert(op_data)
+
+    return {'opId': opId, 'chainId': chainId, 'result': True}
 
 
-
-#TODO, 实现与接口不符
+# TODO, 实现与接口不符
 @jsonrpc.method('Zchain.CashSweep.History(chainId=str, opId=str, startTime=str, endTime=str)')
 def index(chainId, opId, startTime, endTime):
     """
@@ -191,7 +196,7 @@ def index(chainId, opId, startTime, endTime):
     }
 
 
-#TODO, 可能不需要了，需要确认
+# TODO, 可能不需要了，需要确认
 @jsonrpc.method('Zchain.CashSweep.HistoryDetails(cash_sweep_id=String)')
 def zchain_query_cash_sweep_details(cash_sweep_id):
     """
@@ -212,7 +217,6 @@ def zchain_query_cash_sweep_details(cash_sweep_id):
     }
 
 
-
 @jsonrpc.method('Zchain.Withdraw.GetInfo(chainId=str)')
 def zchain_withdraw_getinfo(chainId):
     """
@@ -227,8 +231,8 @@ def zchain_withdraw_getinfo(chainId):
     records = db.b_config.find_one({'key': 'withdrawaddress'}, {'_id': 0})
     address = ""
     if records == None:
-         db.b_config.insert_one({"key":"withdrawaddress","value":[]})
-         records = db.b_config.find_one({'key': 'withdrawaddress'}, {'_id': 0})
+        db.b_config.insert_one({"key": "withdrawaddress", "value": []})
+        records = db.b_config.find_one({'key': 'withdrawaddress'}, {'_id': 0})
     for r in records["value"]:
         if r['chainId'] == chainId:
             address = r['address']
@@ -236,17 +240,16 @@ def zchain_withdraw_getinfo(chainId):
     if address == "":
         if chainId == "eth":
             address = eth_utils.eth_create_address()
-            records["value"].append({"chainId":"eth","address":address})
+            records["value"].append({"chainId": "eth", "address": address})
         elif chainId == "btc":
             address = btc_utils.btc_create_withdraw_address()
-            records["value"].append({"chainId":"btc","address":address})
-    db.b_config.update({"key":"withdrawaddress"},{"$set":{"value":records["value"]}})
+            records["value"].append({"chainId": "btc", "address": address})
+    db.b_config.update({"key": "withdrawaddress"}, {"$set": {"value": records["value"]}})
     balance = 0.0
     if chainId == "eth":
         balance = eth_utils.eth_get_base_balance(address)
     elif chainId == "btc":
-        #TODO, 需调用BTC接口
-        balance = 1101.34
+        balance = btc_utils.btc_get_withdraw_balance()
     else:
         return error_utils.invalid_chaind_type(chainId)
 
@@ -257,7 +260,7 @@ def zchain_withdraw_getinfo(chainId):
     }
 
 
-#TODO, 待实现
+# TODO, 待实现
 @jsonrpc.method('Zchain.Withdraw.Execute(chainId=str, address=str, amount=Number)')
 def zchain_withdraw_execute(chainId, address, amount):
     """
