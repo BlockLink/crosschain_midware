@@ -9,6 +9,7 @@ from service import db
 from utils import error_utils
 from bson import json_util
 from bson import ObjectId
+import time
 import json
 
 
@@ -103,21 +104,22 @@ def index(chainId=str):
 @jsonrpc.method('Zchain.Address.Create(chainId=String)')
 def zchain_address_create(chainId):
     logger.info('Create_address coin: %s'%(chainId))
+    address = ""
     if chainId == 'eth':
         address = eth_utils.eth_create_address()
-        if address !=  "":
-            return {'coin':chainId,'address':address}
-        else:
-            return {'coin':chainId,'error':'创建地址失败'}
     elif chainId == 'btc':
         address = btc_utils.btc_create_address()
-        if address !=  "":
-            return {'coin':chainId,'address':address}
-        else:
-            return {'coin':chainId,'error':'创建地址失败'}
     else:
         return error_utils.invalid_chaind_type(chainId)
-
+    if address != "":
+        data = db.b_chain_account.find_one({"chainId":chainId,"address":address})
+        if data != None:
+            return {'coin':chainId,'error':'创建地址失败'}
+        d = {"chainId":chainId,"address":address,"name":"","pubKey":"","securedPrivateKey":"","creatorUserId":"","balance":{},"memo":"","createTime":time.time()}
+        db.b_chain_account.insert(d)
+        return {'coin':chainId,'address':address}
+    else:
+        return {'coin':chainId,'error':'创建地址失败'}
 
 
 #TODO, 要返回opId

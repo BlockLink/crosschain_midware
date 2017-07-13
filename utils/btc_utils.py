@@ -22,18 +22,13 @@ def btc_request(method,args):
     response = requests.request("POST", url, data=payload, headers=headers)
     rep = response.json()
     return rep
-def btc_create_address(db):
+def btc_create_address():
     resp = btc_request("getnewaddress",["btc_test"])
     address = ""
     if resp["result"] != None:
         address = resp["result"]
-        mongo_data = db.find_one({"chainId":"btc","address":address})
-        if mongo_data == None:
-            db.insert({"chainId":"btc","address":address,"createTime":datetime.now()})
-            btc_backup_wallet()
-        else:
-            db.update({"chainId":"btc","address":address})
     return address
+
 
 def btc_create_withdraw_address():
     resp = btc_request("getnewaddress",["btc_withdraw_test"])
