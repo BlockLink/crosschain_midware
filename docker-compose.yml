@@ -1,6 +1,12 @@
 version: '3'
 
 services:
+  python_web:
+    build:
+      context: .
+      dockerfile: Dockerfile.base
+    image: 'yqr/python_web'
+
   chain_midware:
     build:
       context: .
@@ -9,7 +15,13 @@ services:
     ports:
       - "80:80"
     links:
+      - chaindb:chaindb
+      - btc_wallet:btc_wallet
+      - eth_wallet:eth_wallet
+    depends_on:
       - chaindb
+      - btc_wallet
+      - eth_wallet
 
   chaindb:
     image: 'mongo'
@@ -21,3 +33,14 @@ services:
       context: .
       dockerfile: Dockerfile.btc_wallet
     image: yqr/btc_wallet
+
+  eth_wallet:
+    build:
+      context: .
+      dockerfile: Dockerfile.eth_wallet
+    image: 'yqr/eth_wallet'
+    ports:
+      - "8545:8545"
+      - "30303:30303"
+
+
