@@ -115,7 +115,7 @@ def zchain_address_create(chainId):
         #address = btc_utils.btc_create_address()
         return {'coin':chainId,'address':address}
     else:
-        return error_utils.invalid_chainId_type(chainId)
+        return error_utils.invalid_chaind_type(chainId)
 
 
 
@@ -134,7 +134,7 @@ def zchain_collection_amount(chainId):
     elif chainId == 'btc':
         return {'chainId':chainId,'result':True}
     else:
-        return error_utils.invalid_chainId_type(chainId)
+        return error_utils.invalid_chaind_type(chainId)
 
 
 #TODO, 实现与接口不符
@@ -216,7 +216,7 @@ def zchain_withdraw_getinfo(chainId):
         #TODO, 需调用BTC接口
         balance = 1101.34
     else:
-        return error_utils.invalid_chainId_type(chainId)
+        return error_utils.invalid_chaind_type(chainId)
 
     return {
         'chainId': chainId,

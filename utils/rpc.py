@@ -43,6 +43,8 @@ class RpcConnection(object):
 
     def close(self):
         self.sock.close()
+
+
 def create_btc_rpc_client():
     port = 10086
     user = 'admin'
