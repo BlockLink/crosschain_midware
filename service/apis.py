@@ -24,10 +24,10 @@ def index(chainId, blockNum):
         return error_utils.mismatched_parameter_type('blockNum', 'INTEGER')
 
     trxs = []
-    depositTrxs = db.b_deposit_transaction.find({"blockNum": {"$gte": blockNum}}, {"_id": 0})
-    withdrawTrxs = db.b_withdraw_transaction.find({"blockNum": {"$gte": blockNum}}, {"_id": 0})
-    trxs.append(list(depositTrxs))
-    trxs.append(list(withdrawTrxs))
+    depositTrxs = db.b_deposit_transaction.find({"chainId": chainId, "blockNum": {"$gte": blockNum}}, {"_id": 0})
+    withdrawTrxs = db.b_withdraw_transaction.find({"chainId": chainId, "blockNum": {"$gte": blockNum}}, {"_id": 0})
+    trxs.extend(list(depositTrxs))
+    trxs.extend(list(withdrawTrxs))
 
     return {
         'chainId': chainId,
