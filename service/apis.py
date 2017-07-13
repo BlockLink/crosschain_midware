@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
+#from __future__ import print_function
 from service import jsonrpc
 from config import logger
 from utils import eth_utils
@@ -93,7 +93,7 @@ def index(chainId=str):
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
-    addresses = addresses.find({"chainId": chainId}, {'_id': 0})
+    addresses = addresses.find({}, {'_id': 0})
     json_addrs = json_util.dumps(list(addresses))
 
     return { "addresses": json.loads(json_addrs) }
@@ -111,9 +111,11 @@ def zchain_address_create(chainId):
         else:
             return {'coin':chainId,'error':'创建地址失败'}
     elif chainId == 'btc':
-        address= ""
-        #address = btc_utils.btc_create_address()
-        return {'coin':chainId,'address':address}
+        address = btc_utils.btc_create_address()
+        if address !=  "":
+            return {'coin':chainId,'address':address}
+        else:
+            return {'coin':chainId,'error':'创建地址失败'}
     else:
         return error_utils.invalid_chaind_type(chainId)
 
@@ -132,9 +134,17 @@ def zchain_collection_amount(chainId):
         eth_utils.eth_collect_money(2,addressList)
         return {'chainId':chainId,'result':True}
     elif chainId == 'btc':
-        return {'chainId':chainId,'result':True}
+        try:
+            trx_id = btc_utils.btc_collect_money()
+            if trx_id == "":
+                return {'coin':chainId,'result':False}
+            else:
+                return {'coin':chainId,'result':True}
+        except Exception as e:
+            return {'coin':chainId,'result':False}
     else:
         return error_utils.invalid_chaind_type(chainId)
+
 
 
 #TODO, 实现与接口不符
@@ -197,18 +207,23 @@ def zchain_withdraw_getinfo(chainId):
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
-    records = db.b_config.find({'key': 'withdraw_address'}, {'_id': 0})
+    records = db.b_config.find_one({'key': 'withdrawaddress'}, {'_id': 0})
     address = ""
-    for r in records:
+    if records == None:
+         db.b_config.insert_one({"key":"withdrawaddress","value":[]})
+         records = db.b_config.find_one({'key': 'withdrawaddress'}, {'_id': 0})
+    for r in records["value"]:
         if r['chainId'] == chainId:
             address = r['address']
 
     if address == "":
         if chainId == "eth":
             address = eth_utils.eth_create_address()
+            records["value"].append({"chainId":"eth","address":address})
         elif chainId == "btc":
-            address == "239cadf23"
-
+            address = btc_utils.btc_create_withdraw_address()
+            records["value"].append({"chainId":"btc","address":address})
+    db.b_config.update({"key":"withdrawaddress"},{"$set":{"value":records["value"]}})
     balance = 0.0
     if chainId == "eth":
         balance = eth_utils.eth_get_base_balance(address)
