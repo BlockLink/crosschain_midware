@@ -23,5 +23,9 @@ def mis_cash_sweep_config():
 def mis_cash_sweep_address(v):
     return error_response(u'%s cash sweep address not set.'% v, 40005)
 
+def eth_address_invaild(address):
+    return error_response(u'address %s not start with 0x '%address,40006)
+
 def unexcept_error(ex):
     return error_response('chain happend unexcept error %s'%ex,49999)
+
