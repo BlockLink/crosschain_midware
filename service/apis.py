@@ -16,23 +16,35 @@ from datetime import datetime
 print(models.get_root_user())
 
 
-@jsonrpc.method('Zchain.Transaction.History(chainId=str, blockNum=int)')
+@jsonrpc.method('Zchain.Transaction.Withdraw.History(chainId=str, trxId=str)')
+def index(chainId, trxId):
+    logger.info('Zchain.Transaction.Withdraw.History')
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+    if type(trxId) != unicode:
+        return error_utils.mismatched_parameter_type('trxId', 'STRING')
+
+    withdrawTrxs = db.b_withdraw_transaction.find({"trxId": trxId}, {"_id": 0})
+
+    return {
+        'chainId': chainId,
+        'data': list(withdrawTrxs)
+    }
+
+
+@jsonrpc.method('Zchain.Transaction.Deposit.History(chainId=str, blockNum=int)')
 def index(chainId, blockNum):
-    logger.info('Zchain.Transaction.History')
+    logger.info('Zchain.Transaction.Deposit.History')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
     if type(blockNum) != int:
         return error_utils.mismatched_parameter_type('blockNum', 'INTEGER')
 
-    trxs = []
     depositTrxs = db.b_deposit_transaction.find({"chainId": chainId, "blockNum": {"$gte": blockNum}}, {"_id": 0})
-    withdrawTrxs = db.b_withdraw_transaction.find({"chainId": chainId, "blockNum": {"$gte": blockNum}}, {"_id": 0})
-    trxs.extend(list(depositTrxs))
-    trxs.extend(list(withdrawTrxs))
 
     return {
         'chainId': chainId,
-        'data': trxs
+        'data': list(depositTrxs)
     }
 
 
