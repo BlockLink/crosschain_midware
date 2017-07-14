@@ -246,9 +246,11 @@ def zchain_withdraw_getinfo(chainId):
     if address == "":
         if chainId == "eth":
             address = eth_utils.eth_create_address()
+            eth_utils.eth_backup()
             records["value"].append({"chainId": "eth", "address": address})
         elif chainId == "btc":
             address = btc_utils.btc_create_withdraw_address()
+            btc_utils.btc_backup_wallet()
             records["value"].append({"chainId": "btc", "address": address})
     db.b_config.update({"key": "withdrawaddress"}, {"$set": {"value": records["value"]}})
     balance = 0.0
