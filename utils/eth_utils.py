@@ -73,9 +73,19 @@ def eth_get_base_balance(address):
     if json_result.get("result") is None:
         return 0
     amount = long(json_result["result"],16)
-    return amount
-    #return float(amount/pow(10,18))
+    return float(amount/pow(10,18))
+    #return
 
+
+def eth_get_no_precision_balance(address):
+    result = eth_request("eth_getBalance", [address, "latest"])
+    print result
+    json_result = json.loads(result)
+    if json_result.get("result") is None:
+        return 0
+    amount = long(json_result["result"], 16)
+    return amount
+    # return
 
 
 def get_account_list_from_wallet():
@@ -128,6 +138,19 @@ def get_transaction_data(trx_id):
     return resp_data,receipt_data
 
 
+#创建转账交易 默认GasPrice 5Gwei
+def eth_send_transaction(from_address,to_address,value,gasPrice="0x1dcd6500",gas="0x76c0"):
+    ret = eth_request("eth_sendTransaction", [{"from": account, "to": cash_sweep_account,
+                                               "value": hex(int(value * pow(10,18))).replace('L', ''),
+                                               "gas": "0x76c0", "gasPrice": "0x1dcd6500"}])
+    json_data = json.loads(ret)
+    if json_data.get("result") is None:
+        return ""
+    else:
+        return json_data.get("result")
+
+
+
 def eth_collect_money(cash_sweep_account,accountList):
     try:
         result_data = {}
@@ -136,12 +159,12 @@ def eth_collect_money(cash_sweep_account,accountList):
 
         #存储创建成功的交易单号
         for account in accountList:
-            amount = eth_get_base_balance(account)
+            amount = eth_get_no_precision_balance(account)
             if float(amount)/pow(10,18) > temp_config.ETH_Minimum:
                 #转账给目标账户
                 result = eth_request("personal_unlockAccount",[account,temp_config.ETH_SECRET_KEY,10000])
                 if json.loads(result).get("result") is None:
-                    result_data["errdata"].append({"address":account,"error_reason":u"账户解锁失败"})
+                    result_data["errdata"].append({"from_addr":account,"to_addr":cash_sweep_account,"amount":float(amount)/pow(10,18),"error_reason":u"账户解锁失败"})
                     #写入归账失败的列表
                     continue
 

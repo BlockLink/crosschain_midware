@@ -157,12 +157,12 @@ def zchain_collection_amount(chainId):
 
     for one_data in resp["data"]:
         op_data = {"cash_sweep_id": opId, "fromAddress": one_data["from_addr"], "sweepAddress": cash_sweep_account,
-                   "successCoinAmount": one_data["amount"], "success": 0, "trxId": one_data["trx_id"],
+                   "successCoinAmount": one_data["amount"], "status": 0, "trxId": one_data["trx_id"],
                    "createTime": datetime.now()}
         db.b_cash_sweep_plan_detail.insert(op_data)
     for one_data in resp["errdata"]:
         op_data = {"cash_sweep_id": opId, "fromAddress": one_data["from_addr"], "sweepAddress": cash_sweep_account,
-                   "successCoinAmount": one_data["amount"], "success": -1, "errorMessage": one_data["error_reason"],
+                   "successCoinAmount": one_data["amount"], "status": -1, "errorMessage": one_data["error_reason"],
                    "createTime": datetime.now()}
         db.b_cash_sweep_plan_detail.insert(op_data)
 
@@ -185,10 +185,10 @@ def index(chainId, opId, startTime, endTime):
 
     if opId == "":
         trxs = db.b_cash_sweep.find(
-            {"chainId": chainId, "sweepDoneTime": {"$ge": startTime}, "sweepDoneTime": {"$lt": endTime}})
+            {"chainId": chainId, "createTime": {"$ge": startTime}, "createTime": {"$lt": endTime}})
     else:
         trxs = db.b_cash_sweep.find(
-            {"chainId": chainId, "opId": opId, "sweepDoneTime": {"$ge": startTime}, "sweepDoneTime": {"$lt": endTime}})
+            {"chainId": chainId, "opId": opId, "createTime": {"$ge": startTime}, "createTime": {"$lt": endTime}})
 
     return {
         'chainId': chainId,
@@ -208,7 +208,7 @@ def zchain_query_cash_sweep_details(cash_sweep_id):
     if type(cash_sweep_id) != unicode:
         return error_utils.mismatched_parameter_type('cash_sweep_id', 'STRING')
 
-    trxs = db.b_cash_sweep.find({'_id': ObjectId(cash_sweep_id)}, {'_id': 0})
+    trxs = db.b_cash_sweep_plan_detail.find({'cash_sweep_id': ObjectId(cash_sweep_id)}, {'_id': 0})
 
     return {
         'cash_sweep_id': cash_sweep_id,
