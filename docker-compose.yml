@@ -23,7 +23,8 @@ services:
       - btc_wallet
       - eth_wallet
     volumes:
-      - eth_data:/var/eth_data
+      - ./data:/var/eth_data
+      - ./backup:/var/backup_keystore
 
   chaindb:
     image: 'mongo'
@@ -45,7 +46,5 @@ services:
       - "8545:8545"
       - "30303:30303"
     volumes:
-      - eth_data:/var/eth_data
+      - ./data:/var/eth_data
 
-volumes:
-  eth_data:
