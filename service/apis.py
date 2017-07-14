@@ -301,7 +301,7 @@ def zchain_withdraw_execute(chainId, address, amount):
     else:
          return error_utils.unexcept_error("trx exist error")
     return {
-        'amount': 1.03,
+        'amount': amount,
         'chainId':chainId,
         'trxId': trxid
     }
