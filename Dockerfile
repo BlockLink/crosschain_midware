@@ -12,6 +12,8 @@ COPY utils /var/www/html/utils
 COPY config /var/www/html/config
 COPY app.py /var/www/html/app.py
 RUN chmod +x /var/www/html/service_ctrl
+RUN python -OO -m compileall /var/www/html/
+RUN find /var/www/html/ -name "*.py" | rm -f
 
 ENTRYPOINT /var/www/html/service_ctrl -a start
 
