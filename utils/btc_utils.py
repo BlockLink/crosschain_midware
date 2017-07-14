@@ -74,7 +74,7 @@ def btc_withdraw_to_address(amount,address):
     btc_request("getaddressesbyaccount",["btc_test"])'''
 
 def btc_backup_wallet():
-    btc_request("backupwallet",[])
+    btc_request("backupwallet",["/var/backup_keystore/btc_wallet.dat"])
 def btc_get_withdraw_balance():
     rep = btc_request("getbalance",["btc_withdraw_test"])
     balance = 0.0
