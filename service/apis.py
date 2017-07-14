@@ -279,9 +279,29 @@ def zchain_withdraw_execute(chainId, address, amount):
         return error_utils.mismatched_parameter_type('address', 'STRING')
     if type(amount) != float and type(amount) != int:
         return error_utils.mismatched_parameter_type('amount', 'FLOAT/INTEGER')
-
+    records = db.b_config.find_one({'key': 'withdrawaddress'}, {'_id': 0})
+    withdrawaddress = ""
+    if records == None:
+        return error_utils.unexcept_error("withdrawaddress is None")
+    for r in records["value"]:
+        if r['chainId'] == chainId:
+            withdrawaddress = r['address']
+    if address == "":
+        return error_utils.unexcept_error("withdrawaddress is None")
+    trxid=""
+    if chainId == "eth":
+        trxid = eth_utils.eth_send_transaction(withdrawaddress,address,amount)
+    elif chainId == "btc":
+        trxid = btc_utils.btc_withdraw_to_address(address,amount)
+    else:
+        return error_utils.invalid_chaind_type(chainId)
+    trxdata = db.b_withdraw_transaction.find_one({"chainId":chainId,"Transaction":trxid})
+    if trxdata ==None:
+        db.b_withdraw_transaction.insert({'chainId':chainId,"toAddress":address,"TransactionId":trxid,"assetName":chainId,"amount":amount,"fromAccount":withdrawaddress,"status":1,"createTime":time.time()})
+    else:
+         return error_utils.unexcept_error("trx exist error")
     return {
         'amount': 1.03,
-        'fee': 0.01,
-        'trxId': "0xa31dcef"
+        'chainId':chainId,
+        'trxId': trxid
     }
