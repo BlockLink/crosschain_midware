@@ -158,12 +158,12 @@ def zchain_collection_amount(chainId):
     opId = db.b_cash_sweep.insert(cash_sweep_op)
 
     for one_data in resp["data"]:
-        op_data = {"cash_sweep_id": opId, "fromAddress": one_data["from_addr"], "sweepAddress": cash_sweep_account,
+        op_data = {"cash_sweep_id": opId,  "chainId": chainId,"fromAddress": one_data["from_addr"], "sweepAddress": cash_sweep_account,
                    "successCoinAmount": one_data["amount"], "status": 0, "trxId": one_data["trx_id"],
                    "createTime": datetime.now()}
         db.b_cash_sweep_plan_detail.insert(op_data)
     for one_data in resp["errdata"]:
-        op_data = {"cash_sweep_id": opId, "fromAddress": one_data["from_addr"], "sweepAddress": cash_sweep_account,
+        op_data = {"cash_sweep_id": opId, "chainId": chainId, "fromAddress": one_data["from_addr"], "sweepAddress": cash_sweep_account,
                    "successCoinAmount": one_data["amount"], "status": -1, "errorMessage": one_data["error_reason"],
                    "createTime": datetime.now()}
         db.b_cash_sweep_plan_detail.insert(op_data)
