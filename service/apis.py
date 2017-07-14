@@ -147,14 +147,10 @@ def zchain_collection_amount(chainId):
 
 
     elif chainId == 'btc':
-        try:
-            trx_id = btc_utils.btc_collect_money()
-            if trx_id == "":
-                return {'coin': chainId, 'result': False}
-            else:
-                return {'coin': chainId, 'result': True}
-        except Exception as e:
-            return {'coin': chainId, 'result': False}
+         safeblock = db.b_config.find_one({"key":"btcsafeblock"})["value"]
+         resp, err = btc_utils.btc_collect_money(cash_sweep_account,safeblock)
+         if resp is None:
+            return error_utils.unexcept_error(err)
     else:
         return error_utils.invalid_chaind_type(chainId)
     cash_sweep_op = {"operatorUserId": "1", "chainId": chainId, "sweepAddress": cash_sweep_account,
