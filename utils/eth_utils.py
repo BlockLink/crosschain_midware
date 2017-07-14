@@ -31,17 +31,9 @@ def eth_request(method, args):
 
 
 def eth_backup():
-    #config = db.b_config
-    #path = config.find_one({"key":"eth_backup_path"})
-    print "back"
-    path = None
-    if path is None:
-        backup_path = 'eth_back/'
-    else:
-        backup_path = path["value"]
+    backup_path = '/var/backup_keystore/'
     if not os.path.exists(backup_path):
         os.makedirs(backup_path)
-    source_path = ''
     ret = eth_request("admin_datadir",[])
     json_data = json.loads(ret)
     if json_data.get("result") is None:

@@ -15,6 +15,7 @@ from datetime import datetime
 
 print(models.get_root_user())
 
+
 @jsonrpc.method('Zchain.Transaction.History(chainId=str, blockNum=int)')
 def index(chainId, blockNum):
     logger.info('Zchain.Transaction.History')
@@ -100,8 +101,7 @@ def index(chainId=str):
 
 @jsonrpc.method('Zchain.Address.Create(chainId=String)')
 def zchain_address_create(chainId):
-    logger.info('Create_address coin: %s'%(chainId))
-    address = ""
+    logger.info('Create_address coin: %s' % (chainId))
     if chainId == 'eth':
         address = eth_utils.eth_create_address()
     elif chainId == 'btc':
@@ -109,14 +109,20 @@ def zchain_address_create(chainId):
     else:
         return error_utils.invalid_chaind_type(chainId)
     if address != "":
-        data = db.b_chain_account.find_one({"chainId":chainId,"address":address})
+        if chainId == 'eth':
+            eth_utils.eth_backup()
+        else:
+            btc_utils.btc_backup_wallet()
+        data = db.b_chain_account.find_one({"chainId": chainId, "address": address})
         if data != None:
-            return {'coin':chainId,'error':'创建地址失败'}
-        d = {"chainId":chainId,"address":address,"name":"","pubKey":"","securedPrivateKey":"","creatorUserId":"","balance":{},"memo":"","createTime":time.time()}
+            return {'chainId': chainId, 'error': '创建地址失败'}
+        d = {"chainId": chainId, "address": address, "name": "", "pubKey": "", "securedPrivateKey": "",
+             "creatorUserId": "", "balance": {}, "memo": "", "createTime": time.time()}
         db.b_chain_account.insert(d)
-        return {'coin':chainId,'address':address}
+        return {'chainId': chainId, 'address': address}
     else:
-        return {'coin':chainId,'error':'创建地址失败'}
+        return {'chainId': chainId, 'error': '创建地址失败'}
+
 
 # TODO, 要返回opId
 @jsonrpc.method('Zchain.CashSweep(chainId=String)')
@@ -141,14 +147,10 @@ def zchain_collection_amount(chainId):
 
 
     elif chainId == 'btc':
-        try:
-            trx_id = btc_utils.btc_collect_money()
-            if trx_id == "":
-                return {'coin': chainId, 'result': False}
-            else:
-                return {'coin': chainId, 'result': True}
-        except Exception as e:
-            return {'coin': chainId, 'result': False}
+         safeblock = db.b_config.find_one({"key":"btcsafeblock"})["value"]
+         resp, err = btc_utils.btc_collect_money(cash_sweep_account,safeblock)
+         if resp is None:
+            return error_utils.unexcept_error(err)
     else:
         return error_utils.invalid_chaind_type(chainId)
     cash_sweep_op = {"operatorUserId": "1", "chainId": chainId, "sweepAddress": cash_sweep_account,
@@ -240,9 +242,11 @@ def zchain_withdraw_getinfo(chainId):
     if address == "":
         if chainId == "eth":
             address = eth_utils.eth_create_address()
+            eth_utils.eth_backup()
             records["value"].append({"chainId": "eth", "address": address})
         elif chainId == "btc":
             address = btc_utils.btc_create_withdraw_address()
+            btc_utils.btc_backup_wallet()
             records["value"].append({"chainId": "btc", "address": address})
     db.b_config.update({"key": "withdrawaddress"}, {"$set": {"value": records["value"]}})
     balance = 0.0

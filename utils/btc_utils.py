@@ -2,8 +2,8 @@
 import requests
 from base64 import encodestring
 import json
-from datetime import datetime
-from service import db
+from service import logger
+import traceback
 def btc_request(method,args):
     url = "http://127.0.0.1:60011/"
     user = 'a'
@@ -29,32 +29,37 @@ def btc_create_address():
         address = resp["result"]
     return address
 
-
 def btc_create_withdraw_address():
     resp = btc_request("getnewaddress",["btc_withdraw_test"])
     address = ""
     if resp["result"] != None:
         address = resp["result"]
     return address
-def btc_collect_money():
-    resp = btc_request("settxfee",[0.0004])
-    if resp["result"] == None:
-        raise Exception("settxfee error")
-    sweep_address = db.b_config.find_one({"key":"btcsweepaddress"})["value"]
-    if sweep_address == None:
-        raise Exception("find sweep address error")
-    safe_block = db.b_config.find_one({"key":"btcsafeblock"})["value"]
-    resp = btc_request("getbalance",["btc_test"],safe_block)
-    if resp["result"] == None:
-        raise Exception("getbalance error")
-    balance = resp["result"]
-    if balance - 0.0004 <= 0:
-        raise Exception("balance is not enough error")
-    params = ["btc_test",sweep_address ,balance-0.0004]
-    resp = btc_request("sendfrom",params)
-    if resp["result"] == None:
-        return ""
-    return resp["result"]
+
+def btc_collect_money(address,safe_block):
+    try:
+        result_data = {}
+        result_data["errdata"] = []
+        result_data["data"] = []
+        resp = btc_request("settxfee",[0.0004])
+        if resp["result"] == None:
+            raise Exception("settxfee error")
+        resp = btc_request("getbalance",["btc_test"],safe_block)
+        if resp["result"] == None:
+            raise Exception("getbalance error")
+        balance = resp["result"]
+        if balance - 0.0004 <= 0:
+            raise Exception("balance is not enough error")
+        params = ["btc_test",address ,balance-0.0004]
+        resp = btc_request("sendfrom",params)
+        if resp["result"] == None:
+            raise Exception("send error")
+        result_data["data"].append({"from_addr":"btc_test" ,"to_addr":address,"amount":(balance-0.0004),"trx_id":resp["result"]})
+        return result_data
+    except Exception, ex:
+        logger.info(traceback.format_exc())
+        return None, ex.message
+
 
 def btc_withdraw_to_address(amount,address):
     rep = btc_request("getbalance",["btc_withdraw_test"])
@@ -65,8 +70,8 @@ def btc_withdraw_to_address(amount,address):
     #print(params)
     btc_request("sendfrom",params)
 
-def get_account_list_btc_address():
-    btc_request("getaddressesbyaccount",["btc_test"])
+'''def get_account_list_btc_address():
+    btc_request("getaddressesbyaccount",["btc_test"])'''
 
 def btc_backup_wallet():
     btc_request("backupwallet",[])
