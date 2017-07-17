@@ -145,7 +145,8 @@ def zchain_collection_amount(chainId):
             cash_sweep_account = data["address"]
             break
     if chainId == 'eth':
-        resp, err = eth_utils.eth_collect_money(cash_sweep_account, addressList)
+        safeblock = db.b_config.find_one({"key": "safeblock"})["value"]
+        resp, err = eth_utils.eth_collect_money(cash_sweep_account, addressList,safeblock)
         if resp is None:
             return error_utils.unexcept_error(err)
 
@@ -162,17 +163,17 @@ def zchain_collection_amount(chainId):
     opId = db.b_cash_sweep.insert(cash_sweep_op)
 
     for one_data in resp["data"]:
-        op_data = {"cash_sweep_id": opId,  "chainId": chainId,"fromAddress": one_data["from_addr"], "sweepAddress": cash_sweep_account,
+        op_data = {"cash_sweep_id": ObjectId(opId),  "chainId": chainId,"fromAddress": one_data["from_addr"], "sweepAddress": cash_sweep_account,
                    "successCoinAmount": one_data["amount"], "status": 0, "trxId": one_data["trx_id"],
                    "createTime": datetime.now()}
         db.b_cash_sweep_plan_detail.insert(op_data)
     for one_data in resp["errdata"]:
-        op_data = {"cash_sweep_id": opId, "chainId": chainId, "fromAddress": one_data["from_addr"], "sweepAddress": cash_sweep_account,
+        op_data = {"cash_sweep_id": ObjectId(opId), "chainId": chainId, "fromAddress": one_data["from_addr"], "sweepAddress": cash_sweep_account,
                    "successCoinAmount": one_data["amount"], "status": -1, "errorMessage": one_data["error_reason"],
                    "createTime": datetime.now()}
         db.b_cash_sweep_plan_detail.insert(op_data)
-
-    return {'opId': opId, 'chainId': chainId, 'result': True}
+    print opId
+    return {'opId': str(opId), 'chainId': chainId, 'result': True}
 
 
 # TODO, 实现与接口不符

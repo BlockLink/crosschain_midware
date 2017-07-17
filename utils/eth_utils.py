@@ -70,8 +70,8 @@ def eth_get_base_balance(address):
     # return
 
 
-def eth_get_no_precision_balance(address):
-    result = eth_request("eth_getBalance", [address, "latest"])
+def eth_get_no_precision_balance(address,last_block_num):
+    result = eth_request("eth_getBalance", [address, hex(last_block_num)])
     print result
     json_result = json.loads(result)
     if json_result.get("result") is None:
@@ -149,16 +149,26 @@ def eth_send_transaction(from_address,to_address,value,gasPrice="0x1dcd6500",gas
         return json_data.get("result")
 
 
-def eth_collect_money(cash_sweep_account, accountList):
+def get_latest_block_num():
+    ret = eth_request("eth_blockNumber",[])
+    json_data = json.loads(ret)
+    return int(json_data["result"],16)
+
+def eth_collect_money(cash_sweep_account, accountList, safeBlock):
     try:
         result_data = {}
         result_data["errdata"] = []
         result_data["data"] = []
-
+        print accountList
+        last_block_num = get_latest_block_num() - int(safeBlock)
         # 存储创建成功的交易单号
         for account in accountList:
-            amount = eth_get_no_precision_balance(account)
-            if float(amount) / pow(10, 18) > temp_config.ETH_Minimum:
+            amount = eth_get_no_precision_balance(account,last_block_num)
+
+            print (float(amount) / pow(10, 18))
+            print float(float(amount) / pow(10, 18)) > float(temp_config.ETH_Minimum)
+            if float(float(amount) / pow(10, 18)) > float(temp_config.ETH_Minimum):
+                print hex(long((amount - pow(10, 16)))).replace('L', '')
                 # 转账给目标账户
                 result = eth_request("personal_unlockAccount", [account, temp_config.ETH_SECRET_KEY, 10000])
                 if json.loads(result).get("result") is None:
@@ -180,10 +190,10 @@ def eth_collect_money(cash_sweep_account, accountList):
                 else:
                     result_data["data"].append(
                         {"from_addr": account, "to_addr": cash_sweep_account, "amount": float(amount) / pow(10, 18),
-                         "trx_id": json.loads(result).get("result")})
+                         "trx_id": json.loads(ret).get("result")})
                     # 获取交易详情按笔计入details
                     # 写入归账成功返回
-        return result_data
+        return result_data, None
     except Exception, ex:
         logger.info(traceback.format_exc())
         return None, ex.message
