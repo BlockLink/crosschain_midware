@@ -9,6 +9,7 @@ from service import db
 from utils import error_utils
 from bson import json_util
 from bson import ObjectId
+import pymongo
 import time
 import json
 from datetime import datetime
@@ -40,11 +41,17 @@ def index(chainId, blockNum):
     if type(blockNum) != int:
         return error_utils.mismatched_parameter_type('blockNum', 'INTEGER')
 
-    depositTrxs = db.b_deposit_transaction.find({"chainId": chainId, "blockNum": {"$gte": blockNum}}, {"_id": 0})
+    depositTrxs = db.b_deposit_transaction.find({"chainId": chainId, "blockNum": {"$gte": blockNum}}, {"_id": 0}).sort("blockNum", pymongo.DESCENDING)
+    trxs = list(depositTrxs)
+    if len(trxs) == 0:
+        blockNum = 0
+    else:
+        blockNum = trx[0].blockNum
 
     return {
         'chainId': chainId,
-        'data': list(depositTrxs)
+        'blockNum': blockNum,
+        'data': trxs
     }
 
 
