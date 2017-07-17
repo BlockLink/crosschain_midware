@@ -172,7 +172,7 @@ def zchain_collection_amount(chainId):
 
     elif chainId == 'btc':
          safeblock = db.b_config.find_one({"key":"btcsafeblock"})["value"]
-         resp, err = btc_utils.btc_collect_money(cash_sweep_account,safeblock)
+         resp, err = btc_utils.btc_collect_money(cash_sweep_account,int(safeblock))
          if resp is None:
             return error_utils.unexcept_error(err)
     else:
