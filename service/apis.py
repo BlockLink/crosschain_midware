@@ -18,14 +18,14 @@ print(models.get_root_user())
 
 
 @jsonrpc.method('Zchain.Transaction.Withdraw.History(chainId=str, trxId=str)')
-def index(chainId, trxId):
+def zchain_transaction_withdraw_history(chainId, trxId):
     logger.info('Zchain.Transaction.Withdraw.History')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
     if type(trxId) != unicode:
         return error_utils.mismatched_parameter_type('trxId', 'STRING')
 
-    withdrawTrxs = db.b_withdraw_transaction.find({"trxId": trxId}, {"_id": 0})
+    withdrawTrxs = db.b_withdraw_transaction.find({"TransactionId": trxId}, {"_id": 0})
 
     return {
         'chainId': chainId,
@@ -34,7 +34,7 @@ def index(chainId, trxId):
 
 
 @jsonrpc.method('Zchain.Transaction.Deposit.History(chainId=str, blockNum=int)')
-def index(chainId, blockNum):
+def zchain_transaction_deposit_history(chainId, blockNum):
     logger.info('Zchain.Transaction.Deposit.History')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
@@ -56,7 +56,7 @@ def index(chainId, blockNum):
 
 
 @jsonrpc.method('Zchain.Configuration.Set(chainId=str, key=str, value=str)')
-def index(chainId, key, value):
+def zchain_configuration_set(chainId, key, value):
     logger.info('Zchain.Configure')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
@@ -79,7 +79,7 @@ def index(chainId, key, value):
 
 
 @jsonrpc.method('Zchain.Address.Setup(chainId=str, data=list)')
-def index(chainId, data):
+def zchain_address_setup(chainId, data):
     logger.info('Zchain.Address.Setup')
     addresses = db.b_chain_account
     if type(chainId) != unicode:
@@ -104,7 +104,7 @@ def index(chainId, data):
 
 
 @jsonrpc.method('Zchain.Address.List(chainId=str)')
-def index(chainId=str):
+def zchain_address_list(chainId=str):
     logger.info('Zchain.Address.List')
     addresses = db.b_chain_account
     # chain_accounts = models.BChainAccount.objects()
@@ -197,7 +197,7 @@ def zchain_collection_amount(chainId):
 
 # TODO, 实现与接口不符
 @jsonrpc.method('Zchain.CashSweep.History(chainId=str, opId=str, startTime=str, endTime=str)')
-def index(chainId, opId, startTime, endTime):
+def zchain_cashsweep_history(chainId, opId, startTime, endTime):
     """
     查询归账历史
     :param chainId:
