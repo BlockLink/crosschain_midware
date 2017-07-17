@@ -6,7 +6,7 @@ from service import logger, app
 import traceback
 
 def btc_request(method,args):
-    url = "http://%s:%s/rpc" % (app.config['BTC_HOST'], app.config['BTC_PORT'])
+    url = "http://%s:%s" % (app.config['BTC_HOST'], app.config['BTC_PORT'])
     user = 'a'
     passwd = 'b'
     basestr = encodestring('%s:%s' % (user,passwd))[:-1]
@@ -45,7 +45,7 @@ def btc_collect_money(address,safe_block):
         resp = btc_request("settxfee",[0.0004])
         if resp["result"] == None:
             raise Exception("settxfee error")
-        resp = btc_request("getbalance",["btc_test"],safe_block)
+        resp = btc_request("getbalance",["btc_test",safe_block])
         if resp["result"] == None:
             raise Exception("getbalance error")
         balance = resp["result"]
