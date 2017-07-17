@@ -49,14 +49,14 @@ def btc_collect_money(address,safe_block):
         if resp["result"] == None:
             raise Exception("getbalance error")
         balance = resp["result"]
-        if balance - 0.0004 <= 0:
+        if balance - 0.0005 <= 0:
             raise Exception("balance is not enough error")
-        params = ["btc_test",address ,balance-0.0004]
+        params = ["btc_test",address ,balance-0.0005]
         resp = btc_request("sendfrom",params)
         if resp["result"] == None:
             raise Exception("send error")
-        result_data["data"].append({"from_addr":"btc_test" ,"to_addr":address,"amount":(balance-0.0004),"trx_id":resp["result"]})
-        return result_data
+        result_data["data"].append({"from_addr":"btc_test" ,"to_addr":address,"amount":balance-0.0005,"trx_id":resp["result"]})
+        return result_data,None
     except Exception, ex:
         logger.info(traceback.format_exc())
         return None, ex.message
