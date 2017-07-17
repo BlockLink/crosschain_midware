@@ -7,13 +7,12 @@ from config import config
 import sys
 import shutil
 import os
-from math import pow
+from math import pow,floor
 import time
 from service import logger
 import traceback
 
 temp_config = config["Sunny"]
-
 
 def eth_request(method, args):
     url = "http://%s:%s/rpc" % (temp_config.ETH_URL, temp_config.ETH_PORT)
@@ -130,12 +129,20 @@ def get_transaction_data(trx_id):
     return resp_data, receipt_data
 
 
-# 创建转账交易 默认GasPrice 5Gwei
-def eth_send_transaction(from_address, to_address, value, gasPrice="0x1dcd6500", gas="0x76c0"):
-    ret = eth_request("eth_sendTransaction", [{"from": account, "to": cash_sweep_account,
-                                               "value": hex(int(value * pow(10, 18))).replace('L', ''),
-                                               "gas": "0x76c0", "gasPrice": "0x1dcd6500"}])
+#创建转账交易 默认GasPrice 5Gwei
+def eth_send_transaction(from_address,to_address,value,gasPrice="0x1dcd6500",gas="0x76c0"):
+    ret = eth_request("personal_unlockAccount",[from_address,temp_config.ETH_SECRET_KEY,1000])
     json_data = json.loads(ret)
+    print ret
+    if json_data.get("result") is None:
+        return ''
+    elif not json_data["result"]:
+        return ''
+    ret = eth_request("eth_sendTransaction", [{"from": from_address, "to": to_address,
+                                               "value": hex(long(floor(float(float(value) * pow(10,18))))).replace('L', ''),
+                                               "gas": gas, "gasPrice": gasPrice}])
+    json_data = json.loads(ret)
+    print ret
     if json_data.get("result") is None:
         return ""
     else:
@@ -161,9 +168,9 @@ def eth_collect_money(cash_sweep_account, accountList):
                     # 写入归账失败的列表
                     continue
 
-                ret = eth_request("eth_sendTransaction", [{"from": account, "to": cash_sweep_account,
-                                                           "value": hex(int((amount - pow(10, 16)))).replace('L', ''),
-                                                           "gas": "0x76c0", "gasPrice": "0x1dcd6500"}])
+                ret = eth_request("eth_sendTransaction",[{"from": account, "to": cash_sweep_account,
+                                                          "value": hex(long((amount - pow(10,16)))).replace('L',''),
+                                                          "gas": "0x76c0", "gasPrice": "0x1dcd6500"}])
                 if json.loads(result).get("result") is None:
                     result_data["errdata"].append(
                         {"from_addr": account, "to_addr": cash_sweep_account, "amount": float(amount) / pow(10, 18),
