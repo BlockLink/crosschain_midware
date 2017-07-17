@@ -8,4 +8,4 @@ RUN apt-get update
 RUN apt-get install -y bitcoind
 RUN mkdir /var/btc_data
 
-ENTRYPOINT bitcoind --datadir=/var/btc_data --rpcuser=a --rpcpassword=b --rpcport=60011 --server
+ENTRYPOINT bitcoind --datadir=/var/btc_data --rpcuser=a --rpcpassword=b --rpcallowip=172.28.8.0/24 --rpcport=60011 --server

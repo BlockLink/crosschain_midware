@@ -25,17 +25,26 @@ services:
     volumes:
       - ./data:/var/eth_data
       - ./backup:/var/backup_keystore
+    networks:
+      app_net:
+        ipv4_address: 172.28.8.2
 
   chaindb:
     image: 'mongo'
     ports:
       - "27017:27017"
+    networks:
+      app_net:
+        ipv4_address: 172.28.8.5
 
   btc_wallet:
     build:
       context: .
       dockerfile: Dockerfile.btc_wallet
     image: yqr/btc_wallet
+    networks:
+      app_net:
+        ipv4_address: 172.28.8.3
 
   eth_wallet:
     build:
@@ -47,4 +56,14 @@ services:
       - "30303:30303"
     volumes:
       - ./data:/var/eth_data
+    networks:
+      app_net:
+        ipv4_address: 172.28.8.4
 
+networks:
+  app_net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.8.0/24
