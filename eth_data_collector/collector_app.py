@@ -246,15 +246,16 @@ def collect_pretty_transaction(db_pool, base_trx_data, receipt_trx_data, block_t
     trx_data["chainId"] = "eth"
     trx_data["trxid"] = base_trx_data["hash"]
     trx_data["blockid"] = base_trx_data["blockHash"]
-    trx_data["blockNum"] = int(base_trx_data["blockNumber"],16)
+    trx_data["blockNum"] = int(base_trx_data["blockNumber"], 16)
     trx_data["fromAddresses"] = [receipt_trx_data["from"]]
-    trx_data["fromAmounts"] = [str(float(int(base_trx_data["value"], 16))/pow(10,18))]
+    trx_data["fromAmounts"] = [str(float(int(base_trx_data["value"], 16)) / pow(10, 18))]
     trx_data["fromAssets"] = ["ETH"]
-    trx_data["toAddresses"] =  [receipt_trx_data["to"]]
+    trx_data["toAddresses"] = [receipt_trx_data["to"]]
 
-    trx_data["toAmounts"] = [str(float(int(base_trx_data["value"], 16))/pow(10,18))]
+    trx_data["toAmounts"] = [str(float(int(base_trx_data["value"], 16)) / pow(10, 18))]
     trx_data["toAssets"] = ["ETH"]
-    trx_data["trxFee"] = str(float((int(receipt_trx_data["gasUsed"],16)) * (int(base_trx_data["gasPrice"],16)))/pow(10,18))
+    trx_data["trxFee"] = str(
+        float((int(receipt_trx_data["gasUsed"], 16)) * (int(base_trx_data["gasPrice"], 16))) / pow(10, 18))
     trx_data["FeeAsset"] = "ETH"
     trx_data["isSpecialTransaction"] = is_contract_trx(receipt_trx_data)
     trx_data["transactionJsonInfo"] = base_trx_data
@@ -263,11 +264,11 @@ def collect_pretty_transaction(db_pool, base_trx_data, receipt_trx_data, block_t
     trx_data["createtime"] = datetime.now()
     trx_data["isDispatched"] = 0
     trx_data["isHandled"] = 0
-    mongo_data = raw_transaction_db.find_one({"trxid" : base_trx_data["hash"]})
+    mongo_data = raw_transaction_db.find_one({"trxid": base_trx_data["hash"]})
     if mongo_data == None:
         raw_transaction_db.insert(trx_data)
     else:
-        raw_transaction_db.update({"trxid":base_trx_data["hash"]},{"$set":trx_data})
+        raw_transaction_db.update({"trxid": base_trx_data["hash"]}, {"$set": trx_data})
 
     raw_transaction_input_db = db_pool.b_raw_transaction_input
 
@@ -277,13 +278,14 @@ def collect_pretty_transaction(db_pool, base_trx_data, receipt_trx_data, block_t
     trx_input_data["blockNum"] = trx_data["blockNum"]
     trx_input_data["address"] = receipt_trx_data["from"]
     trx_input_data["assetName"] = "eth"
-    trx_input_data["amount"] =  str(float(int(base_trx_data["value"], 16))/pow(10,18))
-    mongo_data = raw_transaction_input_db.find_one({"trxid": base_trx_data["hash"],"address":receipt_trx_data["from"]})
+    trx_input_data["amount"] = str(float(int(base_trx_data["value"], 16)) / pow(10, 18))
+    mongo_data = raw_transaction_input_db.find_one(
+        {"trxid": base_trx_data["hash"], "address": receipt_trx_data["from"]})
     if mongo_data == None:
         raw_transaction_input_db.insert(trx_input_data)
     else:
-        raw_transaction_input_db.update({"trxid": base_trx_data["hash"],"address":receipt_trx_data["from"]}, {"$set": trx_data})
-
+        raw_transaction_input_db.update({"trxid": base_trx_data["hash"], "address": receipt_trx_data["from"]},
+                                        {"$set": trx_data})
 
     raw_transaction_output_db = db_pool.b_raw_transaction_output
     trx_output_data = {}
@@ -292,57 +294,56 @@ def collect_pretty_transaction(db_pool, base_trx_data, receipt_trx_data, block_t
     trx_output_data["blockNum"] = trx_data["blockNum"]
     trx_output_data["address"] = receipt_trx_data["to"]
     trx_output_data["assetName"] = "eth"
-    trx_output_data["amount"] = str(float(int(base_trx_data["value"], 16))/pow(10,18))
+    trx_output_data["amount"] = str(float(int(base_trx_data["value"], 16)) / pow(10, 18))
     mongo_data = raw_transaction_output_db.find_one({"trxid": base_trx_data["hash"], "address": receipt_trx_data["to"]})
     if mongo_data == None:
         raw_transaction_output_db.insert(trx_output_data)
     else:
         raw_transaction_output_db.update({"trxid": base_trx_data["hash"], "address": receipt_trx_data["from"]},
-                                  {"$set": trx_data})
+                                         {"$set": trx_data})
 
     if receipt_trx_data["from"] in GlobalVariable.withdraw_account:
         # 提现交易搬运
         b_withdraw_transaction = db_pool.b_withdraw_transaction
         withdraw_data_trx = b_withdraw_transaction.find_one({"chainId": "eth", "TransactionId": trx_data["trxid"]})
-        withdraw_trx = {"chainId": "eth","TransactionId": trx_data["trxid"],"toAddress": receipt_trx_data["to"],"fromAccount": receipt_trx_data["from"],
-                        "assetName":"eth","status":2,"amount":float(int(base_trx_data["value"], 16))/pow(10,18)}
+        withdraw_trx = {"chainId": "eth", "TransactionId": trx_data["trxid"], "toAddress": receipt_trx_data["to"],
+                        "fromAccount": receipt_trx_data["from"],
+                        "assetName": "eth", "status": 2, "amount": float(int(base_trx_data["value"], 16)) / pow(10, 18),
+                        "blockNum": trx_data["blockNum"]}
         if withdraw_data_trx is None:
             b_withdraw_transaction.insert(withdraw_trx)
         else:
-            b_withdraw_transaction.update({"TransactionId": trx_data["trxid"]},{"$set":withdraw_trx})
-
+            b_withdraw_transaction.update({"TransactionId": trx_data["trxid"]}, {"$set": withdraw_trx})
 
     if receipt_trx_data["to"] in GlobalVariable.db_account_list:
-        #入账交易搬运
+        # 入账交易搬运
         b_deposit_transaction = db_pool.b_deposit_transaction
         deposit_data_trx = b_deposit_transaction.find_one({"chainId": "eth", "TransactionId": trx_data["trxid"]})
-        deposit_trx = {"chainId": "eth","TransactionId": trx_data["trxid"],"toAddress": receipt_trx_data["to"],"fromAddress": receipt_trx_data["from"],
-                        "assetName":"eth","amount":float(int(base_trx_data["value"], 16))/pow(10,18)}
+        deposit_trx = {"chainId": "eth", "TransactionId": trx_data["trxid"], "toAddress": receipt_trx_data["to"],
+                       "fromAddress": receipt_trx_data["from"],
+                       "assetName": "eth", "amount": float(int(base_trx_data["value"], 16)) / pow(10, 18),
+                       "blockNum": trx_data["blockNum"]}
         if deposit_data_trx is None:
             b_deposit_transaction.insert(deposit_trx)
         else:
-            b_deposit_transaction.update({"TransactionId": trx_data["trxid"]},{"$set":deposit_trx})
+            b_deposit_transaction.update({"TransactionId": trx_data["trxid"]}, {"$set": deposit_trx})
     if receipt_trx_data["to"] in GlobalVariable.cash_sweep_account:
-        #归账交易搬运
+        # 归账交易搬运
         print "归账交易搬运"
         b_cash_sweep_plan_detail = db_pool.b_cash_sweep_plan_detail
         cash_sweep_data_trx = b_cash_sweep_plan_detail.find_one({"chainId": "eth", "trxId": trx_data["trxid"]})
         cash_sweep_trx = {"chainId": "eth", "trxId": trx_data["trxid"], "sweepAddress": receipt_trx_data["to"],
-                       "fromAddress": receipt_trx_data["from"], "successCoinAmount": float(int(base_trx_data["value"], 16)) / pow(10, 18),"status":1}
+                          "fromAddress": receipt_trx_data["from"],
+                          "successCoinAmount": float(int(base_trx_data["value"], 16)) / pow(10, 18), "status": 1,
+                          "blockNum": trx_data["blockNum"]}
         if cash_sweep_data_trx is None:
             b_cash_sweep_plan_detail.insert(cash_sweep_trx)
         else:
             b_cash_sweep_plan_detail.update({"trxId": trx_data["trxid"]}, {"$set": cash_sweep_trx})
-            record = b_cash_sweep_plan_detail.find_one({"cash_sweep_id":cash_sweep_data_trx["cash_sweep_id"],"status": 0})
+            record = b_cash_sweep_plan_detail.find_one(
+                {"cash_sweep_id": cash_sweep_data_trx["cash_sweep_id"], "status": 0})
             if record is None:
-                db_pool.b_cash_sweep.update({"_id": cash_sweep_data_trx["cash_sweep_id"]},{"$set":{"status":2}})
-
-
-
-
-
-
-
+                db_pool.b_cash_sweep.update({"_id": cash_sweep_data_trx["cash_sweep_id"]}, {"$set": {"status": 2}})
 
     return trx_data
 
