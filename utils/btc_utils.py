@@ -2,10 +2,11 @@
 import requests
 from base64 import encodestring
 import json
-from service import logger
+from service import logger, app
 import traceback
+
 def btc_request(method,args):
-    url = "http://127.0.0.1:60011/"
+    url = "http://%s:%s/rpc" % (app.config['BTC_HOST'], app.config['BTC_PORT'])
     user = 'a'
     passwd = 'b'
     basestr = encodestring('%s:%s' % (user,passwd))[:-1]

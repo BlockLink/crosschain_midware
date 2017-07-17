@@ -47,6 +47,8 @@ class SunnyConfig(Config):
     ETH_URL = '192.168.1.115'
     ETH_PORT = 8546
     ETH_Minimum = 1
+    BTC_HOST = 'btc_wallet'
+    BTC_PORT = 60011
 
 class TestingConfig(Config):
     TESTING = True
