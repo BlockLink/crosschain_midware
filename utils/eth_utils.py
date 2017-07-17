@@ -222,10 +222,8 @@ if __name__ == '__main__':
     # eth_create_address()
     # get_account_list_from_db()
     # eth_collect_money(2,"0x085aa94b764316d5e608335d13d926c6c6911e56")
-    account = "0x085aa94b764316d5e608335d13d926c6c6911e56"
+    account = "0x268be647f2fa7134486cf34121c7cba15fea994e"
     cash_sweep_account = "0xaf5d9e0b647d775a2f951bc4b34b84f6a301f381"
 
-    ret = eth_request("eth_sendTransaction", [{"from": account, "to": cash_sweep_account,
-                                               "value": hex(int((pow(10, 18)))).replace('L', ''), "gas": "0x76c0",
-                                               "gasPrice": "0x1dcd6500"}])
-    print ret
+    eth_send_transaction(account,"0x54d5f528f2f579aa98ed419209066ddaff87f341", 1.2)
+
