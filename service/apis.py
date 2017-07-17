@@ -46,7 +46,7 @@ def index(chainId, blockNum):
     if len(trxs) == 0:
         blockNum = 0
     else:
-        blockNum = trx[0].blockNum
+        blockNum = trxs[0].blockNum
 
     return {
         'chainId': chainId,
