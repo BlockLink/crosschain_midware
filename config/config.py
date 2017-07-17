@@ -31,7 +31,18 @@ class DevelopmentConfig(Config):
     ETH_PORT = 8546
     ETH_Minimum = 1
 
-
+class DaConfig(Config):
+    DEBUG = True
+    MAIL_SERVER = 'smtp.googlemail.com'
+    MAIL_PORT = 587
+    MAIL_USE_TLS = True
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+    MONGO_HOST = '192.168.127.128'
+    MONGO_PORT = 27017
+    MONGO_NAME = 'test'
+    BTC_HOST = 'btc_wallet'
+    BTC_PORT = 60011
 class SunnyConfig(Config):
     DEBUG = True
 
@@ -66,5 +77,6 @@ config = {
     'testing': TestingConfig,
     'production': ProductionConfig,
     'default': DevelopmentConfig,
-    'Sunny' : SunnyConfig
+    'Sunny' : SunnyConfig,
+    'Da':DaConfig
 }
