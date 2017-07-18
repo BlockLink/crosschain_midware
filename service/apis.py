@@ -108,8 +108,6 @@ def zchain_address_setup(chainId, data):
 def zchain_deposit_address_list(chainId):
     logger.info('Zchain.Address.List')
     addresses = db.b_chain_account
-    # chain_accounts = models.BChainAccount.objects()
-    # print(chain_accounts)
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
@@ -135,6 +133,7 @@ def zchain_deposit_address_balance(chainId, address):
         balance = eth_utils.eth_get_base_balance(address)
     elif chainId == "btc":
         balance = btc_utils.btc_get_withdraw_balance()
+        address = "btc_deposit_address"
     else:
         return error_utils.invalid_chainid_type(chainId)
 
@@ -145,7 +144,7 @@ def zchain_deposit_address_balance(chainId, address):
     }
 
 
-#TODO, 备份私钥功能暂时注释，正式上线要加回来
+# TODO, 备份私钥功能暂时注释，正式上线要加回来
 @jsonrpc.method('Zchain.Address.Create(chainId=String)')
 def zchain_address_create(chainId):
     logger.info('Create_address coin: %s' % (chainId))
@@ -204,7 +203,7 @@ def zchain_collection_amount(chainId):
         return error_utils.invalid_chainid_type(chainId)
     cash_sweep_op = {"operatorUserId": "1", "chainId": chainId, "sweepAddress": cash_sweep_account,
                      "status": 0, "memo": "", "errorMessage": resp["errdata"], "createTime": datetime.now()}
-    if len(resp["data"]) ==0 and len(resp["errdata"]==0):
+    if len(resp["data"]) == 0 and len(resp["errdata"] == 0):
         return error_utils.unexcept_error("no balance to cash sweep!")
     opId = db.b_cash_sweep.insert(cash_sweep_op)
 
@@ -317,7 +316,6 @@ def zchain_withdraw_getinfo(chainId):
     }
 
 
-# TODO, 待实现
 @jsonrpc.method('Zchain.Withdraw.Execute(chainId=str, address=str, amount=float)')
 def zchain_withdraw_execute(chainId, address, amount):
     """
@@ -330,9 +328,9 @@ def zchain_withdraw_execute(chainId, address, amount):
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
     if type(address) != unicode:
         return error_utils.mismatched_parameter_type('address', 'STRING')
-
     if type(amount) != float and type(amount) != int:
         return error_utils.mismatched_parameter_type('amount', 'FLOAT/INTEGER')
+
     records = db.b_config.find_one({'key': 'withdrawaddress'}, {'_id': 0})
     withdrawaddress = ""
     if records == None:
@@ -342,21 +340,17 @@ def zchain_withdraw_execute(chainId, address, amount):
             withdrawaddress = r['address']
     if address == "":
         return error_utils.unexcept_error("withdrawaddress is None")
-    trxid = ""
 
     if chainId == "eth":
         if not address.startswith("0x", 0):
             return error_utils.invaild_eth_address(address)
-        print 2
         trxid = eth_utils.eth_send_transaction(withdrawaddress, address, amount)
-        print 4
     elif chainId == "btc":
         trxid = btc_utils.btc_withdraw_to_address(address, amount)
     else:
         return error_utils.invalid_chainid_type(chainId)
     if trxid == "":
         return error_utils.unexcept_error("create trx error")
-    print 3
     trxdata = db.b_withdraw_transaction.find_one({"chainId": chainId, "TransactionId": trxid})
     if trxdata == None:
         db.b_withdraw_transaction.insert(
