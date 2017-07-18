@@ -8,7 +8,7 @@ import logging
 
 
 # DB configure
-MONGO_HOST = 'chaindb'
+MONGO_HOST = '192.168.1.115'
 MONGO_PORT = 27017
 MONGO_NAME = 'chaindb'
 DB_POOL_SIZE = 10
@@ -27,6 +27,6 @@ LOG_FILENAME = "eth_data_collector.log"
 
 
 #ETH configure
-ETH_URL = "eth_wallet"
+ETH_URL = "192.168.1.115"
 ETH_PORT = 8546
 

@@ -132,7 +132,7 @@ def zchain_deposit_address_balance(chainId, address):
     if chainId == "eth":
         balance = eth_utils.eth_get_base_balance(address)
     elif chainId == "btc":
-        balance = btc_utils.btc_get_withdraw_balance()
+        balance = btc_utils.btc_get_deposit_balance()
         address = "btc_deposit_address"
     else:
         return error_utils.invalid_chainid_type(chainId)
