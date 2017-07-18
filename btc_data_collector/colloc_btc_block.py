@@ -250,7 +250,7 @@ def collect_pretty_transaction(db_pool, base_trx_data,block_num):
         #b_deposit_transaction
         deposit_data = db_pool.b_deposit_transaction.find_one({"chainId":"btc","TransactionId":trx_data["trxid"]})
         if deposit_data == None:
-            db_pool.b_deposit_transaction.insert({"chainId":"btc","TransactionId":trx_data["trxid"],"fromAccount":from_address,"toAddress":to_address,"assetName":"btc","amount":amount,"createTime":time.time()})
+            db_pool.b_deposit_transaction.insert({"chainId":"btc","TransactionId":trx_data["trxid"],"fromAccount":from_address,"toAddress":to_address,"assetName":"btc","amount":amount,"blocknum":block_num,"createTime":time.time()})
 
     return trx_data
 
