@@ -303,8 +303,7 @@ def zchain_withdraw_execute(chainId, address, amount):
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
     if type(address) != unicode:
         return error_utils.mismatched_parameter_type('address', 'STRING')
-    if not address.startswith("0x",0):
-        return error_utils.eth_address_invaild(address)
+
     if type(amount) != float and type(amount) != int:
         return error_utils.mismatched_parameter_type('amount', 'FLOAT/INTEGER')
     records = db.b_config.find_one({'key': 'withdrawaddress'}, {'_id': 0})
@@ -319,6 +318,8 @@ def zchain_withdraw_execute(chainId, address, amount):
     trxid=""
 
     if chainId == "eth":
+        if not address.startswith("0x",0):
+            return error_utils.eth_address_invaild(address)
         print 2
         trxid = eth_utils.eth_send_transaction(withdrawaddress,address,amount)
         print 4
@@ -326,8 +327,10 @@ def zchain_withdraw_execute(chainId, address, amount):
         trxid = btc_utils.btc_withdraw_to_address(address,amount)
     else:
         return error_utils.invalid_chaind_type(chainId)
+    if trxid == "":
+        return error_utils.unexcept_error("create trx error")
     print 3
-    trxdata = db.b_withdraw_transaction.find_one({"chainId":chainId,"Transaction":trxid})
+    trxdata = db.b_withdraw_transaction.find_one({"chainId":chainId,"TransactionId":trxid})
     if trxdata ==None:
         db.b_withdraw_transaction.insert({'chainId':chainId,"toAddress":address,"TransactionId":trxid,"assetName":chainId,"amount":amount,"fromAccount":withdrawaddress,"status":1,"createTime":time.time()})
     else:
