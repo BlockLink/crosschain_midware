@@ -223,7 +223,6 @@ def zchain_collection_amount(chainId):
     return {'opId': str(opId), 'chainId': chainId}
 
 
-# TODO, 实现与接口不符
 @jsonrpc.method('Zchain.CashSweep.History(chainId=str, opId=str)')
 def zchain_cashsweep_history(chainId, opId):
     """
@@ -238,36 +237,15 @@ def zchain_cashsweep_history(chainId, opId):
         return error_utils.mismatched_parameter_type('opId', 'STRING')
 
     if opId == "":
-        trxs = db.b_cash_sweep.find(
-            {"chainId": chainId})
+        return error_utils.empty_cash_sweep_id()
     else:
-        trxs = db.b_cash_sweep.find(
-            {"chainId": chainId, "opId": opId})
+        trxs = db.b_cash_sweep_plan_detail.find(
+            {"chainId": chainId, "cash_sweep_id": ObjectId(opId)},
+            {"chainId": 1, "trxTime": 1, "trxId": 1, "fromAddress": 1, "sweepAddress": 1, "successCoinAmount": 1,
+             "status": 1, "_id": 0})
 
     return {
-        'chainId': chainId,
-        'history': json.loads(json_util.dumps(trxs))
-    }
-
-
-# TODO, 可能不需要了，需要确认
-@jsonrpc.method('Zchain.CashSweep.HistoryDetails(cash_sweep_id=String)')
-def zchain_query_cash_sweep_details(cash_sweep_id):
-    """
-    查询某次归账操作记录的具体明细
-    :param cash_sweep_id:
-    :return:
-    """
-    logger.info('Zchain.CashSweep.HistoryDetails')
-    if type(cash_sweep_id) != unicode:
-        return error_utils.mismatched_parameter_type('cash_sweep_id', 'STRING')
-
-    trxs = db.b_cash_sweep_plan_detail.find({'cash_sweep_id': ObjectId(cash_sweep_id)}, {'_id': 0})
-
-    return {
-        'cash_sweep_id': cash_sweep_id,
-        'total': trxs.count(),
-        'result': json.loads(json_util.dumps(trxs))
+        'transactions': json.loads(json_util.dumps(trxs))
     }
 
 

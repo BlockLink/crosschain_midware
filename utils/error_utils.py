@@ -27,7 +27,10 @@ def invalid_deposit_address(address):
     return error_response(u'address [%s] is not in deposit address list '%address, 40006)
 
 def invaild_eth_address(address):
-    return error_response(u'address [%s] not start with 0x '%address,40007)
+    return error_response(u'address [%s] not start with 0x '%address, 40007)
+
+def empty_cash_sweep_id():
+    return error_response(u'opId is empty', 40008)
 
 def unexcept_error(ex):
     return error_response('chain happend unexcept error %s'%ex,49999)
