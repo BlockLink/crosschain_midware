@@ -8,7 +8,7 @@ import logging
 
 
 # DB configure
-MONGO_HOST = '192.168.52.128'
+MONGO_HOST = '192.168.1.115'
 MONGO_PORT = 27017
 MONGO_NAME = 'chaindb'
 DB_POOL_SIZE = 10
@@ -26,6 +26,6 @@ LOG_LEVEL = logging.DEBUG
 LOG_FILENAME = "btc_data_collector.log"
 
 
-BTC_URL = "127.0.0.1"
+BTC_URL = "192.168.1.104"
 BTC_PORT = 60011
 

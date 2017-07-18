@@ -76,11 +76,11 @@ def btc_withdraw_to_address(address,amount):
         balance = resp["result"]
         if balance - 0.0005 <= 0:
             raise Exception("balance is not enough error")
-        params = ["btc_withdraw_test",address,balance-0.0005]
+        params = ["btc_withdraw_test",address,balance]
         resp = btc_request("sendfrom",params)
         if resp["result"] == None:
             raise Exception("send error")
-        result_data["data"].append({"from_addr":"btc_withdraw_test" ,"to_addr":address,"amount":balance-0.0005,"trx_id":resp["result"]})
+        result_data["data"].append({"from_addr":"btc_withdraw_test" ,"to_addr":address,"amount":balance,"trx_id":resp["result"]})
         return resp["result"]
     except Exception, ex:
         logger.info(traceback.format_exc())
@@ -91,6 +91,12 @@ def btc_withdraw_to_address(address,amount):
 
 def btc_backup_wallet():
     btc_request("backupwallet",["/var/backup_keystore/btc_wallet.dat"])
+def btc_get_deposit_balance():
+    rep = btc_request("getbalance",["btc_test"])
+    balance = 0.0
+    if rep["result"] != None:
+        balance = rep["result"]
+    return balance
 def btc_get_withdraw_balance():
     rep = btc_request("getbalance",["btc_withdraw_test"])
     balance = 0.0

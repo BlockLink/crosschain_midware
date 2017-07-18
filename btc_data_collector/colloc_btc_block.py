@@ -102,13 +102,13 @@ def clear_last_garbage_data(db_pool):
     ret = config.find_one({"key":"btcsyncblocknum"})
     last_sync_block_num = int(ret["value"])
     try:
-        db_pool.b_raw_transaction.remove({"blockNum":{"$gte":last_sync_block_num},"chainid":"btc"})
-        db_pool.b_block.remove({"blockNumber":{"$gte":last_sync_block_num},"chainid":"btc"})
+        db_pool.b_raw_transaction.remove({"blockNum":{"$gte":last_sync_block_num},"chainId":"btc"})
+        db_pool.b_block.remove({"blockNumber":{"$gte":last_sync_block_num},"chainId":"btc"})
 
-        db_pool.b_raw_transaction_input.remove({"blockNum": {"$gte": last_sync_block_num},"chainid":"btc"})
-        db_pool.b_raw_transaction_output.remove({"blockNum": {"$gte": last_sync_block_num},"chainid":"btc"})
-        db_pool.b_deposit_transaction.remove({"blockNum": {"$gte": last_sync_block_num},"chainid":"btc"})
-        db_pool.b_withdraw_transaction.remove({"blockNum": {"$gte": last_sync_block_num},"chainid":"btc"})
+        db_pool.b_raw_transaction_input.remove({"blockNum": {"$gte": last_sync_block_num},"chainId":"btc"})
+        db_pool.b_raw_transaction_output.remove({"blockNum": {"$gte": last_sync_block_num},"chainId":"btc"})
+        db_pool.b_deposit_transaction.remove({"blockNum": {"$gte": last_sync_block_num},"chainId":"btc"})
+        db_pool.b_withdraw_transaction.remove({"blockNum": {"$gte": last_sync_block_num},"chainId":"btc"})
     except Exception,ex:
         print ex
     return int(last_sync_block_num)

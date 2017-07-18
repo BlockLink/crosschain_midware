@@ -41,7 +41,8 @@ def zchain_transaction_deposit_history(chainId, blockNum):
     if type(blockNum) != int:
         return error_utils.mismatched_parameter_type('blockNum', 'INTEGER')
 
-    depositTrxs = db.b_deposit_transaction.find({"chainId": chainId, "blockNum": {"$gte": blockNum}}, {"_id": 0}).sort("blockNum", pymongo.DESCENDING)
+    depositTrxs = db.b_deposit_transaction.find({"chainId": chainId, "blockNum": {"$gte": blockNum}}, {"_id": 0}).sort(
+        "blockNum", pymongo.DESCENDING)
     trxs = list(depositTrxs)
     if len(trxs) == 0:
         blockNum = 0
@@ -103,21 +104,47 @@ def zchain_address_setup(chainId, data):
     }
 
 
-@jsonrpc.method('Zchain.Address.List(chainId=str)')
-def zchain_address_list(chainId=str):
+@jsonrpc.method('Zchain.Deposit.Address.List(chainId=str)')
+def zchain_deposit_address_list(chainId):
     logger.info('Zchain.Address.List')
     addresses = db.b_chain_account
-    # chain_accounts = models.BChainAccount.objects()
-    # print(chain_accounts)
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
-    addresses = addresses.find({"chainId":chainId}, {'_id': 0})
+    addresses = addresses.find({"chainId": chainId}, {'_id': 0, 'address': 1})
     json_addrs = json_util.dumps(list(addresses))
 
     return {"addresses": json.loads(json_addrs)}
 
 
+@jsonrpc.method('Zchain.Deposit.Address.Balance(chainId=str, address=str)')
+def zchain_deposit_address_balance(chainId, address):
+    logger.info('Zchain.Address.Balance')
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+    if type(address) != unicode:
+        return error_utils.mismatched_parameter_type('address', 'STRING')
+
+    address = db.b_chain_account.find_one({"chainId": chainId, "address": address})
+    if address is None:
+        return error_utils.invalid_deposit_address(address)
+
+    if chainId == "eth":
+        balance = eth_utils.eth_get_base_balance(address)
+    elif chainId == "btc":
+        balance = btc_utils.btc_get_deposit_balance()
+        address = "btc_deposit_address"
+    else:
+        return error_utils.invalid_chainid_type(chainId)
+
+    return {
+        "chainId": chainId,
+        "address": address,
+        "balance": balance
+    }
+
+
+# TODO, 备份私钥功能暂时注释，正式上线要加回来
 @jsonrpc.method('Zchain.Address.Create(chainId=String)')
 def zchain_address_create(chainId):
     logger.info('Create_address coin: %s' % (chainId))
@@ -127,14 +154,14 @@ def zchain_address_create(chainId):
     elif chainId == 'btc':
         address = btc_utils.btc_create_address()
     else:
-        return error_utils.invalid_chaind_type(chainId)
+        return error_utils.invalid_chainid_type(chainId)
     if address != "":
         if chainId == 'eth':
             pass
-            #eth_utils.eth_backup()
+            # eth_utils.eth_backup()
         else:
             pass
-            #btc_utils.btc_backup_wallet()
+            # btc_utils.btc_backup_wallet()
         data = db.b_chain_account.find_one({"chainId": chainId, "address": address})
         if data != None:
             return {'chainId': chainId, 'error': '创建地址失败'}
@@ -147,7 +174,6 @@ def zchain_address_create(chainId):
         return {'chainId': chainId, 'error': '创建地址失败'}
 
 
-# TODO, 要返回opId
 @jsonrpc.method('Zchain.CashSweep(chainId=String)')
 def zchain_collection_amount(chainId):
     logger.info('CashSweep chainId: %s' % (chainId))
@@ -165,41 +191,41 @@ def zchain_collection_amount(chainId):
             break
     if chainId == 'eth':
         safeblock = db.b_config.find_one({"key": "safeblock"})["value"]
-        resp, err = eth_utils.eth_collect_money(cash_sweep_account, addressList,safeblock)
+        resp, err = eth_utils.eth_collect_money(cash_sweep_account, addressList, safeblock)
         if resp is None:
             return error_utils.unexcept_error(err)
-
-
     elif chainId == 'btc':
-         safeblock = db.b_config.find_one({"key":"btcsafeblock"})["value"]
-         resp, err = btc_utils.btc_collect_money(cash_sweep_account,int(safeblock))
-         if resp is None:
+        safeblock = db.b_config.find_one({"key": "btcsafeblock"})["value"]
+        resp, err = btc_utils.btc_collect_money(cash_sweep_account, int(safeblock))
+        if resp is None:
             return error_utils.unexcept_error(err)
     else:
-        return error_utils.invalid_chaind_type(chainId)
+        return error_utils.invalid_chainid_type(chainId)
     cash_sweep_op = {"operatorUserId": "1", "chainId": chainId, "sweepAddress": cash_sweep_account,
                      "status": 0, "memo": "", "errorMessage": resp["errdata"], "createTime": datetime.now()}
-    if len(resp["data"]) ==0 and len(resp["errdata"]==0):
+    if len(resp["data"]) == 0 and len(resp["errdata"] == 0):
         return error_utils.unexcept_error("no balance to cash sweep!")
     opId = db.b_cash_sweep.insert(cash_sweep_op)
 
     for one_data in resp["data"]:
-        op_data = {"cash_sweep_id": ObjectId(opId),  "chainId": chainId,"fromAddress": one_data["from_addr"], "sweepAddress": cash_sweep_account,
+        op_data = {"cash_sweep_id": ObjectId(opId), "chainId": chainId, "fromAddress": one_data["from_addr"],
+                   "sweepAddress": cash_sweep_account,
                    "successCoinAmount": one_data["amount"], "status": 0, "trxId": one_data["trx_id"],
                    "createTime": datetime.now()}
         db.b_cash_sweep_plan_detail.insert(op_data)
     for one_data in resp["errdata"]:
-        op_data = {"cash_sweep_id": ObjectId(opId), "chainId": chainId, "fromAddress": one_data["from_addr"], "sweepAddress": cash_sweep_account,
+        op_data = {"cash_sweep_id": ObjectId(opId), "chainId": chainId, "fromAddress": one_data["from_addr"],
+                   "sweepAddress": cash_sweep_account,
                    "successCoinAmount": one_data["amount"], "status": -1, "errorMessage": one_data["error_reason"],
                    "createTime": datetime.now()}
         db.b_cash_sweep_plan_detail.insert(op_data)
-    print opId
-    return {'opId': str(opId), 'chainId': chainId, 'result': True}
+    logger.info(opId)
+    return {'opId': str(opId), 'chainId': chainId}
 
 
 # TODO, 实现与接口不符
-@jsonrpc.method('Zchain.CashSweep.History(chainId=str, opId=str, startTime=str, endTime=str)')
-def zchain_cashsweep_history(chainId, opId, startTime, endTime):
+@jsonrpc.method('Zchain.CashSweep.History(chainId=str, opId=str)')
+def zchain_cashsweep_history(chainId, opId):
     """
     查询归账历史
     :param chainId:
@@ -213,10 +239,10 @@ def zchain_cashsweep_history(chainId, opId, startTime, endTime):
 
     if opId == "":
         trxs = db.b_cash_sweep.find(
-            {"chainId": chainId, "createTime": {"$ge": startTime}, "createTime": {"$lt": endTime}})
+            {"chainId": chainId})
     else:
         trxs = db.b_cash_sweep.find(
-            {"chainId": chainId, "opId": opId, "createTime": {"$ge": startTime}, "createTime": {"$lt": endTime}})
+            {"chainId": chainId, "opId": opId})
 
     return {
         'chainId': chainId,
@@ -268,7 +294,7 @@ def zchain_withdraw_getinfo(chainId):
     if address == "":
         if chainId == "eth":
             address = eth_utils.eth_create_address()
-            #eth_utils.eth_backup()
+            # eth_utils.eth_backup()
             records["value"].append({"chainId": "eth", "address": address})
         elif chainId == "btc":
             address = btc_utils.btc_create_withdraw_address()
@@ -281,7 +307,7 @@ def zchain_withdraw_getinfo(chainId):
     elif chainId == "btc":
         balance = btc_utils.btc_get_withdraw_balance()
     else:
-        return error_utils.invalid_chaind_type(chainId)
+        return error_utils.invalid_chainid_type(chainId)
 
     return {
         'chainId': chainId,
@@ -290,7 +316,6 @@ def zchain_withdraw_getinfo(chainId):
     }
 
 
-# TODO, 待实现
 @jsonrpc.method('Zchain.Withdraw.Execute(chainId=str, address=str, amount=float)')
 def zchain_withdraw_execute(chainId, address, amount):
     """
@@ -303,9 +328,9 @@ def zchain_withdraw_execute(chainId, address, amount):
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
     if type(address) != unicode:
         return error_utils.mismatched_parameter_type('address', 'STRING')
-
     if type(amount) != float and type(amount) != int:
         return error_utils.mismatched_parameter_type('amount', 'FLOAT/INTEGER')
+
     records = db.b_config.find_one({'key': 'withdrawaddress'}, {'_id': 0})
     withdrawaddress = ""
     if records == None:
@@ -315,28 +340,26 @@ def zchain_withdraw_execute(chainId, address, amount):
             withdrawaddress = r['address']
     if address == "":
         return error_utils.unexcept_error("withdrawaddress is None")
-    trxid=""
 
     if chainId == "eth":
-        if not address.startswith("0x",0):
-            return error_utils.eth_address_invaild(address)
-        print 2
-        trxid = eth_utils.eth_send_transaction(withdrawaddress,address,amount)
-        print 4
+        if not address.startswith("0x", 0):
+            return error_utils.invaild_eth_address(address)
+        trxid = eth_utils.eth_send_transaction(withdrawaddress, address, amount)
     elif chainId == "btc":
-        trxid = btc_utils.btc_withdraw_to_address(address,amount)
+        trxid = btc_utils.btc_withdraw_to_address(address, amount)
     else:
-        return error_utils.invalid_chaind_type(chainId)
+        return error_utils.invalid_chainid_type(chainId)
     if trxid == "":
         return error_utils.unexcept_error("create trx error")
-    print 3
-    trxdata = db.b_withdraw_transaction.find_one({"chainId":chainId,"TransactionId":trxid})
-    if trxdata ==None:
-        db.b_withdraw_transaction.insert({'chainId':chainId,"toAddress":address,"TransactionId":trxid,"assetName":chainId,"amount":amount,"fromAccount":withdrawaddress,"status":1,"createTime":time.time()})
+    trxdata = db.b_withdraw_transaction.find_one({"chainId": chainId, "TransactionId": trxid})
+    if trxdata == None:
+        db.b_withdraw_transaction.insert(
+            {'chainId': chainId, "toAddress": address, "TransactionId": trxid, "assetName": chainId, "amount": amount,
+             "fromAccount": withdrawaddress, "status": 1, "createTime": time.time()})
     else:
-         return error_utils.unexcept_error("trx exist error")
+        return error_utils.unexcept_error("trx exist error")
     return {
         'amount': amount,
-        'chainId':chainId,
+        'chainId': chainId,
         'trxId': trxid
     }
