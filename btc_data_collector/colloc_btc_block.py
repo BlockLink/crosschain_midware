@@ -158,6 +158,8 @@ def collect_pretty_transaction(db_pool, base_trx_data,block_num):
     amount = 0.0
     from_address = ""
     to_address = ""
+    from_account = ""
+    to_account = ""
     trx_data["chainId"] = "btc"
     trx_data["trxid"] = base_trx_data["txid"]
     trx_data["blockid"] = base_trx_data["blockhash"]
@@ -171,6 +173,7 @@ def collect_pretty_transaction(db_pool, base_trx_data,block_num):
     for trx in trxs:
         if trx["category"] == "send":
             from_address = trx["address"]
+            from_account = trx["account"]
             trx_data["fromAddresses"].append(trx["address"])
             trx_data["fromAmounts"].append(trx["amount"])
             trx_data["fromAssets"] = "btc"
@@ -178,6 +181,7 @@ def collect_pretty_transaction(db_pool, base_trx_data,block_num):
             trx_data["FeeAsset"] = "btc"
         elif trx["category"] == "receive":
             to_address = trx["address"]
+            to_account = trx["account"]
             trx_data["toAddresses"].append(trx["address"])
             amount += trx["amount"]
             trx_data["toAmounts"].append(trx["amount"])
@@ -221,29 +225,28 @@ def collect_pretty_transaction(db_pool, base_trx_data,block_num):
             else:
                 raw_transaction_output_db.update({"TransactionId": base_trx_data["txid"], "address":trx["address"],"chainID":"btc"},
                                           {"$set": trx_data})
-    address_from_info = btc_request("getaccount",[from_address])
-    address_to_info = btc_request("getaccount",[to_address])
-    if address_from_info['result'] == "btc_test":
+
+    if from_account == "btc_test":
         print "handle address from"
         #b_cash_sweep  b_cash_sweep_plan_detail
         cash_detail_data = db_pool.b_cash_sweep_plan_detail.find_one({"chainId":"btc","trxId":trx_data["trxid"]})
         if cash_detail_data == None:
-            db_pool.b_cash_sweep_plan_detail.insert({"chainId":"btc","trxId":trx_data["trxid"],"fromAddress":from_address,"sweepAddress":to_address,"successCoinAmount":amount,"success":True,"createTime":time.time()})
+            db_pool.b_cash_sweep_plan_detail.insert({"chainId":"btc","trxId":trx_data["trxid"],"fromAddress":from_address,"sweepAddress":to_address,"successCoinAmount":amount,"status":1,"createTime":time.time()})
         else:
-            db_pool.b_cash_sweep_plan_detail.update({"chainId":"btc","trxId":trx_data["trxid"]},{"$set":{"fromAddress":from_address,"sweepAddress":to_address,"successCoinAmount":amount,"success":True,"createTime":time.time()}})
+            db_pool.b_cash_sweep_plan_detail.update({"chainId":"btc","trxId":trx_data["trxid"]},{"$set":{"fromAddress":from_address,"sweepAddress":to_address,"successCoinAmount":amount,"status":1,"createTime":time.time()}})
             cash_data = db_pool.b_cash_sweep.find_one({"_id":cash_detail_data["cash_sweep_id"]})
             if cash_data == None:
                 logging.info("cash data is not exist error")
             else:
                 db_pool.b_cash_sweep.update({"_id":cash_detail_data["cash_sweep_id"]},{"$set":{"status":2}})
-    elif address_from_info['result'] == "btc_withdraw_test":
+    elif from_account == "btc_withdraw_test":
         #b_withdraw_transaction
         withdraw_data = db_pool.b_withdraw_transaction.find_one({"chainId":"btc","TransactionId":trx_data["trxid"]})
         if withdraw_data == None:
             db_pool.b_withdraw_transaction.insert({"chainId":"btc","TransactionId":trx_data["trxid"],"fromAccount":from_address,"toAddress":to_address,"assetName":"btc","amount":amount,"status":2,"createTime":time.time()})
         else:
             db_pool.b_withdraw_transaction.update({"chainId":"btc","TransactionId":trx_data["trxid"]},{"$set":{"status":2}})
-    if address_to_info['result'] == "btc_test":
+    if to_account == "btc_test":
         #b_deposit_transaction
         deposit_data = db_pool.b_deposit_transaction.find_one({"chainId":"btc","TransactionId":trx_data["trxid"]})
         if deposit_data == None:
