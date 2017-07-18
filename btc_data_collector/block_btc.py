@@ -51,7 +51,7 @@ class BlockInfoBtc(object):
         self.fee = 0.0
 
     def get_json_data(self):
-        return {"blockHash":self.block_id,"chainid":"btc","blockNumber":self.block_num,"blockSize":self.block_size,
+        return {"blockHash":self.block_id,"chainId":"btc","blockNumber":self.block_num,"blockSize":self.block_size,
                 "previous":self.previous,"trxDigest":self.trx_digest,"transactionsCount":self.trx_count,
         "trxamount":self.trx_amount,"trxfee":self.trx_fee,"createtime":datetime.now()}
 #UT
