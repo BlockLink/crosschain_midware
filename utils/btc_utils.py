@@ -84,7 +84,7 @@ def btc_withdraw_to_address(address,amount):
         return resp["result"]
     except Exception, ex:
         logger.info(traceback.format_exc())
-        return None
+        return ""
 
 '''def get_account_list_btc_address():
     btc_request("getaddressesbyaccount",["btc_test"])'''

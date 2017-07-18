@@ -325,6 +325,8 @@ def zchain_withdraw_execute(chainId, address, amount):
         trxid = btc_utils.btc_withdraw_to_address(address,amount)
     else:
         return error_utils.invalid_chaind_type(chainId)
+    if trxid == "":
+        return error_utils.unexcept_error("create trx error")
     print 3
     trxdata = db.b_withdraw_transaction.find_one({"chainId":chainId,"TransactionId":trxid})
     if trxdata ==None:
