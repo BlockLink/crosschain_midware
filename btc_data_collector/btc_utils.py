@@ -2,8 +2,10 @@
 import requests
 from base64 import encodestring
 import json
+from collector_conf import BTC_URL,BTC_PORT
 def btc_request(method,args):
-    url = "http://127.0.0.1:60011/"
+    #url = "http://192.168.1.104:60011/"
+    url = "http://%s:%s" % (BTC_URL,BTC_PORT)
     user = 'a'
     passwd = 'b'
     basestr = encodestring('%s:%s' % (user,passwd))[:-1]
