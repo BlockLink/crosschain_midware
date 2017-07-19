@@ -201,7 +201,7 @@ def zchain_collection_amount(chainId):
         return error_utils.invalid_chainid_type(chainId)
     cash_sweep_op = {"operatorUserId": "1", "chainId": chainId, "sweepAddress": cash_sweep_account,
                      "status": 0, "memo": "", "errorMessage": resp["errdata"], "createTime": datetime.now()}
-    if len(resp["data"]) == 0 and len(resp["errdata"] == 0):
+    if len(resp["data"]) == 0 and len(resp["errdata"]) == 0:
         return error_utils.unexcept_error("no balance to cash sweep!")
     opId = db.b_cash_sweep.insert(cash_sweep_op)
 

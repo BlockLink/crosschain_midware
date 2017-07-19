@@ -300,7 +300,7 @@ def collect_pretty_transaction(db_pool, base_trx_data, receipt_trx_data, block_t
         b_withdraw_transaction = db_pool.b_withdraw_transaction
         withdraw_data_trx = b_withdraw_transaction.find_one({"chainId": "eth", "TransactionId": trx_data["trxid"]})
         withdraw_trx = {"chainId": "eth", "TransactionId": trx_data["trxid"], "toAddress": receipt_trx_data["to"],
-                        "fromAccount": receipt_trx_data["from"],
+                        "fromAddress": receipt_trx_data["from"],
                         "assetName": "eth", "status": 2, "amount": float(int(base_trx_data["value"], 16)) / pow(10, 18),
                         "blockNum": trx_data["blockNum"], "trxTime": block_time}
         if withdraw_data_trx is None:
