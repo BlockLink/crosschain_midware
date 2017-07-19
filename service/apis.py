@@ -23,7 +23,7 @@ def zchain_transaction_withdraw_history(chainId, trxId):
     if type(trxId) != unicode:
         return error_utils.mismatched_parameter_type('trxId', 'STRING')
 
-    withdrawTrxs = db.b_withdraw_transaction.find({"TransactionId": trxId}, {"_id": 0})
+    withdrawTrxs = db.b_withdraw_transaction.find({"TransactionId": trxId, "chainId": chainId}, {"_id": 0})
 
     return {
         'chainId': chainId,
