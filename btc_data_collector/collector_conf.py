@@ -4,13 +4,16 @@
 __author__ = 'hasee'
 
 import logging
+from config import config
 
-
+conf = config['development']
 
 # DB configure
-MONGO_HOST = '192.168.1.115'
-MONGO_PORT = 27017
-MONGO_NAME = 'chaindb'
+MONGO_HOST = conf['MONG_HOST']
+MONGO_PORT = conf['MONG_PORT']
+MONGO_NAME = conf['MONG_NAME']
+MONGO_USER = conf['MONG_USER']
+MONGO_PASS = conf['MONG_PASS']
 DB_POOL_SIZE = 10
 CONNECT_TIMEOUT = 50
 
@@ -25,7 +28,5 @@ REFRESH_STAT_POST_DATA = ''' { "jsonrpc": "2.0", "method": "Statistic.Maintain",
 LOG_LEVEL = logging.DEBUG
 LOG_FILENAME = "btc_data_collector.log"
 
-
-BTC_URL = "192.168.1.104"
-BTC_PORT = 60011
-
+BTC_URL = conf['BTC_HOST']
+BTC_PORT = conf['BTC_PORT']

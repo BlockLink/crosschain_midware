@@ -4,7 +4,7 @@
 __author__ = 'sunny'
 
 
-from collector_conf import MONGO_HOST,MONGO_NAME,MONGO_PORT,DB_POOL_SIZE
+from collector_conf import MONGO_HOST,MONGO_NAME,MONGO_PORT,DB_POOL_SIZE, MONGO_USER, MONGO_PASS
 from collector_conf import LOG_LEVEL, LOG_FILENAME
 from collector_app import do_collect_app
 import logging
@@ -18,5 +18,6 @@ if __name__ == '__main__':
     client = MongoClient(host=MONGO_HOST, port=MONGO_PORT)
 
     db = client[MONGO_NAME]
+    db.authenticate(MONGO_USER, MONGO_PASS)
 
     do_collect_app(db)

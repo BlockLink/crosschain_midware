@@ -4,7 +4,6 @@ from gevent import monkey
 monkey.patch_all()
 
 import os
-from config import logger
 from flask import Flask
 from config import config
 from pymongo import MongoClient

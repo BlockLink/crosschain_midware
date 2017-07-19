@@ -4,13 +4,15 @@
 __author__ = 'hasee'
 
 import logging
+from config import config
 
-
-
+conf = config['development']
 # DB configure
-MONGO_HOST = '192.168.1.115'
-MONGO_PORT = 27017
-MONGO_NAME = 'chaindb'
+MONGO_HOST = conf['MONG_HOST']
+MONGO_PORT = conf['MONG_PORT']
+MONGO_NAME = conf['MONGO_NAME']
+MONGO_USER = conf['MONG_USER']
+MONGO_PASS = conf['MONG_PASS']
 DB_POOL_SIZE = 10
 CONNECT_TIMEOUT = 50
 
@@ -27,6 +29,6 @@ LOG_FILENAME = "eth_data_collector.log"
 
 
 #ETH configure
-ETH_URL = "192.168.1.115"
-ETH_PORT = 8546
+ETH_URL = conf['ETH_URL']
+ETH_PORT = conf['ETH_PORT']
 
