@@ -243,14 +243,14 @@ def collect_pretty_transaction(db_pool, base_trx_data,block_num):
         #b_withdraw_transaction
         withdraw_data = db_pool.b_withdraw_transaction.find_one({"chainId":"btc","TransactionId":trx_data["trxid"]})
         if withdraw_data == None:
-            db_pool.b_withdraw_transaction.insert({"chainId":"btc","TransactionId":trx_data["trxid"],"fromAccount":from_address,"toAddress":to_address,"assetName":"btc","amount":amount,"status":2,"createTime":time.time()})
+            db_pool.b_withdraw_transaction.insert({"chainId":"btc","TransactionId":trx_data["trxid"],"fromAddress":from_address,"toAddress":to_address,"assetName":"btc","amount":amount,"status":2,"createTime":time.time()})
         else:
             db_pool.b_withdraw_transaction.update({"chainId":"btc","TransactionId":trx_data["trxid"]},{"$set":{"status":2}})
     if to_account == "btc_test":
         #b_deposit_transaction
         deposit_data = db_pool.b_deposit_transaction.find_one({"chainId":"btc","TransactionId":trx_data["trxid"]})
         if deposit_data == None:
-            db_pool.b_deposit_transaction.insert({"chainId":"btc","TransactionId":trx_data["trxid"],"fromAccount":from_address,"toAddress":to_address,"assetName":"btc","amount":amount,"blocknum":block_num,"createTime":time.time()})
+            db_pool.b_deposit_transaction.insert({"chainId":"btc","TransactionId":trx_data["trxid"],"fromAddress":from_address,"toAddress":to_address,"assetName":"btc","amount":amount,"blocknum":block_num,"createTime":time.time()})
 
     return trx_data
 
