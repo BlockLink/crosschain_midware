@@ -1,5 +1,4 @@
-
-use admin
+db = db.getSiblingDB('admin')
 db.createUser(
   {
     user: "dbAdmin",
@@ -8,7 +7,7 @@ db.createUser(
   }
 )
 db.auth("dbAdmin","admin12#$%")
-use chaindb
+db = db.getSiblingDB('chaindb')
 db.createUser(
   {
     user: "chaindb_user",
