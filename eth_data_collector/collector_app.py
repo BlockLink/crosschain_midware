@@ -116,6 +116,12 @@ def init_account_info(db):
         raise Exception("get_all_account_list")
     GlobalVariable.account_list = json_data["result"]
 
+    GlobalVariable.all_care_account = []
+    GlobalVariable.all_care_account.extend(GlobalVariable.account_list)
+    GlobalVariable.all_care_account.extend(GlobalVariable.db_account_list)
+    GlobalVariable.all_care_account.extend(GlobalVariable.cash_sweep_account)
+    GlobalVariable.all_care_account.extend(GlobalVariable.withdraw_account)
+
 
 def get_latest_block_num(db):
     ret = eth_request("eth_blockNumber", [])
@@ -154,7 +160,7 @@ def collect_block(db_pool, block_num_fetch):
     print "", block_num_fetch
     if json.loads(ret).get("result") is None:
         # 正式环境删除
-        while True:
+        '''while True:
             block_num_fetch = GlobalVariable.sync_start_per_round
 
             GlobalVariable.sync_start_per_round += 1
@@ -165,8 +171,8 @@ def collect_block(db_pool, block_num_fetch):
             print "GlobalVariable.sync_start_per_round", GlobalVariable.sync_start_per_round, ret
             if json.loads(ret).get("result") is not None:
                 break
-
-                # raise Exception("blockchain_get_block error blockNum:%d, returnStr: %s"%(block_num_fetch,ret))
+        '''
+        raise Exception("blockchain_get_block error blockNum:%d, returnStr: %s"%(block_num_fetch,ret))
     json_data = json.loads(ret)
     # print json_data["result"]
     json_data = json_data["result"]
@@ -191,11 +197,8 @@ def collect_block(db_pool, block_num_fetch):
 
 
 def is_care_trx(receipt_data):
-    temp_list = []
-    temp_list.extend(GlobalVariable.account_list)
-    temp_list.extend(GlobalVariable.db_account_list)
-    temp_list.extend(GlobalVariable.cash_sweep_account)
-    temp_list.extend(GlobalVariable.withdraw_account)
+    temp_list = GlobalVariable.all_care_account
+    print temp_list
     if receipt_data["from"] in temp_list:
         return True
     if receipt_data["to"] in temp_list:

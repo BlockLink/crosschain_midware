@@ -47,6 +47,7 @@ class GlobalVariable(object):
     db_account_list = []
     withdraw_account = []
     cash_sweep_account = []
+    all_care_account = []
 
 
 
