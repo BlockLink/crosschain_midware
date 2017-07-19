@@ -23,8 +23,8 @@ services:
       - btc_wallet
       - eth_wallet
     volumes:
-      - ./data/eth:/var/eth_data
-      - ./backup:/var/backup_keystore
+      - ~/data/eth:/var/eth_data
+      - ~/data/backup:/var/backup_keystore
     networks:
       app_net:
         ipv4_address: 172.28.8.2
@@ -37,7 +37,7 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      - ./data/mongodb:/data/db
+      - ~/data/mongodb:/data/db
     networks:
       app_net:
         ipv4_address: 172.28.8.5
@@ -48,7 +48,7 @@ services:
       dockerfile: Dockerfile.btc_wallet
     image: yqr/btc_wallet
     volumes:
-      - ./data/btc:/var/btc_data
+      - ~/data/btc:/var/btc_data
     networks:
       app_net:
         ipv4_address: 172.28.8.3
@@ -62,7 +62,7 @@ services:
       - "8545:8545"
       - "30303:30303"
     volumes:
-      - ./data/eth:/var/eth_data
+      - ~/data/eth:/var/eth_data
     networks:
       app_net:
         ipv4_address: 172.28.8.4
