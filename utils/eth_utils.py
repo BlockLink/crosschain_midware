@@ -225,5 +225,5 @@ if __name__ == '__main__':
     account = "0x268be647f2fa7134486cf34121c7cba15fea994e"
     cash_sweep_account = "0xaf5d9e0b647d775a2f951bc4b34b84f6a301f381"
 
-    eth_send_transaction(account,"0xf9e6b2a7756031b6eb45a0abcda3a2e52d5dd193", 1.2)
+    eth_send_transaction(account,"0xf9e6b2a7756031b6eb45a0abcda3a2e52d5dd193", 1.3)
 

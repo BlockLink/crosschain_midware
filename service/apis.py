@@ -200,7 +200,7 @@ def zchain_collection_amount(chainId):
     else:
         return error_utils.invalid_chainid_type(chainId)
     cash_sweep_op = {"operatorUserId": "1", "chainId": chainId, "sweepAddress": cash_sweep_account,
-                     "status": 0, "memo": "", "errorMessage": resp["errdata"], "createTime": datetime.now()}
+                     "status": 0, "memo": "", "errorMessage": resp["errdata"], "createTime": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
     if len(resp["data"]) == 0 and len(resp["errdata"]) == 0:
         return error_utils.unexcept_error("no balance to cash sweep!")
     opId = db.b_cash_sweep.insert(cash_sweep_op)
@@ -209,13 +209,13 @@ def zchain_collection_amount(chainId):
         op_data = {"cash_sweep_id": ObjectId(opId), "chainId": chainId, "fromAddress": one_data["from_addr"],
                    "sweepAddress": cash_sweep_account,
                    "successCoinAmount": one_data["amount"], "status": 0, "trxId": one_data["trx_id"],
-                   "createTime": datetime.now()}
+                   "createTime": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
         db.b_cash_sweep_plan_detail.insert(op_data)
     for one_data in resp["errdata"]:
         op_data = {"cash_sweep_id": ObjectId(opId), "chainId": chainId, "fromAddress": one_data["from_addr"],
                    "sweepAddress": cash_sweep_account,
                    "successCoinAmount": one_data["amount"], "status": -1, "errorMessage": one_data["error_reason"],
-                   "createTime": datetime.now()}
+                   "createTime": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
         db.b_cash_sweep_plan_detail.insert(op_data)
     logger.info(opId)
     return {'opId': str(opId), 'chainId': chainId}

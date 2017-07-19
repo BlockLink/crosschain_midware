@@ -42,7 +42,7 @@ class BlockInfo(object):
         self.block_size = int(block_result.get("size"),16)
         self.previous = (block_result.get("parentHash"))
         self.trx_digest = (block_result.get("transactionsRoot"))
-        self.block_time = datetime.fromtimestamp(int(block_result.get("timestamp"),16))
+        self.block_time = datetime.fromtimestamp(int(block_result.get("timestamp"),16)).strftime("%Y-%m-%d %H:%M:%S")
         self.transactions = block_result.get("transactions")
         self.block_bonus = 5.0
         self.trx_count = len(self.transactions)
@@ -52,4 +52,4 @@ class BlockInfo(object):
     def get_json_data(self):
         return {"blockHash":self.block_id,"chainId":"eth","blockNumber":self.block_num,"blockSize":self.block_size,
                 "previous":self.previous,"trxDigest":self.trx_digest,"transactionsCount":self.trx_count,
-        "trxamount":self.trx_amount,"trxfee":self.trx_fee,"createtime":datetime.now()}
+        "trxamount":self.trx_amount,"trxfee":self.trx_fee,"createtime":datetime.now().strftime("%Y-%m-%d %H:%M:%S")}

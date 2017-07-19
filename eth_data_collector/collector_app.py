@@ -257,7 +257,7 @@ def collect_pretty_transaction(db_pool, base_trx_data, receipt_trx_data, block_t
     trx_data["transactionJsonInfo"] = base_trx_data
     trx_data["memo"] = ""
     trx_data["trxTime"] = block_time
-    trx_data["createtime"] = datetime.now()
+    trx_data["createtime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     trx_data["isDispatched"] = 0
     trx_data["isHandled"] = 0
     mongo_data = raw_transaction_db.find_one({"trxid": base_trx_data["hash"]})
