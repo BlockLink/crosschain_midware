@@ -11,8 +11,6 @@ from pymongo import MongoClient
 from flask_jsonrpc import JSONRPC
 
 
-logger.info('hello')
-
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates'))
 jsonrpc = JSONRPC(app, '/api', enable_web_browsable_api=True)
 
