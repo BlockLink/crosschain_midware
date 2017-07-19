@@ -1,4 +1,8 @@
 db = db.getSiblingDB('admin')
+if (db.auth("dbAdmin","admin12#$%") == 1) {
+    exit;
+}
+
 db.createUser(
   {
     user: "dbAdmin",

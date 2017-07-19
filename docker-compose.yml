@@ -36,9 +36,9 @@ services:
       - --auth
     ports:
       - "27017:27017"
-     volumes:
+    volumes:
       - ./data/mongodb:/data/db
-   networks:
+    networks:
       app_net:
         ipv4_address: 172.28.8.5
 
