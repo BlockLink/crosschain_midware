@@ -6,13 +6,13 @@ __author__ = 'hasee'
 import logging
 from config import config
 
-conf = config['development']
+conf = config['Sunny']
 # DB configure
-MONGO_HOST = conf['MONG_HOST']
-MONGO_PORT = conf['MONG_PORT']
-MONGO_NAME = conf['MONGO_NAME']
-MONGO_USER = conf['MONG_USER']
-MONGO_PASS = conf['MONG_PASS']
+MONGO_HOST = conf.MONGO_HOST
+MONGO_PORT = conf.MONGO_PORT
+MONGO_NAME = conf.MONGO_NAME
+MONGO_USER = conf.MONGO_USER
+MONGO_PASS = conf.MONGO_PASS
 DB_POOL_SIZE = 10
 CONNECT_TIMEOUT = 50
 
@@ -29,6 +29,6 @@ LOG_FILENAME = "eth_data_collector.log"
 
 
 #ETH configure
-ETH_URL = conf['ETH_URL']
-ETH_PORT = conf['ETH_PORT']
+ETH_URL = conf.ETH_URL
+ETH_PORT = conf.ETH_PORT
 
