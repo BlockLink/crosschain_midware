@@ -68,12 +68,12 @@ def do_collect_app(db):
                 sys.stdout.write(
                     "\rsync block [%s][%d/%d], %.3f%%\n" % (sync_process, GlobalVariable.sync_start_per_round,
                                                             latest_block_num, sync_rate * 100))
-                while GlobalVariable.sync_start_per_round < GlobalVariable.sync_end_per_round:
+                while GlobalVariable.sync_start_per_round <= GlobalVariable.sync_end_per_round:
                     collect_data_cb(db)
                 GlobalVariable.last_sync_block_num = GlobalVariable.sync_end_per_round
                 config.update({"key": "syncblocknum"},
                               {"$set": {"key": "syncblocknum", "value": str(GlobalVariable.last_sync_block_num)}})
-                if GlobalVariable.sync_start_per_round == latest_block_num:
+                if GlobalVariable.sync_start_per_round == latest_block_num+1:
                     break
 
             print 'ok'
