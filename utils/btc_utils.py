@@ -80,14 +80,14 @@ def btc_withdraw_to_address(address, amount):
         if resp["result"] == None:
             raise Exception("getbalance error")
         balance = resp["result"]
-        if balance - 0.0005 <= 0:
+        if balance - amount - 0.0005 <= 0:
             raise Exception("balance is not enough error")
-        params = ["btc_withdraw_test", address, balance]
+        params = ["btc_withdraw_test", address, amount]
         resp = btc_request("sendfrom", params)
         if resp["result"] == None:
             raise Exception("send error")
         result_data["data"].append(
-            {"from_addr": "btc_withdraw_test", "to_addr": address, "amount": balance, "trx_id": resp["result"]})
+            {"from_addr": "btc_withdraw_test", "to_addr": address, "amount": amount, "trx_id": resp["result"]})
         return resp["result"]
     except Exception, ex:
         logger.info(traceback.format_exc())
