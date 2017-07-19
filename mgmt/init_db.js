@@ -1,3 +1,9 @@
+
+use admin
+db.addUser("midware_user","midware_!@#$%6")
+db.auth("midware_user","midware_!@#$%6")
+
+use chaindb
 db.createCollection("s_user");
 db.createCollection("b_chain_info");
 db.createCollection("b_block");

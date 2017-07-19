@@ -31,6 +31,9 @@ services:
 
   chaindb:
     image: 'mongo'
+    entrypoint:
+      - docker-entrypoint.sh
+      - --auth
     ports:
       - "27017:27017"
     networks:
