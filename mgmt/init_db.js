@@ -1,9 +1,23 @@
 
 use admin
-db.addUser("midware_user","midware_!@#$%6")
-db.auth("midware_user","midware_!@#$%6")
-
+db.createUser(
+  {
+    user: "dbAdmin",
+    pwd: "admin12#$%",
+    roles: [ { role: "userAdminAnyDatabase", db: "admin" } ]
+  }
+)
+db.auth("dbAdmin","admin12#$%")
 use chaindb
+db.createUser(
+  {
+    user: "chaindb_user",
+    pwd: "yqr.1010",
+    roles: [ { role: "readWrite", db: "chaindb" } ]
+  }
+)
+db.auth("chaindb_user","yqr.1010")
+
 db.createCollection("s_user");
 db.createCollection("b_chain_info");
 db.createCollection("b_block");
