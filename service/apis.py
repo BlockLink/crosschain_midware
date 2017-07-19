@@ -165,7 +165,7 @@ def zchain_address_create(chainId):
             return {'chainId': chainId, 'error': '创建地址失败'}
         print 2
         d = {"chainId": chainId, "address": address, "name": "", "pubKey": "", "securedPrivateKey": "",
-             "creatorUserId": "", "balance": {}, "memo": "", "createTime": time.time()}
+             "creatorUserId": "", "balance": {}, "memo": "", "createTime": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
         db.b_chain_account.insert(d)
         return {'chainId': chainId, 'address': address}
     else:
@@ -331,7 +331,7 @@ def zchain_withdraw_execute(chainId, address, amount):
     if trxdata == None:
         db.b_withdraw_transaction.insert(
             {'chainId': chainId, "toAddress": address, "TransactionId": trxid, "assetName": chainId, "amount": amount,
-             "fromAccount": withdrawaddress, "status": 1, "createTime": time.time()})
+             "fromAccount": withdrawaddress, "status": 1, "trxTime": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
     else:
         return error_utils.unexcept_error("trx exist error")
     return {
