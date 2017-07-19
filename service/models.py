@@ -1,5 +1,7 @@
 # coding: utf-8
 
+#TODO, 暂未用到
+
 from service import db
 from utils import enums
 from datetime import datetime, timedelta

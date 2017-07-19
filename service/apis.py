@@ -14,8 +14,6 @@ import time
 import json
 from datetime import datetime
 
-print(models.get_root_user())
-
 
 @jsonrpc.method('Zchain.Transaction.Withdraw.History(chainId=str, trxId=str)')
 def zchain_transaction_withdraw_history(chainId, trxId):
