@@ -18,6 +18,6 @@ if __name__ == '__main__':
     client = MongoClient(host=MONGO_HOST, port=MONGO_PORT)
 
     db = client[MONGO_NAME]
-    db.authenticate(MONGO_USER, MONGO_PASS)
+    #db.authenticate(MONGO_USER, MONGO_PASS)
 
     do_collect_app(db)
