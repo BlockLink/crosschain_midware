@@ -200,30 +200,31 @@ def collect_pretty_transaction(db_pool, base_trx_data,block_num):
     for trx in trxs:
         if trx["category"] == "send":
             trx_input_data = {}
-            trx_input_data["chainID"] = "btc"
+            trx_input_data["chainId"] = "btc"
             trx_input_data["TransactionId"] = trx_data["trxid"]
             trx_input_data["address"] = trx["address"]
             trx_input_data["blockNum"] = trx_data["blockNum"]
             trx_input_data["assetName"] = "btc"
             trx_input_data["amount"] = str(trx["amount"])
-            mongo_data = raw_transaction_input_db.find_one({"TransactionId": base_trx_data["txid"],"address":trx["address"],"chainID":"btc"})
+            mongo_data = raw_transaction_input_db.find_one({"TransactionId": base_trx_data["txid"],"address":trx["address"],"chainId":"btc"})
             if mongo_data == None:
                 raw_transaction_input_db.insert(trx_input_data)
             else:
-                raw_transaction_input_db.update({"trxid": base_trx_data["txid"],"address":trx["address"],"chainID":"btc"}, {"$set": trx_data})
+                raw_transaction_input_db.update({"trxid": base_trx_data["txid"],"address":trx["address"],"chainId":"btc"}, {"$set": trx_data})
         elif trx["category"] == "receive":
             trx_output_data = {}
-            trx_output_data["chainID"] = "btc"
+            trx_output_data["chainId"] = "btc"
             trx_output_data["TransactionId"] = trx_data["trxid"]
             trx_output_data["blockNum"] = trx_data["blockNum"]
             trx_output_data["address"] = trx["address"]
             trx_output_data["assetName"] = "btc"
             trx_output_data["amount"] = str(trx["amount"])
-            mongo_data = raw_transaction_output_db.find_one({"TransactionId": base_trx_data["txid"], "address":trx["address"],"chainID":"btc"})
+            mongo_data = raw_transaction_output_db.find({"TransactionId": base_trx_data["txid"], "address":trx["address"],"chainId":"btc"})
             if mongo_data == None:
                 raw_transaction_output_db.insert(trx_output_data)
             else:
-                raw_transaction_output_db.update({"TransactionId": base_trx_data["txid"], "address":trx["address"],"chainID":"btc"},
+                for mong in mongo_data:
+                    raw_transaction_output_db.update({"_id":mong["_id"],"TransactionId": base_trx_data["txid"], "address":trx["address"],"chainId":"btc"},
                                           {"$set": trx_data})
 
     if from_account == "btc_test":
