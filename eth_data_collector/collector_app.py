@@ -90,6 +90,11 @@ def do_collect_app(db):
 
 def init_account_info(db):
     GlobalVariable.db_account_list = []
+    GlobalVariable.account_list = []
+    GlobalVariable.withdraw_account = []
+    GlobalVariable.cash_sweep_account = []
+
+
     records = db.b_chain_account.find({"chainId": "eth"})
     for one_account in records:
         GlobalVariable.db_account_list.append(one_account["address"])
