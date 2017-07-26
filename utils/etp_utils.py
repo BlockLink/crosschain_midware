@@ -108,9 +108,6 @@ def etp_create_withdraw_address():
 #只限于etp，不包含智能资产
 def etp_withdraw_address(address, amount) :
     try:
-        result_data = {}
-        result_data["errdata"] = []
-        result_data["data"] = []
         resp = etp_request("getbalance", ["etp_withdraw_test","etp_withdraw_test"])
         try:
             amount = amount * float(100000000)
@@ -121,10 +118,11 @@ def etp_withdraw_address(address, amount) :
             return
         params = ["etp_withdraw_test","etp_withdraw_test", address, amount]
         resp = etp_request("send", params)
-        if json.loads(resp).get("transactions") is None:
+        result = json.loads(resp)
+        if result.get("transactions") is None:
             raise Exception("send ETP to %s failed." % address)
-        return {"from_addr": "etp_test", "to_addr": address, "amount": amount / float(100000000),
-                "trx_id": resp["result"]}
+        return result.get('transaction').get('hash')
+
     except Exception, ex:
         logger.info(traceback.format_exc())
         return ""
