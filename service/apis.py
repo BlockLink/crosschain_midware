@@ -208,6 +208,7 @@ def zchain_collection_amount(chainId):
             return error_utils.unexcept_error(err)
     else:
         return error_utils.invalid_chainid_type(chainId)
+    print resp,1
     cash_sweep_op = {"operatorUserId": "1", "chainId": chainId, "sweepAddress": cash_sweep_account,
                      "status": 0, "memo": "", "errorMessage": resp["errdata"], "createTime": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
     if len(resp["data"]) == 0 and len(resp["errdata"]) == 0:

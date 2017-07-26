@@ -50,9 +50,11 @@ def number(num) :
 
 
 def etp_get_addr_balance(addr):
+    print addr
     result = etp_request("fetch-balance", [addr])
     json_result = json.loads(result)
     balance={}
+    print json_result
     balance['etp'] = float(json_result.get('balance').get('confirmed'))/float(100000000)
 
     result = etp_request("getaddressasset",[addr])
@@ -74,13 +76,13 @@ def etp_collect_money(address):
         try:
             balance = int(json.loads(resp).get("total-confirmed"))
             if int(balance) <= 10000:
-               raise Exception("balance is not enough error")
+               return None,("balance is not enough error")
         except:
             return
         resp = etp_request("getaccountasset", ["etp_test", "etp_test"])
         assets = json.loads(resp)
         Fee=10000
-        if assets.get("assets") is not None:
+        if len(assets.get("assets")) is not 0:
             for asset in assets:
                 symbol = asset.get("symbol")
                 quantity = asset.get("quantity")
@@ -90,10 +92,13 @@ def etp_collect_money(address):
                     Fee += 10000
         params = ["etp_test", "etp_test", address, balance - Fee]
         resp = etp_request("send", params)
-        if json.loads(resp).get("transactions") is None:
-            raise Exception("send ETP to %s failed." % address)
-        return {"from_addr": "etp_test", "to_addr": address, "amount": float(balance - Fee)/float(100000000),
-                        "trx_id": resp["result"]},None
+        if json.loads(resp).get("transaction") is None:
+            return None,("send ETP to %s failed." % address)
+        ret={}
+        ret['data'] = [{"from_addr": "etp_test", "to_addr": address, "amount": float(balance - Fee)/float(100000000),
+                        "trx_id": json.loads(resp).get("transaction").get('hash')}]
+        ret['errdata'] = []
+        return ret,None
     except Exception as e:
         logger.info(traceback.format_exc())
         return None, e.message
@@ -116,10 +121,12 @@ def etp_withdraw_address(address, amount) :
                raise Exception("balance is not enough error")
         except:
             return
-        params = ["etp_withdraw_test","etp_withdraw_test", address, amount]
+        params = ["etp_withdraw_test","etp_withdraw_test", address, int(amount)]
+        print params
         resp = etp_request("send", params)
         result = json.loads(resp)
-        if result.get("transactions") is None:
+        print result
+        if result.get("transaction") is None:
             raise Exception("send ETP to %s failed." % address)
         return result.get('transaction').get('hash')
 

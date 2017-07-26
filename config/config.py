@@ -94,7 +94,7 @@ class hzkConfig(Config) :
     MAIL_USE_TLS = True
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    MONGO_HOST = '192.168.1.115'
+    MONGO_HOST = '192.168.1.121'
     MONGO_PORT = 27017
     MONGO_NAME = 'chaindb'
     MONGO_USER = 'chaindb_user'
