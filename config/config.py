@@ -61,13 +61,13 @@ class SunnyConfig(Config):
     MAIL_USE_TLS = True
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    MONGO_HOST = '192.168.1.115'
+    MONGO_HOST = '192.168.1.121'
     MONGO_PORT = 27017
     MONGO_NAME = 'chaindb'
     MONGO_USER = 'chaindb_user'
     MONGO_PASS = 'yqr.1010'
     ETH_SECRET_KEY = 'Q!wert123@'
-    ETH_URL = '192.168.1.115'
+    ETH_URL = '192.168.1.121'
     ETH_PORT = 8546
     ETH_Minimum = 1
     BTC_HOST = '192.168.1.104'
