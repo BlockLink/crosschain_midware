@@ -87,11 +87,29 @@ class ProductionConfig(Config):
     MONGO_NAME = 'chaindb'
 
 
+class hzkConfig(Config) :
+    DEBUG = True
+    MAIL_SERVER = 'smtp.googlemail.com'
+    MAIL_PORT = 587
+    MAIL_USE_TLS = True
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+    MONGO_HOST = '192.168.1.115'
+    MONGO_PORT = 27017
+    MONGO_NAME = 'chaindb'
+    MONGO_USER = 'chaindb_user'
+    MONGO_PASS = 'yqr.1010'
+    ETP_URL = '192.168.1.123'
+    ETP_PORT = 8820
+    ETH_Minimum = 1
+
+
 config = {
     'development': DevelopmentConfig,
     'testing': TestingConfig,
     'production': ProductionConfig,
     'default': DevelopmentConfig,
     'Sunny': SunnyConfig,
-    'Da': DaConfig
+    'Da': DaConfig,
+    'hzk':hzkConfig
 }
