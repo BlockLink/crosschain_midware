@@ -129,8 +129,6 @@ def init_account_info(db):
         if json_data.get("addresses") is not None :
             addr_list = json_data.get("addresses")
             for addr in addr_list :
-                if addr is None :
-                    continue
                 GlobalVariable.account_list.append(addr)
     GlobalVariable.all_care_account = []
     GlobalVariable.all_care_account.extend(GlobalVariable.account_list)
