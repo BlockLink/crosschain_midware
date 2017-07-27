@@ -129,6 +129,8 @@ def init_account_info(db):
         if json_data.get("addresses") is not None :
             addr_list = json_data.get("addresses")
             for addr in addr_list :
+                if addr is None :
+                    continue
                 GlobalVariable.account_list.append(addr)
     GlobalVariable.all_care_account = []
     GlobalVariable.all_care_account.extend(GlobalVariable.account_list)
@@ -230,11 +232,11 @@ def need_to_skip(tx):
     for output in tx.get('outputs') :
         if output.get('address') is not None :
             recp['to'].append(output.get('address'))
-    for recp in recp['from'] :
-        if is_care_trx(recp) :
+    for rec in recp['from'] :
+        if is_care_trx(rec) :
             return False
-    for recp in recp['to'] :
-        if is_care_trx(recp) :
+    for rec in recp['to'] :
+        if is_care_trx(rec) :
             return False
     return True
 
