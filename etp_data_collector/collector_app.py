@@ -51,6 +51,7 @@ def do_collect_app(db):
                 GlobalVariable.register_account_dic = {}
                 GlobalVariable.upgrade_contract_dic = {}
                 latest_block_num = get_latest_block_num(db)
+                init_account_info(db)
 
                 print "latest_block_num",latest_block_num
                 print "GlobalVariable.last_sync_block_num",GlobalVariable.last_sync_block_num
@@ -90,6 +91,51 @@ def do_collect_app(db):
             # 异常情况，60秒后重试eth_utils.py
             time.sleep(60)
             do_collect_app(db)
+
+def init_account_info(db):
+    GlobalVariable.db_account_list = []
+    GlobalVariable.account_list = []
+    GlobalVariable.withdraw_account = []
+    GlobalVariable.cash_sweep_account = []
+
+
+    records = db.b_chain_account.find({"chainId": "etp"})
+    for one_account in records:
+        GlobalVariable.db_account_list.append(one_account["address"])
+
+    cash_sweep_data = db.b_config.find_one({"key": "cash_sweep_address"})
+    if cash_sweep_data is not None:
+
+        for data in cash_sweep_data["value"]:
+            if data["chainId"] == "etp":
+                GlobalVariable.cash_sweep_account.append(data["address"])
+                break
+
+    withdraw_data = db.b_config.find_one({"key": "withdrawaddress"})
+    if withdraw_data is not None:
+        for data in withdraw_data["value"]:
+            if data["chainId"] == "etp":
+                GlobalVariable.withdraw_account.append(data["address"])
+                break
+
+    ret = etp_request("listaccounts", [])
+    json_data = json.loads(ret)
+    if json_data.get("accounts") is None:
+        raise Exception("get_all_account_list")
+    acc_list = json_data.get("accounts")
+    for account in acc_list :
+        ret = etp_request("listaccounts", [account.get("name"),account.get("name")])
+        json_data = json.loads(ret)
+        if json_data.get("addresses") is not None :
+            addr_list = json_data.get("addresses")
+            for addr in addr_list :
+                GlobalVariable.account_list.append(addr)
+    GlobalVariable.all_care_account = []
+    GlobalVariable.all_care_account.extend(GlobalVariable.account_list)
+    GlobalVariable.all_care_account.extend(GlobalVariable.db_account_list)
+    GlobalVariable.all_care_account.extend(GlobalVariable.cash_sweep_account)
+    GlobalVariable.all_care_account.extend(GlobalVariable.withdraw_account)
+
 
 
 def get_all_account_list():
@@ -150,6 +196,8 @@ def collect_block( db_pool, block_num_fetch):
     txs = json_block.get('txs').get('transactions')
     for tx in txs :
         block_info.trx_count += 1
+        if need_to_skip(tx) :
+            continue
         tx_data=collect_pretty_transaction(db_pool,block_info,tx)
         update_input_output_tx_data(db_pool,tx,tx_data)
     mongo_data = block.find_one({"blockHash": block_info.block_id})
@@ -162,11 +210,33 @@ def collect_block( db_pool, block_num_fetch):
 
 
 def is_contract_trx(receipt_data):
-
     return False
 
-def update_output_tx(tx_info):
-    pass
+def is_care_trx(addr):
+    temp_list = GlobalVariable.all_care_account
+    print temp_list
+    if addr in temp_list:
+        return True
+    return False
+
+
+def need_to_skip(tx):
+    recp={}
+    recp['from'] = []
+    recp['to'] = []
+    for input in tx.get('inputs'):
+        if input.get('address') is not None:
+            recp['from'].append(input.get('address'))
+    for output in tx.get('outputs') :
+        if output.get('address') is not None :
+            recp['to'].append(output.get('address'))
+    for recp in recp['from'] :
+        if is_care_trx(recp) :
+            return False
+    for recp in recp['to'] :
+        if is_care_trx(recp) :
+            return False
+    return True
 
 def update_input_output_tx_data(db_pool,tx,tx_data):
     raw_transaction_input_db = db_pool.b_raw_transaction_input
