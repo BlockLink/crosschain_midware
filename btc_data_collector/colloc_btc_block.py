@@ -100,7 +100,7 @@ def clear_last_garbage_data(db_pool):
 
     config = db_pool.b_config
     ret = config.find_one({"key":"btcsyncblocknum"})
-    last_sync_block_num = int(ret["value"])
+    last_sync_block_num = int(ret["value"])+1
     try:
         db_pool.b_raw_transaction.remove({"blockNum":{"$gte":last_sync_block_num},"chainId":"btc"})
         db_pool.b_block.remove({"blockNumber":{"$gte":last_sync_block_num},"chainId":"btc"})
