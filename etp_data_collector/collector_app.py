@@ -214,7 +214,6 @@ def is_contract_trx(receipt_data):
 
 def is_care_trx(addr):
     temp_list = GlobalVariable.all_care_account
-    print temp_list
     if addr in temp_list:
         return True
     return False
