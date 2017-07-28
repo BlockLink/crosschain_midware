@@ -142,7 +142,7 @@ def clear_last_garbage_data(db_pool):
         config.insert({"key": "syncblocknum", "value": "0"})
         last_sync_block_num = int(0)
     else:
-        last_sync_block_num = int(ret["value"])
+        last_sync_block_num = int(ret["value"])+1
     try:
         db_pool.b_raw_transaction.remove({"blockNum": {"$gte": last_sync_block_num}, "chainId": "eth"})
         db_pool.b_block.remove({"blockNumber": {"$gte": last_sync_block_num}, "chainId": "eth"})
@@ -203,7 +203,7 @@ def collect_block(db_pool, block_num_fetch):
 
 def is_care_trx(receipt_data):
     temp_list = GlobalVariable.all_care_account
-    print temp_list
+    #print temp_list
     if receipt_data["from"] in temp_list:
         return True
     if receipt_data["to"] in temp_list:
@@ -368,12 +368,13 @@ def collect_data_cb(db_pool):
 
             for trx_id in block_info.transactions:
                 trx_id = trx_id
+
                 # 采集交易
                 base_trx_data, receipt_trx_data = get_transaction_data(trx_id)
                 if not is_care_trx(receipt_trx_data):
                     continue
-
                 if not is_contract_trx(receipt_trx_data):
+
                     # 非合约交易
                     pretty_trx_info = collect_pretty_transaction(db_pool, base_trx_data, receipt_trx_data,
                                                                  block_info.block_time)
@@ -383,7 +384,7 @@ def collect_data_cb(db_pool):
 
                     block_info.trx_fee = block_info.trx_fee + float(pretty_trx_info["trxFee"])
                 else:
-                    # print "has contract transaction: ",block_info.block_num
+                    print "has contract transaction: ",block_info.block_num
                     pass
                     '''
                     # 合约交易
