@@ -34,8 +34,8 @@ services:
     entrypoint:
       - docker-entrypoint.sh
       - --auth
-    ports:
-      - "27017:27017"
+#    ports:
+#      - "27017:27017"
     volumes:
       - ~/data/mongodb:/data/db
     networks:
@@ -58,9 +58,6 @@ services:
       context: .
       dockerfile: Dockerfile.eth_wallet
     image: 'yqr/eth_wallet'
-    ports:
-      - "8545:8545"
-      - "30303:30303"
     volumes:
       - ~/data/eth:/var/eth_data
     networks:
