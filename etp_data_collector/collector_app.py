@@ -244,7 +244,7 @@ def update_input_output_tx_data(db_pool,tx,tx_data):
 
     for input in tx.get('inputs'):
         tx_input_data = {}
-        tx_input_data["chainID"] = 'etp'
+        tx_input_data["chainId"] = 'etp'
         tx_input_data["TransactionId"] = tx_data['trxid']
         tx_input_data["address"] = input.get('address')
         tx_input_data["blockNum"] = tx_data['blockNum']
@@ -255,14 +255,14 @@ def update_input_output_tx_data(db_pool,tx,tx_data):
             tx_input_data["assetName"] = "ETP"
             tx_input_data["amount"] = 0
         mongo_data = raw_transaction_input_db.find_one(
-            {"TransactionId": tx_data["trxid"], "address": input.get('address'), "chainID": "etp"})
+            {"TransactionId": tx_data["trxid"], "address": input.get('address'), "chainId": "etp"})
         if mongo_data is None :
             raw_transaction_input_db.insert(tx_input_data)
         else:
-            raw_transaction_input_db.update({"TransactionId": tx_data["trxid"],"address":input.get('address'),"chainID":"etp"}, {"$set": tx_input_data})
+            raw_transaction_input_db.update({"TransactionId": tx_data["trxid"],"address":input.get('address'),"chainId":"etp"}, {"$set": tx_input_data})
     for output in tx.get('outputs') :
         tx_output_data = {}
-        tx_output_data["chainID"] = 'etp'
+        tx_output_data["chainId"] = 'etp'
         tx_output_data["TransactionId"] = tx_data['trxid']
         tx_output_data["blockNum"] = tx_data['blockNum']
         tx_output_data["address"] = output.get("address")
@@ -284,11 +284,11 @@ def update_input_output_tx_data(db_pool,tx,tx_data):
             tx_output_data['address'] = output.get('attachment').get('address')
             tx_output_data['description'] = output.get('attachment').get('description')
         mongo_data = raw_transaction_output_db.find_one(
-            {"TransactionId": tx_data["trxid"], "address": output.get('address'), "chainID": "etp"})
+            {"TransactionId": tx_data["trxid"], "address": output.get('address'), "chainId": "etp"})
         if mongo_data is None :
             raw_transaction_output_db.insert(tx_output_data)
         else:
-            raw_transaction_output_db.update({"TransactionId": tx_data["trxid"],"address":output.get('address'),"chainID":"etp"}, {"$set": tx_output_data})
+            raw_transaction_output_db.update({"TransactionId": tx_data["trxid"],"address":output.get('address'),"chainId":"etp"}, {"$set": tx_output_data})
 
 def get_amount_from_previous_outputs(hash,addr):
     trx_response = etp_request("fetch-tx",[hash])
