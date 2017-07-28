@@ -4,6 +4,7 @@ from service import jsonrpc
 from config import logger
 from utils import eth_utils
 from utils import btc_utils
+from utils import etp_utils
 from service import models
 from service import db
 from utils import error_utils
@@ -132,6 +133,8 @@ def zchain_deposit_address_balance(chainId, address):
     elif chainId == "btc":
         balance = btc_utils.btc_get_deposit_balance()
         address = "btc_deposit_address"
+    elif chainId == "etp":
+        balance = etp_utils.etp_get_addr_balance(address)
     else:
         return error_utils.invalid_chainid_type(chainId)
 
@@ -151,6 +154,8 @@ def zchain_address_create(chainId):
         print 1
     elif chainId == 'btc':
         address = btc_utils.btc_create_address()
+    elif chainId == 'etp' :
+        address = etp_utils.etp_create_address()
     else:
         return error_utils.invalid_chainid_type(chainId)
     if address != "":
@@ -197,8 +202,13 @@ def zchain_collection_amount(chainId):
         resp, err = btc_utils.btc_collect_money(cash_sweep_account, int(safeblock))
         if resp is None:
             return error_utils.unexcept_error(err)
+    elif chainId == 'etp' :
+        resp,err = etp_utils.etp_collect_money(cash_sweep_account)
+        if resp is None:
+            return error_utils.unexcept_error(err)
     else:
         return error_utils.invalid_chainid_type(chainId)
+    print resp,1
     cash_sweep_op = {"operatorUserId": "1", "chainId": chainId, "sweepAddress": cash_sweep_account,
                      "status": 0, "memo": "", "errorMessage": resp["errdata"], "createTime": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
     if len(resp["data"]) == 0 and len(resp["errdata"]) == 0:
@@ -276,12 +286,17 @@ def zchain_withdraw_getinfo(chainId):
             address = btc_utils.btc_create_withdraw_address()
             btc_utils.btc_backup_wallet()
             records["value"].append({"chainId": "btc", "address": address})
+        elif chainId == "etp" :
+            address = etp_utils.etp_create_withdraw_address()
+            records["value"].append({"chainId": "etp", "address": address})
     db.b_config.update({"key": "withdrawaddress"}, {"$set": {"value": records["value"]}})
     balance = 0.0
     if chainId == "eth":
         balance = eth_utils.eth_get_base_balance(address)
     elif chainId == "btc":
         balance = btc_utils.btc_get_withdraw_balance()
+    elif chainId == "etp" :
+        balance = etp_utils.etp_get_addr_balance(address)
     else:
         return error_utils.invalid_chainid_type(chainId)
 
@@ -323,6 +338,8 @@ def zchain_withdraw_execute(chainId, address, amount):
         trxid = eth_utils.eth_send_transaction(withdrawaddress, address, amount)
     elif chainId == "btc":
         trxid = btc_utils.btc_withdraw_to_address(address, amount)
+    elif chainId == "etp" :
+        trxid = etp_utils.etp_withdraw_address(address,amount)
     else:
         return error_utils.invalid_chainid_type(chainId)
     if trxid == "":
