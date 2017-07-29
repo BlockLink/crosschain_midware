@@ -34,8 +34,8 @@ services:
     entrypoint:
       - docker-entrypoint.sh
       - --auth
-#    ports:
-#      - "27017:27017"
+    ports:
+      - "27017:27017"
     volumes:
       - ~/data/mongodb:/data/db
     networks:
