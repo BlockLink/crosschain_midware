@@ -14,8 +14,13 @@ if __name__ == '__main__':
     logging.basicConfig(level=LOG_LEVEL, format=LOG_FORMAT, filename=LOG_FILENAME, filenode="a")
 
     client = MongoClient(host=MONGO_HOST, port=MONGO_PORT)
+    client[MONGO_NAME].authenticate(MONGO_USER, MONGO_PASS)
 
     db = client[MONGO_NAME]
+
+
+
+
     # db.authenticate(MONGO_USER, MONGO_PASS)
 
     do_collect_app(db)
