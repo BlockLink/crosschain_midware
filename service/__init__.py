@@ -20,8 +20,7 @@ app.config.from_object(config['development'])   # 载入配置文件
 
 client = MongoClient(app.config['MONGO_HOST'], app.config['MONGO_PORT'])
 
-db = client[app.config['MONGO_NAME']]
-client[app.config['MONGONAME']].authenticate(app.config['MONGO_USER'],app.config['MONGO_PASS'],mechanism="SCRAM-SHA-1")
+db = client[app.config['MONGO_NAME']].authenticate(app.config['MONGO_USER'],app.config['MONGO_PASS'],mechanism="SCRAM-SHA-1")
 
 
 from service import apis
