@@ -12,7 +12,7 @@ import time
 from service import logger
 import traceback
 
-temp_config = config["Sunny"]
+temp_config = config["development"]
 
 def eth_request(method, args):
     url = "http://%s:%s/rpc" % (temp_config.ETH_URL, temp_config.ETH_PORT)
@@ -168,7 +168,7 @@ def eth_collect_money(cash_sweep_account, accountList, safeBlock):
             print (float(amount) / pow(10, 18))
             print float(float(amount) / pow(10, 18)) > float(temp_config.ETH_Minimum)
             if float(float(amount) / pow(10, 18)) > float(temp_config.ETH_Minimum):
-                print hex(long((amount - pow(10, 16)))).replace('L', '')
+                print hex(long((amount - pow(10, 15)))).replace('L', '')
                 # 转账给目标账户
                 result = eth_request("personal_unlockAccount", [account, temp_config.ETH_SECRET_KEY, 10000])
                 if json.loads(result).get("result") is None:
@@ -179,7 +179,7 @@ def eth_collect_money(cash_sweep_account, accountList, safeBlock):
                     continue
 
                 ret = eth_request("eth_sendTransaction",[{"from": account, "to": cash_sweep_account,
-                                                          "value": hex(long((amount - pow(10,16)))).replace('L',''),
+                                                          "value": hex(long((amount - pow(10,15)))).replace('L',''),
                                                           "gas": "0x76c0", "gasPrice": "0x1dcd6500"}])
                 if json.loads(result).get("result") is None:
                     result_data["errdata"].append(

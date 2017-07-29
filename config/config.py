@@ -34,7 +34,7 @@ class DevelopmentConfig(Config):
     ETH_SECRET_KEY = 'Q!wert123@'
     ETH_URL = 'eth_wallet'
     ETH_PORT = 8545
-    ETH_Minimum = 1
+    ETH_Minimum = 0.5
     BTC_HOST = 'btc_wallet'
     BTC_PORT = 60011
 
