@@ -17,7 +17,9 @@ def eth_request(method, args):
     }
 
     response = requests.request("POST", url, data=data_to_send, headers=headers)
-    return response.text
+    test = response.text
+    response.close()
+    return test
 
 
 if __name__ == '__main__':

@@ -25,8 +25,9 @@ def eth_request(method, args):
     headers = {
         'content-type': "application/x-www-form-urlencoded"
     }
-
     response = requests.request("POST", url, data=data_to_send, headers=headers)
+    test = response.text
+    response.close()
     return response.text
 
 
