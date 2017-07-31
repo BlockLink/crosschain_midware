@@ -12,7 +12,7 @@ import time
 from service import logger
 import traceback
 
-temp_config = config["hzk"]
+temp_config = config["development"]
 
 def etp_request(method, args):
     url = "http://%s:%s/rpc" % (temp_config.ETP_URL, temp_config.ETP_PORT)
@@ -104,9 +104,9 @@ def etp_collect_money(address):
         return None, e.message
 
 def etp_create_withdraw_address():
-    resp = etp_request("getnewaddress", ["etp_withdraw_test"])
+    resp = etp_request("getnewaddress", ['etp_withdraw_test','etp_withdraw_test'])
     address = ""
-    if resp[0] != 'M' :
+    if resp[0] != 'M' and resp[0] != 't':
         return None
     address = resp
     return address

@@ -4,9 +4,30 @@
 __author__ = 'hasee'
 
 import logging
-from config import config
+import os
 
-conf = config['development']
+class DevelopmentConfig():
+    DEBUG = True
+
+    MAIL_SERVER = 'smtp.googlemail.com'
+    MAIL_PORT = 587
+    MAIL_USE_TLS = True
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+    MONGO_HOST = 'chaindb'
+    MONGO_PORT = 27017
+    MONGO_NAME = 'chaindb'
+    MONGO_USER = 'chaindb_user'
+    MONGO_PASS = 'yqr.1010'
+    ETH_SECRET_KEY = 'Q!wert123@'
+    ETH_URL = 'eth_wallet'
+    ETH_PORT = 8545
+    ETH_Minimum = 0.5
+    BTC_HOST = 'btc_wallet'
+    BTC_PORT = 60011
+
+
+conf = DevelopmentConfig
 
 # DB configure
 MONGO_HOST = conf.MONGO_HOST
