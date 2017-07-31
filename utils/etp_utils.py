@@ -12,7 +12,7 @@ import time
 from service import logger
 import traceback
 
-temp_config = config["hzk"]
+temp_config = config["development"]
 
 def etp_request(method, args):
     url = "http://%s:%s/rpc" % (temp_config.ETP_URL, temp_config.ETP_PORT)
