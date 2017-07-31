@@ -37,6 +37,8 @@ class DevelopmentConfig(Config):
     ETH_Minimum = 0.5
     BTC_HOST = 'btc_wallet'
     BTC_PORT = 60011
+    ETP_PORT = 8820
+    ETP_URL = 'etp_wallet'
 
 
 class DaConfig(Config):
