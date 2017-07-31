@@ -18,10 +18,12 @@ services:
       - chaindb:chaindb
       - btc_wallet:btc_wallet
       - eth_wallet:eth_wallet
+      - etp_wallet:etp_wallet
     depends_on:
       - chaindb
       - btc_wallet
       - eth_wallet
+      - etp_wallet
     volumes:
       - ~/data/eth:/var/eth_data
       - ~/data/backup:/var/backup_keystore
@@ -63,6 +65,17 @@ services:
     networks:
       app_net:
         ipv4_address: 172.28.8.4
+
+  etp_wallet:
+    build:
+      context: .
+      dockerfile: Dockerfile.etp_wallet
+    image: 'yqr/etp_wallet'
+    volumes:
+      - ~/data/etp:/root/.metaverse
+    networks:
+      app_net:
+        ipv4_address: 172.28.8.6
 
 networks:
   app_net:
