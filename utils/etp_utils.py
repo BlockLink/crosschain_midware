@@ -106,7 +106,7 @@ def etp_collect_money(address):
 def etp_create_withdraw_address():
     resp = etp_request("getnewaddress", ["etp_withdraw_test"])
     address = ""
-    if resp[0] != 'M' :
+    if resp[0] != 'M' and resp[0] != 't':
         return None
     address = resp
     return address
