@@ -5,4 +5,4 @@ ADD mvsd/mvsd /usr/bin/mvsd
 ADD mvsd/mvs-cli /usr/bin/mvs-cli
 ADD mvsd/mvs.conf /root/.metaverse/mvs.conf
 
-ENTRYPOINT mvsd -t
+ENTRYPOINT mvsd 
