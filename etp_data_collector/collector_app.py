@@ -191,7 +191,6 @@ def collect_block( db_pool, block_num_fetch):
     block_info.from_header_resp(json_header)
     #获取交易信息
     block_response=etp_request("getblock",[block_info.block_id, True])
-    print block_response
     json_block = json.loads(block_response)
     block_info.from_trx_resp(json_block.get('txs').get('transactions'))
     block = db_pool.b_block
