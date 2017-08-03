@@ -184,12 +184,14 @@ def clear_last_garbage_data(db_pool):
 def collect_block( db_pool, block_num_fetch):
     # height就是ret,ret 为string
     header_response = etp_request("fetch-header",["-t",block_num_fetch])
+    print  "header_response",header_response
     json_header = json.loads(header_response)
 
     block_info = BlockInfo()
     block_info.from_header_resp(json_header)
     #获取交易信息
     block_response=etp_request("getblock",[block_info.block_id, True])
+    print block_response
     json_block = json.loads(block_response)
     block_info.from_trx_resp(json_block.get('txs').get('transactions'))
     block = db_pool.b_block
