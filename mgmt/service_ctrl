@@ -36,6 +36,9 @@ start_service()
     /etc/init.d/nginx start
     [ -d /var/www/html/logs ] || mkdir /var/www/html/logs
     cd /var/www/html
+    nohup python /var/www/html/eth_data_collector/run_server.pyc > /var/www/html/eth_data_collector/run_server.out 2>&1 &
+    nohup python /var/www/html/btc_data_collector/run_server.pyc > /var/www/html/btc_data_collector/run_server.out 2>&1 &
+	nohup python /var/www/html/etp_data_collector/run_server.pyc > /var/www/html/etp_data_collector/run_server.out 2>&1 &
     exec gunicorn -c gunicorn.conf app:app
 }
 

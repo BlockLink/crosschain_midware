@@ -55,14 +55,15 @@ def etp_get_addr_balance(addr):
     json_result = json.loads(result)
     balance={}
     print json_result
-    balance['etp'] = float(json_result.get('balance').get('confirmed'))/float(100000000)
+    balance = float(json_result.get('balance').get('confirmed'))/float(100000000)
 
     result = etp_request("getaddressasset",[addr])
     json_result = json.loads(result)
     assets = json_result.get('assets')
 
     for asset in assets :
-        balance[asset.get('symbol')] = float(asset.get('quantity'))/float(number(asset.get('decimal_number')))
+        pass
+        #balance[asset.get('symbol')] = float(asset.get('quantity'))/float(number(asset.get('decimal_number')))
     return balance
 
 def etp_backup_wallet() :

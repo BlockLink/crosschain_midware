@@ -183,6 +183,7 @@ def zchain_collection_amount(chainId):
     addressList = []
     chain_account = db.b_chain_account
     resultData = chain_account.find({"chainId": chainId})
+    cash_sweep_account = ''
     for one_data in resultData:
         addressList.append(one_data["address"])
     cash_sweep_data = db.b_config.find_one({"key": "cash_sweep_address"})

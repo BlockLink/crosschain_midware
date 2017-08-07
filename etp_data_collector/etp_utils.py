@@ -19,9 +19,6 @@ def etp_request(method, args):
     return response.text
 
 
-
-
-
 if __name__ == '__main__':
     block_num = etp_request("fetch-height",[])
 

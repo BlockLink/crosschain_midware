@@ -56,7 +56,7 @@ def do_collect_app(db):
                     GlobalVariable_btc.sync_start_per_round = latest_block_num
                     GlobalVariable_btc.sync_end_per_round = latest_block_num
                 else:
-                    GlobalVariable_btc.sync_start_per_round = GlobalVariable_btc.last_sync_block_num + 1
+                    GlobalVariable_btc.sync_start_per_round = GlobalVariable_btc.last_sync_block_num
                     GlobalVariable_btc.sync_end_per_round = ((
                                                          GlobalVariable_btc.last_sync_block_num + SYNC_BLOCK_PER_ROUND) >= latest_block_num) \
                                                         and latest_block_num or (

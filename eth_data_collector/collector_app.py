@@ -56,7 +56,7 @@ def do_collect_app(db):
                     GlobalVariable.sync_end_per_round = latest_block_num
                 else:
                     # print 2
-                    GlobalVariable.sync_start_per_round = GlobalVariable.last_sync_block_num + 1
+                    GlobalVariable.sync_start_per_round = GlobalVariable.last_sync_block_num
                     GlobalVariable.sync_end_per_round = ((
                                                              GlobalVariable.last_sync_block_num + SYNC_BLOCK_PER_ROUND) >= latest_block_num) \
                                                         and latest_block_num or (
@@ -373,6 +373,7 @@ def collect_data_cb(db_pool):
                 base_trx_data, receipt_trx_data = get_transaction_data(trx_id)
                 if not is_care_trx(receipt_trx_data):
                     continue
+                print trx_id
                 if not is_contract_trx(receipt_trx_data):
 
                     # 非合约交易
