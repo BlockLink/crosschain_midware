@@ -370,7 +370,7 @@ def collect_pretty_transaction(db_pool,block,tx):
                                        "assetName": trx_data["toAssets"], 'toAddresses':trx_data['toAddresses'],
                                           "amount": trx_data['toAmounts'], "status": 2, "createTime": block.block_time})
             #其他类型
-    trx_data["trxFee"] = block.block_bonus - float(3)
+    trx_data["trxFee"] = float(block.trx_count-1)*float(0.0001)
     trx_data["FeeAsset"] = "ETP"
     trx_data["isSpecialTransaction"] = False
     trx_data["memo"] = ""
