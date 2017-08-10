@@ -60,7 +60,7 @@ def do_collect_app(db):
                     GlobalVariable.sync_end_per_round = latest_block_num
                 else:
                     #print 2
-                    GlobalVariable.sync_start_per_round = GlobalVariable.last_sync_block_num + 1
+                    GlobalVariable.sync_start_per_round = GlobalVariable.last_sync_block_num
                     GlobalVariable.sync_end_per_round = ((
                                                          GlobalVariable.last_sync_block_num + SYNC_BLOCK_PER_ROUND) >= latest_block_num) \
                                                         and latest_block_num or (
@@ -72,12 +72,12 @@ def do_collect_app(db):
                 sys.stdout.write(
                     "\rsync block [%s][%d/%d], %.3f%%\n" % (sync_process, GlobalVariable.sync_start_per_round,
                                                           latest_block_num, sync_rate * 100))
-                while GlobalVariable.sync_start_per_round <GlobalVariable.sync_end_per_round:
+                while GlobalVariable.sync_start_per_round <=GlobalVariable.sync_end_per_round:
                     collect_data_cb(db)
                 print 'GlobalVariable.sync_end_per_round',GlobalVariable.sync_end_per_round
                 GlobalVariable.last_sync_block_num = GlobalVariable.sync_end_per_round
                 config.update({"key": "etpsyncblocknum"}, {"$set":{"key": "etpsyncblocknum", "value": str(GlobalVariable.last_sync_block_num)}})
-                if GlobalVariable.sync_start_per_round == latest_block_num:
+                if GlobalVariable.sync_start_per_round == latest_block_num+1:
                     break
 
 
@@ -164,7 +164,7 @@ def clear_last_garbage_data(db_pool):
         config.insert({"key":"etpsyncblocknum","value":"0"})
         last_sync_block_num = int(0)
     else:
-        last_sync_block_num = int(ret["value"])
+        last_sync_block_num = int(ret["value"]) + 1
     try:
         db_pool.b_raw_transaction.remove({"blockNum":{"$gte":last_sync_block_num}, "chainId": "etp"})
         db_pool.b_block.remove({"blockNumber":{"$gte":last_sync_block_num}, "chainId": "etp"})
