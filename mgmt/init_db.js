@@ -4,7 +4,7 @@ if (db.auth("dbAdmin", "admin12#$%") != 1) {
         {
             user: "dbAdmin",
             pwd: "admin12#$%",
-            roles: [{role: "userAdminAnyDatabase", db: "admin"}]
+            roles: [{role: "root", db: "admin"}]
         }
     )
     db.auth("dbAdmin", "admin12#$%")
@@ -36,6 +36,7 @@ if (db.auth("dbAdmin", "admin12#$%") != 1) {
     db.b_block.ensureIndex({'chainId': 1});
     db.b_block.ensureIndex({'blockHash': 1});
     db.b_block.ensureIndex({'blockNumber':1});
+    db.b_block.ensureIndex({'blockNumber':1, "chainId": 1});
     db.b_raw_transaction.ensureIndex({'chainId': 1});
     db.b_raw_transaction.ensureIndex({'trxId': 1});
     db.b_raw_transaction_input.ensureIndex({'rawTransactionid': 1});
