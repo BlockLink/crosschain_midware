@@ -44,6 +44,8 @@ class GlobalVariable(object):
     register_account_dic = {}
     upgrade_contract_dic = {}
     account_list = []
-
-
+    db_account_list = []
+    withdraw_account = []
+    cash_sweep_account = []
+    all_care_account = []
 
