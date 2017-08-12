@@ -80,18 +80,8 @@ def etp_collect_money(address):
                return None,("balance is not enough error")
         except:
             return
-        resp = etp_request("getaccountasset", ["etp_test", "etp_test"])
-        assets = json.loads(resp)
         Fee=10000
-        if len(assets.get("assets")) is not 0:
-            for asset in assets:
-                symbol = asset.get("symbol")
-                quantity = asset.get("quantity")
-                result = etp_request("sendasset",["etp_test","etp_test",address,symbol,int(quantity)])
-                ret = json.loads(result)
-                if ret.get("transaction") is not None :
-                    Fee += 10000
-        params = ["etp_test", "etp_test", address, balance - Fee]
+        params = ["etp_test", "etp_test", address, balance ]
         resp = etp_request("send", params)
         if json.loads(resp).get("transaction") is None:
             return None,("send ETP to %s failed." % address)
@@ -139,4 +129,4 @@ def etp_withdraw_address(address, amount) :
 
 if __name__ == '__main__':
     #print etp_get_addr_balance("MUqWtDM78aftFUnzkrtgBgUVGWLJgXxPEw")
-    print etp_collect_money("MUqWtDM78aftFUnzkrtgBgUVGWLJgXxPEw")
+    print etp_get_addr_balance("MHPdS4GKE1v13vnhdt6DPGhyFksaaVSKPR")
