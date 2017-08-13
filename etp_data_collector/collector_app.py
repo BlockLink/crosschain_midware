@@ -385,7 +385,7 @@ def collect_pretty_transaction(db_pool,block,tx):
             from_addr = trx_data["fromAddresses"]
         b_cash_sweep_plan_detail = db_pool.b_cash_sweep_plan_detail
         cash_sweep_data = b_cash_sweep_plan_detail.find_one({"chainId": "etp", "trxId": trx_data["trxid"]})
-        cash_sweep_trx = {"chainId": "eth", "trxId": trx_data["trxid"], "sweepAddress": trx_data["toAddresses"] ,
+        cash_sweep_trx = {"chainId": "etp", "trxId": trx_data["trxid"], "sweepAddress": trx_data["toAddresses"] ,
                           "fromAddress": from_addr,
                           "successCoinAmount": trx_data["toAmounts"], "status": 1,
                           "blockNum": trx_data["blockNum"], "trxTime": block.block_time}
