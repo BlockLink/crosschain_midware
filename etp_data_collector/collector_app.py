@@ -374,7 +374,7 @@ def collect_pretty_transaction(db_pool,block,tx):
             else:
                 from_addr = trx_data["fromAddresses"]
             b_deposit_transaction.insert({"chainId": "etp", "TransactionId": trx_data["trxid"], "fromAddress": from_addr,
-                                       "assetName": "ETP", 'toAddresses':trx_data['toAddresses'],
+                                       "assetName": "ETP", 'toAddress':trx_data['toAddresses'],
                                           "amount": trx_data['toAmounts'],"blockNum":trx_data["blockNum"], "status": 2, "trxTime": block.block_time})
     if trx_data["toAddresses"] in GlobalVariable.cash_sweep_account:
         print "归账交易搬运"
