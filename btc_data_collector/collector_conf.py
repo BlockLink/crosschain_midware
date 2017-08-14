@@ -46,7 +46,7 @@ REFRESH_STAT_POST_URL = "http://52.80.29.33:8000/api"
 REFRESH_STAT_POST_DATA = ''' { "jsonrpc": "2.0", "method": "Statistic.Maintain", "params": [], "id": "1" } '''
 
 # LOG configure
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.INFO
 LOG_FILENAME = "btc_data_collector.log"
 
 BTC_URL = conf.BTC_HOST
