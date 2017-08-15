@@ -108,7 +108,7 @@ def etp_withdraw_address(address, amount) :
         try:
             amount = amount * float(100000000)
             balance = int(json.loads(resp).get("total-confirmed"))
-            if int(balance) <= amount:
+            if int(balance) < amount:
                raise Exception("balance is not enough error")
         except:
             return
