@@ -77,7 +77,11 @@ def do_collect_app(db):
                 print 'GlobalVariable.sync_end_per_round',GlobalVariable.sync_end_per_round
                 GlobalVariable.last_sync_block_num = GlobalVariable.sync_end_per_round
                 config.update({"key": "etpsyncblocknum"}, {"$set":{"key": "etpsyncblocknum", "value": str(GlobalVariable.last_sync_block_num)}})
+<<<<<<< HEAD
                 if GlobalVariable.sync_start_per_round == latest_block_num+1:
+=======
+                if GlobalVariable.sync_start_per_round == latest_block_num + 1:
+>>>>>>> 986bf1d58eac0c696107fea6e9f299025ba3d19a
                     break
 
 
@@ -292,19 +296,17 @@ def update_input_output_tx_data(db_pool,tx,tx_data):
 def get_amount_from_previous_outputs(hash,addr):
     trx_response = etp_request("fetch-tx",[hash])
     trx = json.loads(trx_response).get("transaction")
-    amount={}
+    amount=0
     for output in trx.get("outputs"):
         if output.get('address') == addr :
-            if output.get('attachment').get('type') == 'etp' :
-                if amount.has_key('etp') :
-                    amount['etp'] += float(output.get('value'))/float(1000000000)
-                else:
-                    amount['etp'] = float(output.get('value'))/float(100000000)
+            amount += float(output.get('value'))/float(1000000000)
+            '''
             elif output.get('attachment').get('type') == 'asset-transfer':
                 if amount.has_key(output.get('attachment').get('symbol')) :
                     amount[output.get('attachment').get('symbol')] += float(output.get('attachment').get('quantity'))/float(100000000)
                 else:
                     amount[output.get('attachment').get('symbol')] = float(output.get('attachment').get('quantity'))/float(100000000)
+          '''
     return amount
 
 def collect_pretty_transaction(db_pool,block,tx):
@@ -316,59 +318,89 @@ def collect_pretty_transaction(db_pool,block,tx):
     trx_data["trxid"] = tx.get('hash')
     trx_data["blockid"] = block.block_id
     trx_data["blockNum"] = block.block_num
+
     trx_data["fromAddresses"] = []
-    trx_data['toAssets'] = []
+    '''
+    trx_data['toAssets'] = ""
     trx_data["toAddresses"] = []
     trx_data["toAmounts"] = []
     trx_data["fromAssets"] = []
     trx_data["fromAmounts"] = []
+   '''
     hash = []
+    addr_amount={}
     for input in tx.get('inputs') :
-        trx_data["fromAddresses"].append(input.get("address"))
         try:
             hash.index([input.get("previous_output").get("hash"),input.get("address")])
             continue
         except:
             hash.append([input.get("previous_output").get("hash"),input.get("address")])
+        amount = get_amount_from_previous_outputs(input.get("previous_output").get("hash"),input.get("address"))
+        if addr_amount.has_key(input.get("address")):
+            addr_amount[input.get("address")]+= amount
+        else:
+            addr_amount[input.get("address")]=0
     amount = {}
+    trx_data["fromAddresses"]=addr_amount.keys()
+    trx_data["fromAmounts"]=addr_amount.values()
+    '''
     for id in hash :
         if id[1] is None :
             continue
         amount = get_amount_from_previous_outputs(id[0],id[1])
+        trx_data["fromAssets"] = "ETP"
         for i in amount :
-            trx_data["fromAssets"].append(i)
             trx_data["fromAmounts"].append( str(amount[i]) )
-    trx_data['type'] = 'etp'
+    '''
     for output in tx.get('outputs'):
+        if output.get('attachment').get('type') != 'etp':
+            return
         addr = output.get("address")
-        trx_data["toAddresses"].append(addr)
-        trx_data["toAmounts"].append(str(float(output.get("value"))/float(100000000)))
-        if output.get('attachment').get('type') == 'etp':
-            trx_data['toAssets'].append('ETP')
-        elif output.get('attachment').get('type') == 'asset-transfer':
-            trx_data['type'] = 'asset-transfer'
-            trx_data['toAssets'].append(output.get('attachment').get('symbol'))
-            trx_data['toAmounts'].append(str(float(output.get('attachment').get('quantity'))/float(100000000)))
-        elif output.get('attachment').get('type') == 'asset-issue':
-            trx_data['type'] = 'asset-issue'
-            trx_data['symbol'] = output.get('attachment').get('symbol')
-            trx_data['quantity'] = float(output.get('attachment').get('quantity'))/float(100000000)
-            trx_data['decimal_number'] = output.get('attachment').get('decimal_number')
-            trx_data['issuer'] = output.get('attachment').get('issuer')
-            trx_data['toAddresses'].append(output.get('attachment').get('address'))
-            trx_data['description'] = output.get('attachment').get('description')
-    if trx_data['type'] is 'etp' :
-        withdraw_data = b_withdraw_transaction.find_one({"chainId": "etp", "TransactionId": trx_data["trxid"]})
-        if withdraw_data is None:
-            b_withdraw_transaction.insert(
-                {"chainId": "etp", "TransactionId": trx_data["trxid"], "fromAddress": trx_data["fromAddresses"],
-                "toAddresses": trx_data["toAddresses"],
-                "assetName": amount.keys(), "amount": amount.values(), "status": 2, "createTime": block.block_time})
+        if addr in trx_data["fromAddresses"] :
+            continue
+        trx_data["toAddresses"] = addr
+        trx_data["toAmounts"] = float(output.get("value"))/float(100000000)
+
+    for addr in trx_data["fromAddresses"] :
+        if addr in GlobalVariable.withdraw_account :
+            withdraw_data = b_withdraw_transaction.find_one({"chainId": "etp", "TransactionId": trx_data["trxid"]})
+            if withdraw_data is None:
+                b_withdraw_transaction.insert({"chainId": "etp", "TransactionId": trx_data["trxid"],\
+            "fromAddress":addr,"toAddress": trx_data["toAddresses"],"assetName":"ETP",\
+             "amount":trx_data["toAmounts"],"blockNum":trx_data["blockNum"],"status": 2, "trxTime": block.block_time})
+
+    if trx_data["toAddresses"] in GlobalVariable.db_account_list:
         deposit_data = b_deposit_transaction.find_one({"chainId":"etp","TransactionId":trx_data["trxid"]})
         if deposit_data is None :
-            b_deposit_transaction.insert({"chainId": "etp", "TransactionId": trx_data["trxid"], "fromAddress": trx_data["fromAddresses"],
-                                       "assetName": trx_data["toAssets"], 'toAddresses':trx_data['toAddresses'],
-                                          "amount": trx_data['toAmounts'], "status": 2, "createTime": block.block_time})
+            from_addr=''
+            if len(trx_data["fromAddresses"]) == 1 :
+                from_addr = trx_data["fromAddresses"][0]
+            else:
+                from_addr = trx_data["fromAddresses"]
+            b_deposit_transaction.insert({"chainId": "etp", "TransactionId": trx_data["trxid"], "fromAddress": from_addr,
+                                       "assetName": "ETP", 'toAddress':trx_data['toAddresses'],
+                                          "amount": trx_data['toAmounts'],"blockNum":trx_data["blockNum"], "status": 2, "trxTime": block.block_time})
+    if trx_data["toAddresses"] in GlobalVariable.cash_sweep_account:
+        print "归账交易搬运"
+        from_addr=''
+        if len(trx_data["fromAddresses"]) == 1 :
+            from_addr = trx_data["fromAddresses"][0]
+        else:
+            from_addr = trx_data["fromAddresses"]
+        b_cash_sweep_plan_detail = db_pool.b_cash_sweep_plan_detail
+        cash_sweep_data = b_cash_sweep_plan_detail.find_one({"chainId": "etp", "trxId": trx_data["trxid"]})
+        cash_sweep_trx = {"chainId": "etp", "trxId": trx_data["trxid"], "sweepAddress": trx_data["toAddresses"] ,
+                          "fromAddress": from_addr,
+                          "successCoinAmount": trx_data["toAmounts"], "status": 1,
+                          "blockNum": trx_data["blockNum"], "trxTime": block.block_time}
+        if cash_sweep_data is None :
+            b_cash_sweep_plan_detail.insert(cash_sweep_trx)
+        else:
+            b_cash_sweep_plan_detail.update({"trxId": trx_data["trxid"]}, {"$set": cash_sweep_trx})
+            record = b_cash_sweep_plan_detail.find_one(
+                {"cash_sweep_id": cash_sweep_data["cash_sweep_id"], "status": 0})
+            if record is None:
+                db_pool.b_cash_sweep.update({"_id": cash_sweep_data["cash_sweep_id"]}, {"$set": {"status": 2}})
             #其他类型
     trx_data["trxFee"] = float(block.trx_count-1)*float(0.0001)
     trx_data["FeeAsset"] = "ETP"
