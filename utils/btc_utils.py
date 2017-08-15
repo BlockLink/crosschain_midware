@@ -21,8 +21,10 @@ def btc_request(method, args):
         'authorization': "Basic %s" % (basestr),
         'cache-control': "no-cache",
     }
+    logger.info(payload)
     response = requests.request("POST", url, data=payload, headers=headers)
     rep = response.json()
+    logger.info(rep)
     return rep
 
 
@@ -56,12 +58,30 @@ def btc_collect_money(address, safe_block):
         balance = resp["result"]
         if balance - 0.0005 <= 0:
             raise Exception("balance is not enough error")
-        params = ["btc_test", address, balance - 0.0005]
+        fee_need = 0.0005
+        params = ["btc_test", address, balance - fee_need]
         resp = btc_request("sendfrom", params)
         if resp["result"] == None:
-            raise Exception("send error")
+            if resp["error"] != None:
+                if resp["error"]["message"] != None:
+                    errs = resp["error"]["message"]
+                    start = errs.find("Error: This transaction requires a transaction fee of at least ")
+                    if start != -1:
+                        fee_need = float(errs[len("Error: This transaction requires a transaction fee of at least "):]) + 0.0001
+                        if balance - fee_need <= 0:
+                            raise Exception("balance is not enough error")
+                        params = ["btc_test", address, balance - fee_need]
+                        resp = btc_request("sendfrom", params)
+                        if resp["result"] == None:
+                            raise Exception(resp)
+                    else:
+                        raise Exception(resp)
+                else:
+                    raise Exception(resp)
+            else:
+                raise Exception(resp)
         result_data["data"].append(
-            {"from_addr": "btc_test", "to_addr": address, "amount": balance - 0.0005, "trx_id": resp["result"]})
+            {"from_addr": "btc_test", "to_addr": address, "amount": balance - fee_need, "trx_id": resp["result"]})
         return result_data, None
     except Exception, ex:
         logger.info(traceback.format_exc())
@@ -85,7 +105,7 @@ def btc_withdraw_to_address(address, amount):
         params = ["btc_withdraw_test", address, amount]
         resp = btc_request("sendfrom", params)
         if resp["result"] == None:
-            raise Exception("send error")
+            raise Exception(resp)
         result_data["data"].append(
             {"from_addr": "btc_withdraw_test", "to_addr": address, "amount": amount, "trx_id": resp["result"]})
         return resp["result"]
