@@ -97,14 +97,14 @@ def init_account_info(db):
 
     records = db.b_chain_account.find({"chainId": "eth"})
     for one_account in records:
-        GlobalVariable.db_account_list.append(one_account["address"])
+        GlobalVariable.db_account_list.append(one_account["address"].lower())
 
     cash_sweep_data = db.b_config.find_one({"key": "cash_sweep_address"})
     if cash_sweep_data is not None:
 
         for data in cash_sweep_data["value"]:
             if data["chainId"] == "eth":
-                GlobalVariable.cash_sweep_account.append(data["address"])
+                GlobalVariable.cash_sweep_account.append(data["address"].lower())
                 break
 
     withdraw_data = db.b_config.find_one({"key": "withdrawaddress"})
@@ -112,7 +112,7 @@ def init_account_info(db):
 
         for data in withdraw_data["value"]:
             if data["chainId"] == "eth":
-                GlobalVariable.withdraw_account.append(data["address"])
+                GlobalVariable.withdraw_account.append(data["address"].lower())
                 break
 
     ret = eth_request("personal_listAccounts", [])
@@ -303,7 +303,7 @@ def collect_pretty_transaction(db_pool, base_trx_data, receipt_trx_data, block_t
         raw_transaction_output_db.update({"trxid": base_trx_data["hash"], "address": receipt_trx_data["from"]},
                                          {"$set": trx_data})
 
-    if receipt_trx_data["from"] in GlobalVariable.withdraw_account:
+    if receipt_trx_data["from"].lower() in GlobalVariable.withdraw_account:
         # 提现交易搬运
         b_withdraw_transaction = db_pool.b_withdraw_transaction
         withdraw_data_trx = b_withdraw_transaction.find_one({"chainId": "eth", "TransactionId": trx_data["trxid"]})
@@ -316,7 +316,7 @@ def collect_pretty_transaction(db_pool, base_trx_data, receipt_trx_data, block_t
         else:
             b_withdraw_transaction.update({"TransactionId": trx_data["trxid"]}, {"$set": withdraw_trx})
 
-    if receipt_trx_data["to"] in GlobalVariable.db_account_list:
+    if receipt_trx_data["to"].lower() in GlobalVariable.db_account_list:
         # 入账交易搬运
         b_deposit_transaction = db_pool.b_deposit_transaction
         deposit_data_trx = b_deposit_transaction.find_one({"chainId": "eth", "TransactionId": trx_data["trxid"]})
@@ -328,7 +328,7 @@ def collect_pretty_transaction(db_pool, base_trx_data, receipt_trx_data, block_t
             b_deposit_transaction.insert(deposit_trx)
         else:
             b_deposit_transaction.update({"TransactionId": trx_data["trxid"]}, {"$set": deposit_trx})
-    if receipt_trx_data["to"] in GlobalVariable.cash_sweep_account:
+    if receipt_trx_data["to"].lower() in GlobalVariable.cash_sweep_account:
         # 归账交易搬运
         print "归账交易搬运"
         b_cash_sweep_plan_detail = db_pool.b_cash_sweep_plan_detail
