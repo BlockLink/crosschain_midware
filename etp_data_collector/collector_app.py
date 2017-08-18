@@ -392,7 +392,7 @@ def collect_pretty_transaction(db_pool,block,tx):
         cash_sweep_trx = {"chainId": "etp", "trxId": trx_data["trxid"], "sweepAddress": trx_data["toAddresses"] ,
                           "fromAddress": from_addr,
                           "successCoinAmount": trx_data["toAmounts"], "status": 1,
-                          "blockNum": trx_data["blockNum"], "trxTime": block.block_time}
+                          "blockNum": trx_data["blockNum"], "createTime": block.block_time}
         if cash_sweep_data is None :
             b_cash_sweep_plan_detail.insert(cash_sweep_trx)
         else:
