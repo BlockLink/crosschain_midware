@@ -232,9 +232,10 @@ def collect_pretty_transaction(db_pool, base_trx_data,block_num):
         #b_cash_sweep  b_cash_sweep_plan_detail
         cash_detail_data = db_pool.b_cash_sweep_plan_detail.find_one({"chainId":"btc","trxId":trx_data["trxid"]})
         if cash_detail_data == None:
-            db_pool.b_cash_sweep_plan_detail.insert({"chainId":"btc","trxId":trx_data["trxid"],"fromAddress":from_address,"sweepAddress":to_address,"successCoinAmount":amount,"status":1,"createTime":trx_data["createtime"]})
+            logging.info("cash_detail_data is not exist error")
+            #db_pool.b_cash_sweep_plan_detail.insert({"chainId":"btc","trxId":trx_data["trxid"],"fromAddress":from_address,"sweepAddress":to_address,"successCoinAmount":amount,"status":1,"createTime":trx_data["createtime"]})
         else:
-            db_pool.b_cash_sweep_plan_detail.update({"chainId":"btc","trxId":trx_data["trxid"]},{"$set":{"fromAddress":from_address,"sweepAddress":to_address,"successCoinAmount":amount,"status":1,"createTime":trx_data["createtime"]}})
+            db_pool.b_cash_sweep_plan_detail.update({"chainId":"btc","trxId":trx_data["trxid"]},{"$set":{"fromAddress":from_address,"status":1,"createTime":trx_data["createtime"]}})
             cash_data = db_pool.b_cash_sweep.find_one({"_id":cash_detail_data["cash_sweep_id"]})
             if cash_data == None:
                 logging.info("cash data is not exist error")

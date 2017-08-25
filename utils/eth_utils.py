@@ -72,7 +72,7 @@ def eth_get_base_balance(address):
 
 
 def eth_get_no_precision_balance(address,last_block_num):
-    result = eth_request("eth_getBalance", [address, hex(last_block_num)])
+    result = eth_request("eth_getBalance", [address,  "latest"])
     print result
     json_result = json.loads(result)
     if json_result.get("result") is None:
