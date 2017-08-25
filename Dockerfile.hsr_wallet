@@ -1,0 +1,9 @@
+FROM ubuntu
+MAINTAINER zhangzhentao
+
+RUN apt-get update
+RUN apt-get install build-essential libssl-dev libdb++-dev libboost-all-dev libqrencode-dev libminiupnpc-dev
+ADD hsare/hshared /usr/bin/hshared
+ADD hsare/hshared.conf /root/.hshare/hshare.conf
+
+ENTRYPOINT hshared -daemon
