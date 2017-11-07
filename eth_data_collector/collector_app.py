@@ -16,11 +16,12 @@ __author__ = 'hasee'
 
 
 
-
+from twisted.internet.defer import DeferredList, inlineCallbacks, returnValue,Deferred
+from twisted.internet import reactor
 import sys
 import json
 import logging, traceback
-from collector_conf import SYNC_BLOCK_PER_ROUND
+from collector_conf import SYNC_BLOCK_PER_ROUND,RPC_COROUTINE_MAX
 from collector_conf import REFRESH_STAT_POST_URL, REFRESH_STAT_POST_DATA
 # from utility import to_utf8
 # from base import TRX_TYPE_REGISTER_CONTRACT, TRX_TYPE_UPGRADE_CONTRACT, TRX_TYPE_DESTROY_CONTRACT
@@ -34,21 +35,23 @@ from datetime import datetime
 import math
 
 
+@inlineCallbacks
 def do_collect_app(db):
     while True:
         try:
             # 程序启动，设置为同步状态
             config = db.b_config
-            config.update({"key": "syncstate"}, {"key": "syncstate", "value": True})
-
+            d =config.update({"key": "syncstate"}, {"key": "syncstate", "value": True})
+            yield d
             # 清理上一轮的垃圾数据，包括块数据、交易数据以及合约数据
-            GlobalVariable.last_sync_block_num = clear_last_garbage_data(db)
+            GlobalVariable.last_sync_block_num = yield clear_last_garbage_data(db)
             # 获取当前链上最新块号
             while True:
                 GlobalVariable.register_account_dic = {}
                 GlobalVariable.upgrade_contract_dic = {}
-                latest_block_num = get_latest_block_num(db)
-                init_account_info(db)
+                latest_block_num = yield get_latest_block_num(db)
+                d = init_account_info(db)
+                yield d
                 print "latest_block_num", latest_block_num
                 print "GlobalVariable.last_sync_block_num", GlobalVariable.last_sync_block_num
                 if GlobalVariable.last_sync_block_num >= latest_block_num:
@@ -63,31 +66,46 @@ def do_collect_app(db):
                                                             GlobalVariable.last_sync_block_num + SYNC_BLOCK_PER_ROUND)
                 print GlobalVariable.sync_start_per_round
                 print latest_block_num
+                if GlobalVariable.sync_start_per_round == latest_block_num:
+                    GlobalVariable.current_sync_state = 1
+                    break
                 sync_rate = float(GlobalVariable.sync_start_per_round) / latest_block_num
                 sync_process = '#' * int(40 * sync_rate) + ' ' * (40 - int(40 * sync_rate))
                 sys.stdout.write(
                     "\rsync block [%s][%d/%d], %.3f%%\n" % (sync_process, GlobalVariable.sync_start_per_round,
                                                             latest_block_num, sync_rate * 100))
-                while GlobalVariable.sync_start_per_round <= GlobalVariable.sync_end_per_round:
-                    collect_data_cb(db)
-                GlobalVariable.last_sync_block_num = GlobalVariable.sync_end_per_round
-                config.update({"key": "syncblocknum"},
-                              {"$set": {"key": "syncblocknum", "value": str(GlobalVariable.last_sync_block_num)}})
-                if GlobalVariable.sync_start_per_round == latest_block_num+1:
-                    break
+                if GlobalVariable.current_sync_state:
+                    rpc_count = 1
+                else:
+                    rpc_count = RPC_COROUTINE_MAX
+                defer_list = [collect_data_cb(db) for _ in range(rpc_count)]
+                yield DeferredList(defer_list)
 
-            print 'ok'
-            time.sleep(10)
+                GlobalVariable.last_sync_block_num = GlobalVariable.sync_end_per_round
+                d = config.update({"key": "syncblocknum"},
+                              {"$set": {"key": "syncblocknum", "value": str(GlobalVariable.last_sync_block_num)}})
+                yield d
+            # 同步结束，设置为非同步状态
+            d = config.update({"key": "syncstate"}, {"key": "syncstate", "value": False})
+            yield d
+
+            # 同步结束，维护一个定时启动的任务去获取新产生的块
+            sys.stdout.write("\n")
+            s = Deferred()
+            reactor.callLater(5, s.callback,None)
+            yield s
+
 
 
         except Exception, ex:
             logging.info(traceback.format_exc())
             print ex
             # 异常情况，60秒后重试eth_utils.py
-            time.sleep(60)
-            do_collect_app(db)
+            reactor.callLater(60,do_collect_app,db)
 
 
+
+@inlineCallbacks
 def init_account_info(db):
     GlobalVariable.db_account_list = []
     GlobalVariable.account_list = []
@@ -95,11 +113,11 @@ def init_account_info(db):
     GlobalVariable.cash_sweep_account = []
 
 
-    records = db.b_chain_account.find({"chainId": "eth"})
+    records = yield db.b_chain_account.find({"chainId": "eth"})
     for one_account in records:
         GlobalVariable.db_account_list.append(one_account["address"].lower())
 
-    cash_sweep_data = db.b_config.find_one({"key": "cash_sweep_address"})
+    cash_sweep_data = yield db.b_config.find_one({"key": "cash_sweep_address"})
     if cash_sweep_data is not None:
 
         for data in cash_sweep_data["value"]:
@@ -107,7 +125,7 @@ def init_account_info(db):
                 GlobalVariable.cash_sweep_account.append(data["address"].lower())
                 break
 
-    withdraw_data = db.b_config.find_one({"key": "withdrawaddress"})
+    withdraw_data = yield db.b_config.find_one({"key": "withdrawaddress"})
     if withdraw_data is not None:
 
         for data in withdraw_data["value"]:
@@ -115,7 +133,7 @@ def init_account_info(db):
                 GlobalVariable.withdraw_account.append(data["address"].lower())
                 break
 
-    ret = eth_request("personal_listAccounts", [])
+    ret = yield eth_request("personal_listAccounts", [])
     json_data = json.loads(ret)
     if json_data.get("result") is None:
         raise Exception("get_all_account_list")
@@ -127,39 +145,48 @@ def init_account_info(db):
     GlobalVariable.all_care_account.extend(GlobalVariable.cash_sweep_account)
     GlobalVariable.all_care_account.extend(GlobalVariable.withdraw_account)
 
-
+@inlineCallbacks
 def get_latest_block_num(db):
-    ret = eth_request("eth_blockNumber", [])
+    ret =yield eth_request("eth_blockNumber", [])
     json_data = json.loads(ret)
-    safe_block = db.b_config.find_one({"key": "safeblock"})["value"]
-    return int(json_data["result"], 16) - int(safe_block)
+    d = db.b_config.find_one({"key": "safeblock"})
+    safe_block = yield d
+    safe_block = safe_block["value"]
+    returnValue(int(json_data["result"], 16) - int(safe_block))
 
-
+@inlineCallbacks
 def clear_last_garbage_data(db_pool):
     config = db_pool.b_config
-    ret = config.find_one({"key": "syncblocknum"})
+    d = config.find_one({"key": "syncblocknum"})
+    ret = yield d
     if ret is None:
         config.insert({"key": "syncblocknum", "value": "0"})
         last_sync_block_num = int(0)
     else:
         last_sync_block_num = int(ret["value"])+1
     try:
-        db_pool.b_raw_transaction.remove({"blockNum": {"$gte": last_sync_block_num}, "chainId": "eth"})
-        db_pool.b_block.remove({"blockNumber": {"$gte": last_sync_block_num}, "chainId": "eth"})
-
-        db_pool.b_raw_transaction_input.remove({"blockNum": {"$gte": last_sync_block_num}, "chainId": "eth"})
-        db_pool.b_raw_transaction_output.remove({"blockNum": {"$gte": last_sync_block_num}, "chainId": "eth"})
-        db_pool.b_deposit_transaction.remove({"blockNum": {"$gte": last_sync_block_num}, "chainId": "eth"})
-        db_pool.b_withdraw_transaction.remove({"blockNum": {"$gte": last_sync_block_num}, "chainId": "eth"})
+        d = db_pool.b_raw_transaction.remove({"blockNum": {"$gte": last_sync_block_num}, "chainId": "eth"})
+        yield d
+        d = db_pool.b_block.remove({"blockNumber": {"$gte": last_sync_block_num}, "chainId": "eth"})
+        yield d
+        d = db_pool.b_raw_transaction_input.remove({"blockNum": {"$gte": last_sync_block_num}, "chainId": "eth"})
+        yield d
+        d = db_pool.b_raw_transaction_output.remove({"blockNum": {"$gte": last_sync_block_num}, "chainId": "eth"})
+        yield d
+        d = db_pool.b_deposit_transaction.remove({"blockNum": {"$gte": last_sync_block_num}, "chainId": "eth"})
+        yield d
+        d = db_pool.b_withdraw_transaction.remove({"blockNum": {"$gte": last_sync_block_num}, "chainId": "eth"})
+        yield d
     except Exception, ex:
         logging.info(traceback.format_exc())
         print ex
-    return int(last_sync_block_num)
+    returnValue(int(last_sync_block_num))
 
 
 # 采集块数据
+@inlineCallbacks
 def collect_block(db_pool, block_num_fetch):
-    ret = eth_request("eth_getBlockByNumber", [hex(block_num_fetch), False])
+    ret = yield eth_request("eth_getBlockByNumber", [hex(block_num_fetch), False])
 
     # ret = eth_request("eth_getBlock", [str(block_num_fetch)])
     print "", block_num_fetch
@@ -189,16 +216,16 @@ def collect_block(db_pool, block_num_fetch):
 
     block = db_pool.b_block
 
-    mongo_data = block.find_one({"blockHash": block_info.block_id})
+    mongo_data =yield block.find_one({"blockHash": block_info.block_id})
     # print {"blockHash":block_info.block_id}
     if mongo_data == None:
         block.insert(block_info.get_json_data())
     else:
-        block.update({"blockHash": block_info.block_id}, {"$set": block_info.get_json_data()})
+        yield block.update({"blockHash": block_info.block_id}, {"$set": block_info.get_json_data()})
 
     # print 1
 
-    return block_info
+    returnValue( block_info)
 
 
 def is_care_trx(receipt_data):
@@ -210,21 +237,21 @@ def is_care_trx(receipt_data):
         return True
     return False
 
-
+@inlineCallbacks
 def get_transaction_data(trx_id):
     # print "\ntrx_id:",trx_id
-    ret = eth_request("eth_getTransactionByHash", [str(trx_id)])
+    ret = yield eth_request("eth_getTransactionByHash", [str(trx_id)])
     # print ret
     json_data = json.loads(ret)
     if json_data.get("result") is None:
         raise Exception("blockchain_get_transaction error trx_id:%s, returnStr: %s" % (trx_id, ret))
     resp_data = json_data.get("result")
-    ret = eth_request("eth_getTransactionReceipt", [str(trx_id)])
+    ret = yield eth_request("eth_getTransactionReceipt", [str(trx_id)])
     json_data = json.loads(ret)
     if json_data.get("result") is None:
         raise Exception("blockchain_get_transaction_receipt error  trx_id:%s, returnStr: %s" % (trx_id, ret))
     receipt_data = json_data.get("result")
-    return resp_data, receipt_data
+    returnValue((resp_data, receipt_data))
 
 
 def is_contract_trx(receipt_data):
@@ -240,7 +267,7 @@ def is_contract_trx(receipt_data):
     else:
         return True
 
-
+@inlineCallbacks
 def collect_pretty_transaction(db_pool, base_trx_data, receipt_trx_data, block_time):
     raw_transaction_db = db_pool.b_raw_transaction
     trx_data = {}
@@ -265,11 +292,11 @@ def collect_pretty_transaction(db_pool, base_trx_data, receipt_trx_data, block_t
     trx_data["createtime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     trx_data["isDispatched"] = 0
     trx_data["isHandled"] = 0
-    mongo_data = raw_transaction_db.find_one({"trxid": base_trx_data["hash"]})
+    mongo_data =yield  raw_transaction_db.find_one({"trxid": base_trx_data["hash"]})
     if mongo_data == None:
-        raw_transaction_db.insert(trx_data)
+        yield raw_transaction_db.insert(trx_data)
     else:
-        raw_transaction_db.update({"trxid": base_trx_data["hash"]}, {"$set": trx_data})
+        yield raw_transaction_db.update({"trxid": base_trx_data["hash"]}, {"$set": trx_data})
 
     raw_transaction_input_db = db_pool.b_raw_transaction_input
 
@@ -280,12 +307,12 @@ def collect_pretty_transaction(db_pool, base_trx_data, receipt_trx_data, block_t
     trx_input_data["address"] = receipt_trx_data["from"]
     trx_input_data["assetName"] = "eth"
     trx_input_data["amount"] = str(float(int(base_trx_data["value"], 16)) / pow(10, 18))
-    mongo_data = raw_transaction_input_db.find_one(
+    mongo_data =yield  raw_transaction_input_db.find_one(
         {"trxid": base_trx_data["hash"], "address": receipt_trx_data["from"]})
     if mongo_data == None:
-        raw_transaction_input_db.insert(trx_input_data)
+        yield raw_transaction_input_db.insert(trx_input_data)
     else:
-        raw_transaction_input_db.update({"trxid": base_trx_data["hash"], "address": receipt_trx_data["from"]},
+        yield raw_transaction_input_db.update({"trxid": base_trx_data["hash"], "address": receipt_trx_data["from"]},
                                         {"$set": trx_data})
 
     raw_transaction_output_db = db_pool.b_raw_transaction_output
@@ -296,66 +323,68 @@ def collect_pretty_transaction(db_pool, base_trx_data, receipt_trx_data, block_t
     trx_output_data["address"] = receipt_trx_data["to"]
     trx_output_data["assetName"] = "eth"
     trx_output_data["amount"] = str(float(int(base_trx_data["value"], 16)) / pow(10, 18))
-    mongo_data = raw_transaction_output_db.find_one({"trxid": base_trx_data["hash"], "address": receipt_trx_data["to"]})
+    mongo_data =yield  raw_transaction_output_db.find_one({"trxid": base_trx_data["hash"], "address": receipt_trx_data["to"]})
     if mongo_data == None:
-        raw_transaction_output_db.insert(trx_output_data)
+        yield raw_transaction_output_db.insert(trx_output_data)
     else:
-        raw_transaction_output_db.update({"trxid": base_trx_data["hash"], "address": receipt_trx_data["from"]},
+        yield raw_transaction_output_db.update({"trxid": base_trx_data["hash"], "address": receipt_trx_data["from"]},
                                          {"$set": trx_data})
 
     if receipt_trx_data["from"].lower() in GlobalVariable.withdraw_account:
         # 提现交易搬运
         b_withdraw_transaction = db_pool.b_withdraw_transaction
-        withdraw_data_trx = b_withdraw_transaction.find_one({"chainId": "eth", "TransactionId": trx_data["trxid"]})
+        withdraw_data_trx =yield b_withdraw_transaction.find_one({"chainId": "eth", "TransactionId": trx_data["trxid"]})
         withdraw_trx = {"chainId": "eth", "TransactionId": trx_data["trxid"], "toAddress": receipt_trx_data["to"],
                         "fromAddress": receipt_trx_data["from"],
                         "assetName": "eth", "status": 2, "amount": float(int(base_trx_data["value"], 16)) / pow(10, 18),
                         "blockNum": trx_data["blockNum"], "trxTime": block_time}
         if withdraw_data_trx is None:
-            b_withdraw_transaction.insert(withdraw_trx)
+            yield b_withdraw_transaction.insert(withdraw_trx)
         else:
-            b_withdraw_transaction.update({"TransactionId": trx_data["trxid"]}, {"$set": withdraw_trx})
+            yield b_withdraw_transaction.update({"TransactionId": trx_data["trxid"]}, {"$set": withdraw_trx})
 
     if receipt_trx_data["to"].lower() in GlobalVariable.db_account_list:
         # 入账交易搬运
         b_deposit_transaction = db_pool.b_deposit_transaction
-        deposit_data_trx = b_deposit_transaction.find_one({"chainId": "eth", "TransactionId": trx_data["trxid"]})
+        deposit_data_trx =yield b_deposit_transaction.find_one({"chainId": "eth", "TransactionId": trx_data["trxid"]})
         deposit_trx = {"chainId": "eth", "TransactionId": trx_data["trxid"], "toAddress": receipt_trx_data["to"],
                        "fromAddress": receipt_trx_data["from"],
                        "assetName": "eth", "amount": float(int(base_trx_data["value"], 16)) / pow(10, 18),
                        "blockNum": trx_data["blockNum"], "trxTime": block_time}
         if deposit_data_trx is None:
-            b_deposit_transaction.insert(deposit_trx)
+            yield b_deposit_transaction.insert(deposit_trx)
         else:
-            b_deposit_transaction.update({"TransactionId": trx_data["trxid"]}, {"$set": deposit_trx})
+            yield b_deposit_transaction.update({"TransactionId": trx_data["trxid"]}, {"$set": deposit_trx})
     if receipt_trx_data["to"].lower() in GlobalVariable.cash_sweep_account:
         # 归账交易搬运
         print "归账交易搬运"
         b_cash_sweep_plan_detail = db_pool.b_cash_sweep_plan_detail
-        cash_sweep_data_trx = b_cash_sweep_plan_detail.find_one({"chainId": "eth", "trxId": trx_data["trxid"]})
+        cash_sweep_data_trx =yield b_cash_sweep_plan_detail.find_one({"chainId": "eth", "trxId": trx_data["trxid"]})
         cash_sweep_trx = {"chainId": "eth", "trxId": trx_data["trxid"], "sweepAddress": receipt_trx_data["to"],
                           "fromAddress": receipt_trx_data["from"],
                           "successCoinAmount": float(int(base_trx_data["value"], 16)) / pow(10, 18), "status": 1,
                           "blockNum": trx_data["blockNum"], "trxTime": block_time}
         if cash_sweep_data_trx is None:
-            b_cash_sweep_plan_detail.insert(cash_sweep_trx)
+            yield b_cash_sweep_plan_detail.insert(cash_sweep_trx)
         else:
-            b_cash_sweep_plan_detail.update({"trxId": trx_data["trxid"]}, {"$set": cash_sweep_trx})
-            record = b_cash_sweep_plan_detail.find_one(
-                {"cash_sweep_id": cash_sweep_data_trx["cash_sweep_id"], "status": 0})
-            if record is None:
-                db_pool.b_cash_sweep.update({"_id": cash_sweep_data_trx["cash_sweep_id"]}, {"$set": {"status": 2}})
+            yield b_cash_sweep_plan_detail.update({"trxId": trx_data["trxid"]}, {"$set": cash_sweep_trx})
+            if cash_sweep_data_trx.has_key("cash_sweep_id"):
+                record =yield b_cash_sweep_plan_detail.find_one(
+                    {"cash_sweep_id": cash_sweep_data_trx["cash_sweep_id"], "status": 0})
+                if record is None:
+                    yield db_pool.b_cash_sweep.update({"_id": cash_sweep_data_trx["cash_sweep_id"]}, {"$set": {"status": 2}})
 
-    return trx_data
+    returnValue(trx_data)
 
-
+@inlineCallbacks
 def update_block_trx_amount(db_pool, block_info):
     block = db_pool.b_block
-    block.update({"blockHash": block_info.block_id},
+    yield block.update({"blockHash": block_info.block_id},
                  {"$set": {"trxamount:": str(block_info.trx_amount), "trxfee": str(block_info.trx_fee)}})
 
 
 # 采集数据
+@inlineCallbacks
 def collect_data_cb(db_pool):
     try:
 
@@ -364,20 +393,21 @@ def collect_data_cb(db_pool):
             GlobalVariable.sync_start_per_round += 1
 
             # 采集块
-            block_info = collect_block(db_pool, block_num_fetch)
-
+            block_info =yield collect_block(db_pool, block_num_fetch)
+            print "trx",block_info.transactions
             for trx_id in block_info.transactions:
                 trx_id = trx_id
 
                 # 采集交易
-                base_trx_data, receipt_trx_data = get_transaction_data(trx_id)
+                base_trx_data, receipt_trx_data = yield get_transaction_data(trx_id)
+                print base_trx_data["hash"]
                 if not is_care_trx(receipt_trx_data):
                     continue
                 print trx_id
                 if not is_contract_trx(receipt_trx_data):
 
                     # 非合约交易
-                    pretty_trx_info = collect_pretty_transaction(db_pool, base_trx_data, receipt_trx_data,
+                    pretty_trx_info = yield collect_pretty_transaction(db_pool, base_trx_data, receipt_trx_data,
                                                                  block_info.block_time)
                     # 统计块中交易总金额和总手续费
                     for amount in pretty_trx_info["toAmounts"]:
@@ -412,7 +442,7 @@ def collect_data_cb(db_pool):
                     '''
 
             if block_info.trx_amount > 0 or block_info.trx_fee > 0:
-                update_block_trx_amount(db_pool, block_info)
+                yield update_block_trx_amount(db_pool, block_info)
 
                 # 连接使用完毕，需要释放连接
 

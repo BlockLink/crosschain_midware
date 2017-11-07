@@ -48,7 +48,7 @@ class GlobalVariable(object):
     withdraw_account = []
     cash_sweep_account = []
     all_care_account = []
-
+    current_sync_state = 0
 
 
 

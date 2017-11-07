@@ -11,6 +11,8 @@ RUN pip install Flask
 RUN pip install Flask-JSONRPC
 RUN pip install gevent
 RUN pip install gunicorn
+RUN pip install txmongo
+RUN pip install twisted
 RUN python -m pip install pymongo
 RUN pip install requests
 

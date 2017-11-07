@@ -2,4 +2,6 @@ flask
 gevent
 bcrypt
 pymongo
+twisted
+txmongo
 requests
