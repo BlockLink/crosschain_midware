@@ -77,11 +77,8 @@ def do_collect_app(db):
                 print 'GlobalVariable.sync_end_per_round',GlobalVariable.sync_end_per_round
                 GlobalVariable.last_sync_block_num = GlobalVariable.sync_end_per_round
                 config.update({"key": "etpsyncblocknum"}, {"$set":{"key": "etpsyncblocknum", "value": str(GlobalVariable.last_sync_block_num)}})
-<<<<<<< HEAD
+
                 if GlobalVariable.sync_start_per_round == latest_block_num+1:
-=======
-                if GlobalVariable.sync_start_per_round == latest_block_num + 1:
->>>>>>> 986bf1d58eac0c696107fea6e9f299025ba3d19a
                     break
 
 
@@ -203,6 +200,8 @@ def collect_block( db_pool, block_num_fetch):
         if need_to_skip(tx) :
             continue
         tx_data=collect_pretty_transaction(db_pool,block_info,tx)
+        if tx_data is None :
+            continue
         update_input_output_tx_data(db_pool,tx,tx_data)
     mongo_data = block.find_one({"blockHash": block_info.block_id})
     # print {"blockHash":block_info.block_id}
@@ -392,10 +391,12 @@ def collect_pretty_transaction(db_pool,block,tx):
         cash_sweep_trx = {"chainId": "etp", "trxId": trx_data["trxid"], "sweepAddress": trx_data["toAddresses"] ,
                           "fromAddress": from_addr,
                           "successCoinAmount": trx_data["toAmounts"], "status": 1,
-                          "blockNum": trx_data["blockNum"], "trxTime": block.block_time}
+                          "blockNum": trx_data["blockNum"], "createTime": block.block_time}
         if cash_sweep_data is None :
             b_cash_sweep_plan_detail.insert(cash_sweep_trx)
         else:
+            if cash_sweep_data.get("cash_sweep_id") is None :
+                return
             b_cash_sweep_plan_detail.update({"trxId": trx_data["trxid"]}, {"$set": cash_sweep_trx})
             record = b_cash_sweep_plan_detail.find_one(
                 {"cash_sweep_id": cash_sweep_data["cash_sweep_id"], "status": 0})
