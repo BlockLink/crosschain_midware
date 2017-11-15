@@ -110,20 +110,11 @@ def init_account_info(db):
     GlobalVariable.db_account_list = []
     GlobalVariable.account_list = []
     GlobalVariable.withdraw_account = []
-    GlobalVariable.cash_sweep_account = []
 
 
     records = yield db.b_chain_account.find({"chainId": "eth"})
     for one_account in records:
         GlobalVariable.db_account_list.append(one_account["address"].lower())
-
-    cash_sweep_data = yield db.b_config.find_one({"key": "cash_sweep_address"})
-    if cash_sweep_data is not None:
-
-        for data in cash_sweep_data["value"]:
-            if data["chainId"] == "eth":
-                GlobalVariable.cash_sweep_account.append(data["address"].lower())
-                break
 
     withdraw_data = yield db.b_config.find_one({"key": "withdrawaddress"})
     if withdraw_data is not None:
@@ -142,7 +133,6 @@ def init_account_info(db):
     GlobalVariable.all_care_account = []
     GlobalVariable.all_care_account.extend(GlobalVariable.account_list)
     GlobalVariable.all_care_account.extend(GlobalVariable.db_account_list)
-    GlobalVariable.all_care_account.extend(GlobalVariable.cash_sweep_account)
     GlobalVariable.all_care_account.extend(GlobalVariable.withdraw_account)
 
 @inlineCallbacks
@@ -355,24 +345,6 @@ def collect_pretty_transaction(db_pool, base_trx_data, receipt_trx_data, block_t
             yield b_deposit_transaction.insert(deposit_trx)
         else:
             yield b_deposit_transaction.update({"TransactionId": trx_data["trxid"]}, {"$set": deposit_trx})
-    if receipt_trx_data["to"].lower() in GlobalVariable.cash_sweep_account:
-        # 归账交易搬运
-        print "归账交易搬运"
-        b_cash_sweep_plan_detail = db_pool.b_cash_sweep_plan_detail
-        cash_sweep_data_trx =yield b_cash_sweep_plan_detail.find_one({"chainId": "eth", "trxId": trx_data["trxid"]})
-        cash_sweep_trx = {"chainId": "eth", "trxId": trx_data["trxid"], "sweepAddress": receipt_trx_data["to"],
-                          "fromAddress": receipt_trx_data["from"],
-                          "successCoinAmount": float(int(base_trx_data["value"], 16)) / pow(10, 18), "status": 1,
-                          "blockNum": trx_data["blockNum"], "trxTime": block_time}
-        if cash_sweep_data_trx is None:
-            yield b_cash_sweep_plan_detail.insert(cash_sweep_trx)
-        else:
-            yield b_cash_sweep_plan_detail.update({"trxId": trx_data["trxid"]}, {"$set": cash_sweep_trx})
-            if cash_sweep_data_trx.has_key("cash_sweep_id"):
-                record =yield b_cash_sweep_plan_detail.find_one(
-                    {"cash_sweep_id": cash_sweep_data_trx["cash_sweep_id"], "status": 0})
-                if record is None:
-                    yield db_pool.b_cash_sweep.update({"_id": cash_sweep_data_trx["cash_sweep_id"]}, {"$set": {"status": 2}})
 
     returnValue(trx_data)
 

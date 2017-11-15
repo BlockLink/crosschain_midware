@@ -97,20 +97,11 @@ def init_account_info(db):
     GlobalVariable.db_account_list = []
     GlobalVariable.account_list = []
     GlobalVariable.withdraw_account = []
-    GlobalVariable.cash_sweep_account = []
 
 
     records = db.b_chain_account.find({"chainId": "etp"})
     for one_account in records:
         GlobalVariable.db_account_list.append(one_account["address"])
-
-    cash_sweep_data = db.b_config.find_one({"key": "cash_sweep_address"})
-    if cash_sweep_data is not None:
-
-        for data in cash_sweep_data["value"]:
-            if data["chainId"] == "etp":
-                GlobalVariable.cash_sweep_account.append(data["address"])
-                break
 
     withdraw_data = db.b_config.find_one({"key": "withdrawaddress"})
     if withdraw_data is not None:
@@ -134,7 +125,6 @@ def init_account_info(db):
     GlobalVariable.all_care_account = []
     GlobalVariable.all_care_account.extend(GlobalVariable.account_list)
     GlobalVariable.all_care_account.extend(GlobalVariable.db_account_list)
-    GlobalVariable.all_care_account.extend(GlobalVariable.cash_sweep_account)
     GlobalVariable.all_care_account.extend(GlobalVariable.withdraw_account)
 
 
@@ -379,29 +369,6 @@ def collect_pretty_transaction(db_pool,block,tx):
             b_deposit_transaction.insert({"chainId": "etp", "TransactionId": trx_data["trxid"], "fromAddress": from_addr,
                                        "assetName": "ETP", 'toAddress':trx_data['toAddresses'],
                                           "amount": trx_data['toAmounts'],"blockNum":trx_data["blockNum"], "status": 2, "trxTime": block.block_time})
-    if trx_data["toAddresses"] in GlobalVariable.cash_sweep_account:
-        print "归账交易搬运"
-        from_addr=''
-        if len(trx_data["fromAddresses"]) == 1 :
-            from_addr = trx_data["fromAddresses"][0]
-        else:
-            from_addr = trx_data["fromAddresses"]
-        b_cash_sweep_plan_detail = db_pool.b_cash_sweep_plan_detail
-        cash_sweep_data = b_cash_sweep_plan_detail.find_one({"chainId": "etp", "trxId": trx_data["trxid"]})
-        cash_sweep_trx = {"chainId": "etp", "trxId": trx_data["trxid"], "sweepAddress": trx_data["toAddresses"] ,
-                          "fromAddress": from_addr,
-                          "successCoinAmount": trx_data["toAmounts"], "status": 1,
-                          "blockNum": trx_data["blockNum"], "createTime": block.block_time}
-        if cash_sweep_data is None :
-            b_cash_sweep_plan_detail.insert(cash_sweep_trx)
-        else:
-            if cash_sweep_data.get("cash_sweep_id") is None :
-                return
-            b_cash_sweep_plan_detail.update({"trxId": trx_data["trxid"]}, {"$set": cash_sweep_trx})
-            record = b_cash_sweep_plan_detail.find_one(
-                {"cash_sweep_id": cash_sweep_data["cash_sweep_id"], "status": 0})
-            if record is None:
-                db_pool.b_cash_sweep.update({"_id": cash_sweep_data["cash_sweep_id"]}, {"$set": {"status": 2}})
             #其他类型
     trx_data["trxFee"] = float(block.trx_count-1)*float(0.0001)
     trx_data["FeeAsset"] = "ETP"

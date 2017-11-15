@@ -27,8 +27,6 @@ if (db.auth("dbAdmin", "admin12#$%") != 1) {
     db.createCollection("b_chain_account");
     db.createCollection("b_deposit_transaction");
     db.createCollection("b_withdraw_transaction");
-    db.createCollection("b_cash_sweep");
-    db.createCollection("b_cash_sweep_plan_detail")
 
     db.b_chain_account.ensureIndex({"chainId": 1, "address": 1}, {"unique": true});
     db.s_user.ensureIndex({'email': 1}, {"unique": true});
@@ -54,23 +52,6 @@ if (db.auth("dbAdmin", "admin12#$%") != 1) {
     db.b_withdraw_transaction.ensureIndex({'toAddress': 1});
     db.b_config.ensureIndex({'key': 1}, {'unique': true});
 
-    db.b_config.insert({
-        'key': 'cash_sweep_address',
-        'value': [
-            {
-                'chainId': 'eth',
-                'address': '0x1234'
-            },
-            {
-                'chainId': 'btc',
-                'address': 'adf892fg'
-            },
-            {
-                'chainId': 'etp',
-                'address': '0x1234'
-            }
-        ]
-    });
     db.b_config.insert({
         'key': 'syncblocknum',
         'value': '4000000'
