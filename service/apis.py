@@ -17,7 +17,7 @@ from datetime import datetime
 
 
 @jsonrpc.method('Zchain.Crypt.Sign(chainId=str, addr=str, message=str)')
-def zchain_transaction_create(chainId, message):
+def zchain_transaction_create(chainId, addr, message):
     logger.info('Zchain.Crypt.Sign')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
@@ -25,8 +25,11 @@ def zchain_transaction_create(chainId, message):
     signed_message = ""
     if chainId == "btc":
         signed_message = btc_utils.btc_sign_message(addr, message)
-    else
+    else:
         return error_utils.invalid_chainid_type()
+
+    if signed_message == "null":
+        return error_utils.error_response("Cannot sign message.")
     
     return {
         'chainId': chainId,
