@@ -38,7 +38,7 @@ def zchain_crypt_sign(chainId, addr, message):
 
 
 @jsonrpc.method('Zchain.Crypt.VerifyMessage(chainId=str, addr=str, message=str, signature=str)')
-def zchain_crypt_sign(chainId, addr, message):
+def zchain_crypt_sign(chainId, addr, message, signature):
     logger.info('Zchain.Crypt.Sign')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
