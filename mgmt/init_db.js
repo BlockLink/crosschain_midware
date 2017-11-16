@@ -25,6 +25,8 @@ if (db.auth("dbAdmin", "admin12#$%") != 1) {
     db.createCollection("b_raw_transaction_input");
     db.createCollection("b_raw_transaction_output");
     db.createCollection("b_chain_account");
+    db.createCollection("b_btc_unspent");
+    db.createCollection("b_btc_multisig_address");
     db.createCollection("b_deposit_transaction");
     db.createCollection("b_withdraw_transaction");
 
