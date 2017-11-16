@@ -34,21 +34,21 @@ def zchain_transaction_create(chainId, message):
     }
 
 
-@jsonrpc.method('Zchain.Transaction.Create(chainId=str, from_addr=str, to_addr=str, amount=int)')
-def zchain_transaction_create(chainId, from_addr, to_addr, amount):
-    logger.info('Zchain.Transaction.Create')
-    if type(chainId) != unicode:
-        return error_utils.mismatched_parameter_type('chainId', 'STRING')
-    if type(amount) != int:
-        return error_utils.mismatched_parameter_type('trxId', 'INTEGER')
+# @jsonrpc.method('Zchain.Transaction.Create(chainId=str, from_addr=str, to_addr=str, amount=int)')
+# def zchain_transaction_create(chainId, from_addr, to_addr, amount):
+#     logger.info('Zchain.Transaction.Create')
+#     if type(chainId) != unicode:
+#         return error_utils.mismatched_parameter_type('chainId', 'STRING')
+#     if type(amount) != int:
+#         return error_utils.mismatched_parameter_type('trxId', 'INTEGER')
 
-    if chainId == "btc":
-        eth_utils.eth_create_address()
+#     if chainId == "btc":
+#         eth_utils.eth_create_address()
     
-    return {
-        'chainId': chainId,
-        'data': list(withdrawTrxs)
-    }
+#     return {
+#         'chainId': chainId,
+#         'data': list(withdrawTrxs)
+#     }
 
 
 @jsonrpc.method('Zchain.Transaction.Withdraw.History(chainId=str, trxId=str)')
