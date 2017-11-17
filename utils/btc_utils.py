@@ -28,6 +28,20 @@ def btc_request(method, args):
     return rep
 
 
+def btc_create_multisig(addrs, amount):
+    resp = btc_request("createmultisig", [amount, addrs])
+    multisig_addr = ""
+    if resp["result"] != None:
+        multisig_addr = resp["result"]
+    return multisig_addr
+
+def btc_add_multisig(addrs, amount):
+    resp = btc_request("addmultisigaddress", [amount, addrs])
+    multisig_addr = ""
+    if resp["result"] != None:
+        multisig_addr = resp["result"]
+    return multisig_addr
+
 def btc_create_address():
     resp = btc_request("getnewaddress", ["btc_test"])
     address = ""

@@ -55,21 +55,49 @@ def zchain_crypt_verify_message(chainId, addr, message, signature):
     }
 
 
-# @jsonrpc.method('Zchain.Transaction.Create(chainId=str, from_addr=str, to_addr=str, amount=int)')
-# def zchain_transaction_create(chainId, from_addr, to_addr, amount):
-#     logger.info('Zchain.Transaction.Create')
-#     if type(chainId) != unicode:
-#         return error_utils.mismatched_parameter_type('chainId', 'STRING')
-#     if type(amount) != int:
-#         return error_utils.mismatched_parameter_type('trxId', 'INTEGER')
+@jsonrpc.method('Zchain.Multisig.Create(chainId=str, addrs=arr, amount=int)')
+def zchain_multisig_create(chainId, from_addr, to_addr, amount):
+    logger.info('Zchain.Multisig.Create')
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+    if type(addrs) != list:
+        return error_utils.mismatched_parameter_type('addrs', 'ARRAY')
+    if type(amount) != int:
+        return error_utils.mismatched_parameter_type('amount', 'INTEGER')
 
-#     if chainId == "btc":
-#         eth_utils.eth_create_address()
+    address = ""
+    if chainId == "btc":
+        address = btc_utils.btc_add_multisig(addr, int)
+    else:
+        return error_utils.invalid_chainid_type()
     
-#     return {
-#         'chainId': chainId,
-#         'data': list(withdrawTrxs)
-#     }
+    return {
+        'chainId': chainId,
+        'address': address["address"]
+        'redeemScript': address["redeemScript"]
+    }
+
+
+@jsonrpc.method('Zchain.Multisig.Add(chainId=str, addrs=arr, amount=int)')
+def zchain_multisig_add(chainId, from_addr, to_addr, amount):
+    logger.info('Zchain.Multisig.Add')
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+    if type(addrs) != list:
+        return error_utils.mismatched_parameter_type('addrs', 'ARRAY')
+    if type(amount) != int:
+        return error_utils.mismatched_parameter_type('amount', 'INTEGER')
+
+    address = ""
+    if chainId == "btc":
+        address = btc_utils.btc_add_multisig(addr, int)
+    else:
+        return error_utils.invalid_chainid_type()
+    
+    return {
+        'chainId': chainId,
+        'data': address
+    }
 
 
 @jsonrpc.method('Zchain.Transaction.Withdraw.History(chainId=str, trxId=str)')
