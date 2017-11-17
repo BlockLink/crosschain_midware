@@ -66,15 +66,18 @@ def zchain_multisig_create(chainId, addrs, amount):
         return error_utils.mismatched_parameter_type('amount', 'INTEGER')
 
     address = ""
+    redeemScript = ""
     if chainId == "btc":
-        address = btc_utils.btc_add_multisig(addrs, amount)
+        result = btc_utils.btc_add_multisig(addrs, amount)
+        address = result["address"]
+        redeemScript = result["redeemScript"]
     else:
         return error_utils.invalid_chainid_type()
     
     return {
         'chainId': chainId,
-        'address': address["address"],
-        'redeemScript': address["redeemScript"]
+        'address': address,
+        'redeemScript': redeemScript
     }
 
 
