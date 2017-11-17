@@ -78,7 +78,7 @@ def zchain_multisig_create(chainId, from_addr, to_addr, amount):
     }
 
 
-@jsonrpc.method('Zchain.Multisig.Add(chainId=str, addrs=arr, amount=int)')
+@jsonrpc.method('Zchain.Multisig.Add(chainId=str, addrs=list, amount=int)')
 def zchain_multisig_add(chainId, from_addr, to_addr, amount):
     logger.info('Zchain.Multisig.Add')
     if type(chainId) != unicode:
