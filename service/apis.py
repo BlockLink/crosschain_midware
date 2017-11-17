@@ -56,7 +56,7 @@ def zchain_crypt_verify_message(chainId, addr, message, signature):
 
 
 @jsonrpc.method('Zchain.Multisig.Create(chainId=str, addrs=list, amount=int)')
-def zchain_multisig_create(chainId, from_addr, to_addr, amount):
+def zchain_multisig_create(chainId, addrs, amount):
     logger.info('Zchain.Multisig.Create')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
@@ -79,7 +79,7 @@ def zchain_multisig_create(chainId, from_addr, to_addr, amount):
 
 
 @jsonrpc.method('Zchain.Multisig.Add(chainId=str, addrs=list, amount=int)')
-def zchain_multisig_add(chainId, from_addr, to_addr, amount):
+def zchain_multisig_add(chainId, addrs, amount):
     logger.info('Zchain.Multisig.Add')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
