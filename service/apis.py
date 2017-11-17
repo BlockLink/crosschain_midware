@@ -67,7 +67,7 @@ def zchain_multisig_create(chainId, addrs, amount):
 
     address = ""
     if chainId == "btc":
-        address = btc_utils.btc_add_multisig(addrs, int)
+        address = btc_utils.btc_add_multisig(addrs, amount)
     else:
         return error_utils.invalid_chainid_type()
     
@@ -90,7 +90,7 @@ def zchain_multisig_add(chainId, addrs, amount):
 
     address = ""
     if chainId == "btc":
-        address = btc_utils.btc_add_multisig(addrs, int)
+        address = btc_utils.btc_add_multisig(addrs, amount)
     else:
         return error_utils.invalid_chainid_type()
     
