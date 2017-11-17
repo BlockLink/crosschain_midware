@@ -30,17 +30,24 @@ def btc_request(method, args):
 
 def btc_create_multisig(addrs, amount):
     resp = btc_request("createmultisig", [amount, addrs])
-    multisig_addr = ""
     if resp["result"] != None:
-        multisig_addr = resp["result"]
-    return multisig_addr
+        return resp["result"]
+    else:
+        return None
 
 def btc_add_multisig(addrs, amount):
     resp = btc_request("addmultisigaddress", [amount, addrs])
-    multisig_addr = ""
     if resp["result"] != None:
-        multisig_addr = resp["result"]
-    return multisig_addr
+        return resp["result"]
+    else:
+        return None
+
+def btc_validate_address(addr):
+    resp = btc_request("validateaddress", [addr])
+    if resp["result"] != None:
+        return resp["result"]
+    else:
+        return None
 
 def btc_create_address():
     resp = btc_request("getnewaddress", ["btc_test"])

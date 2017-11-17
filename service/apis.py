@@ -69,8 +69,14 @@ def zchain_multisig_create(chainId, addrs, amount):
     redeemScript = ""
     if chainId == "btc":
         result = btc_utils.btc_create_multisig(addrs, amount)
-        address = result["address"]
-        redeemScript = result["redeemScript"]
+        if result is not None:
+            address = result["address"]
+            redeemScript = result["redeemScript"]
+            mutisig_record = db.b_btc_multisig_address.find_one({"address": address})
+            if mutisig_record is not None:
+                db.b_btc_multisig_address.remove({"address": address})
+            data = {"address": address, "redeemScript": redeemScript}
+            db.b_btc_multisig_address.insert_one(data)
     else:
         return error_utils.invalid_chainid_type()
     
@@ -93,7 +99,17 @@ def zchain_multisig_add(chainId, addrs, amount):
 
     address = ""
     if chainId == "btc":
-        address = btc_utils.btc_add_multisig(addrs, amount)
+        multisig_addr = btc_utils.btc_add_multisig(addrs, amount)
+        if multisig_addr is not None:
+            addr_info = btc_utils.btc_validate_address(multisig_addr)
+            if addr_info is not None:
+                multisig_record = db.b_btc_multisig_address.find_one({"address": multisig_addr})
+                if multisig_record is not None:
+                    db.b_btc_multisig_address.remove({"address": multisig_addr})
+                data = {"address": addr_info["address"], "redeemScript": addr_info["hex"]}
+                db.b_btc_multisig_address.insert_one(data)
+                address = addr_info["address"]
+
     else:
         return error_utils.invalid_chainid_type()
     
