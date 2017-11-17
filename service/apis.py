@@ -55,7 +55,7 @@ def zchain_crypt_verify_message(chainId, addr, message, signature):
     }
 
 
-@jsonrpc.method('Zchain.Multisig.Create(chainId=str, addrs=arr, amount=int)')
+@jsonrpc.method('Zchain.Multisig.Create(chainId=str, addrs=list, amount=int)')
 def zchain_multisig_create(chainId, from_addr, to_addr, amount):
     logger.info('Zchain.Multisig.Create')
     if type(chainId) != unicode:
