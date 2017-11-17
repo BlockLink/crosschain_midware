@@ -73,7 +73,7 @@ def zchain_multisig_create(chainId, from_addr, to_addr, amount):
     
     return {
         'chainId': chainId,
-        'address': address["address"]
+        'address': address["address"],
         'redeemScript': address["redeemScript"]
     }
 
