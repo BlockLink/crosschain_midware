@@ -68,7 +68,7 @@ def zchain_multisig_create(chainId, addrs, amount):
     address = ""
     redeemScript = ""
     if chainId == "btc":
-        result = btc_utils.btc_add_multisig(addrs, amount)
+        result = btc_utils.btc_create_multisig(addrs, amount)
         address = result["address"]
         redeemScript = result["redeemScript"]
     else:
