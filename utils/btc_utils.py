@@ -56,6 +56,13 @@ def btc_create_address():
         address = resp["result"]
     return address
 
+def btc_broadcaset_trx(trx):
+    resp = btc_request("sendrawtransaction", [trx])
+    result = ""
+    if resp["result"] != None:
+        result = resp["result"]
+    return result
+
 def btc_sign_message(addr, message):
     resp = btc_request("signmessage", [addr, message])
     signed_message = ""
