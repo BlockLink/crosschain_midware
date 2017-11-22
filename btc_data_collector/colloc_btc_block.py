@@ -91,8 +91,11 @@ def do_collect_app(db):
 def get_latest_block_num(db):
     ret = btc_request("getblockcount",[])
     real_block_num = ret['result']
-    safe_block = db.b_config.find_one({"key":"btcsafeblock"})["value"]
-    return int(real_block_num) - int(safe_block)
+    safe_block = db.b_config.find_one({"key":"btcsafeblock"})
+    if safe_block is None:
+        return 6
+    else:
+        return int(real_block_num) - int(safe_block["value"])
 
 
 
@@ -102,7 +105,7 @@ def clear_last_garbage_data(db_pool):
     ret = config.find_one({"key":"btcsyncblocknum"})
     if ret is None:
         return 0
-    last_sync_block_num = int(ret["value"])+1
+    last_sync_block_num = int(ret["value"]) + 1
     try:
         db_pool.b_raw_transaction.remove({"blockNum":{"$gte":last_sync_block_num},"chainId":"btc"})
         db_pool.b_block.remove({"blockNumber":{"$gte":last_sync_block_num},"chainId":"btc"})
