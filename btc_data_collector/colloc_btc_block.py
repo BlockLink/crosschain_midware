@@ -100,6 +100,8 @@ def clear_last_garbage_data(db_pool):
 
     config = db_pool.b_config
     ret = config.find_one({"key":"btcsyncblocknum"})
+    if ret is None:
+        return 0
     last_sync_block_num = int(ret["value"])+1
     try:
         db_pool.b_raw_transaction.remove({"blockNum":{"$gte":last_sync_block_num},"chainId":"btc"})
@@ -142,7 +144,7 @@ def collect_block( db_pool, block_num_fetch):
 
 def get_transaction_data(trx_id):
 
-    ret = btc_request("gettransaction",[trx_id])
+    ret = btc_request("getrawtransaction",[trx_id, true])
     if ret["result"] is None:
         resp_data = None
     else:
@@ -154,6 +156,8 @@ def get_transaction_data(trx_id):
 def collect_pretty_transaction(db_pool, base_trx_data,block_num):
     #处理交易
     raw_transaction_db = db_pool.b_raw_transaction
+    btc_unspent = db_pool.b_btc_unspent
+
     trx_data = {}
     amount = 0.0
     from_address = ""
@@ -162,97 +166,96 @@ def collect_pretty_transaction(db_pool, base_trx_data,block_num):
     to_account = ""
     trx_data["chainId"] = "btc"
     trx_data["trxid"] = base_trx_data["txid"]
-    trx_data["blockid"] = base_trx_data["blockhash"]
     trx_data["blockNum"] = block_num
-    trxs = base_trx_data["details"]
-    trx_data["toAmounts"] = []
-    trx_data["fromAmounts"] = []
-    trx_data["trxFee"] = []
-    trx_data["fromAddresses"] = []
-    trx_data["toAddresses"] = []
-    for trx in trxs:
-        if trx["category"] == "send":
-            from_address = trx["address"]
-            from_account = trx["account"]
-            trx_data["fromAddresses"].append(trx["address"])
-            trx_data["fromAmounts"].append(trx["amount"])
-            trx_data["fromAssets"] = "btc"
-            trx_data["trxFee"].append(trx['fee'])
-            trx_data["FeeAsset"] = "btc"
-        elif trx["category"] == "receive":
-            to_address = trx["address"]
-            to_account = trx["account"]
-            trx_data["toAddresses"].append(trx["address"])
-            amount += trx["amount"]
-            trx_data["toAmounts"].append(trx["amount"])
-            trx_data["toAssets"] = "btc"
+    vin = base_trx_data["vin"]
+    vout = base_trx_data["vout"]
+    # trx_data["toAmounts"] = []
+    # trx_data["fromAmounts"] = []
+    # trx_data["trxFee"] = []
+    # trx_data["fromAddresses"] = []
+    # trx_data["toAddresses"] = []
+    for trx_out in vout:
+        out_address = trx_out["scriptPubKey"]["addresses"][0]
+        ret = db.b_btc_multisig_address.find({"address": out_address})
+        if ret is None:
+            continue
+        trx_data["vout"].append({"value": trx_out["value"], "n": trx_out["n"], "scriptPubKey": trx_out["scriptPubKey"]["hex"], "address": out_address})
+    if len(trx_data["vout"]) > 0:
+        for trx_in in vin:
+            in_trx = get_transaction_data(trx_in["txid"])
+            if in_trx is None:
+                logging.error("Fail to get vin transaction [%s] of [%s]" % trx_in["txid"], trx_data["trxid"])
+            else:
+                for t in in_trx["vout"]:
+                    if t["n"] == trx_in["vout"]:
+                        trx_data["vin"].append({"txid": trx_in["txid"], "vout": trx_in["vout"], "value": t["value"], "address": t["addresses"][0]})
+
     trx_data["trxTime"] = datetime.utcfromtimestamp(base_trx_data['time']).strftime("%Y-%m-%d %H:%M:%S")
     trx_data["createtime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    trx_data["isDispatched"] = 0
-    trx_data["isHandled"] = 0
     mongo_data = raw_transaction_db.find_one({"trxid" : base_trx_data["txid"]})
     if mongo_data == None:
         raw_transaction_db.insert(trx_data)
     else:
         raw_transaction_db.update({"trxid":base_trx_data["txid"]},{"$set":trx_data})
-    raw_transaction_input_db = db_pool.b_raw_transaction_input
-    raw_transaction_output_db = db_pool.b_raw_transaction_output
-    for trx in trxs:
-        if trx["category"] == "send":
-            trx_input_data = {}
-            trx_input_data["chainId"] = "btc"
-            trx_input_data["TransactionId"] = trx_data["trxid"]
-            trx_input_data["address"] = trx["address"]
-            trx_input_data["blockNum"] = trx_data["blockNum"]
-            trx_input_data["assetName"] = "btc"
-            trx_input_data["amount"] = str(trx["amount"])
-            mongo_data = raw_transaction_input_db.find_one({"TransactionId": base_trx_data["txid"],"address":trx["address"],"chainId":"btc"})
-            if mongo_data == None:
-                raw_transaction_input_db.insert(trx_input_data)
-            else:
-                raw_transaction_input_db.update({"trxid": base_trx_data["txid"],"address":trx["address"],"chainId":"btc"}, {"$set": trx_data})
-        elif trx["category"] == "receive":
-            trx_output_data = {}
-            trx_output_data["chainId"] = "btc"
-            trx_output_data["TransactionId"] = trx_data["trxid"]
-            trx_output_data["blockNum"] = trx_data["blockNum"]
-            trx_output_data["address"] = trx["address"]
-            trx_output_data["assetName"] = "btc"
-            trx_output_data["amount"] = str(trx["amount"])
-            mongo_data = raw_transaction_output_db.find({"TransactionId": base_trx_data["txid"], "address":trx["address"],"chainId":"btc"})
-            if mongo_data == None:
-                raw_transaction_output_db.insert(trx_output_data)
-            else:
-                for mong in mongo_data:
-                    raw_transaction_output_db.update({"_id":mong["_id"],"TransactionId": base_trx_data["txid"], "address":trx["address"],"chainId":"btc"},
-                                          {"$set": trx_data})
 
-    if from_account == "btc_test":
-        print "handle address from"
-        #b_cash_sweep  b_cash_sweep_plan_detail
-        cash_detail_data = db_pool.b_cash_sweep_plan_detail.find_one({"chainId":"btc","trxId":trx_data["trxid"]})
-        if cash_detail_data == None:
-            logging.info("cash_detail_data is not exist error")
-            #db_pool.b_cash_sweep_plan_detail.insert({"chainId":"btc","trxId":trx_data["trxid"],"fromAddress":from_address,"sweepAddress":to_address,"successCoinAmount":amount,"status":1,"createTime":trx_data["createtime"]})
-        else:
-            db_pool.b_cash_sweep_plan_detail.update({"chainId":"btc","trxId":trx_data["trxid"]},{"$set":{"fromAddress":from_address,"status":1,"createTime":trx_data["createtime"]}})
-            cash_data = db_pool.b_cash_sweep.find_one({"_id":cash_detail_data["cash_sweep_id"]})
-            if cash_data == None:
-                logging.info("cash data is not exist error")
-            else:
-                db_pool.b_cash_sweep.update({"_id":cash_detail_data["cash_sweep_id"]},{"$set":{"status":2}})
-    elif from_account == "btc_withdraw_test":
-        #b_withdraw_transaction
-        withdraw_data = db_pool.b_withdraw_transaction.find_one({"chainId":"btc","TransactionId":trx_data["trxid"]})
-        if withdraw_data == None:
-            db_pool.b_withdraw_transaction.insert({"chainId":"btc","TransactionId":trx_data["trxid"],"fromAddress":from_address,"toAddress":to_address,"assetName":"btc","amount":amount,"status":2,"trxTime":trx_data["trxTime"]})
-        else:
-            db_pool.b_withdraw_transaction.update({"chainId":"btc","TransactionId":trx_data["trxid"]},{"$set":{"status":2,"trxTime":trx_data["trxTime"]}})
-    if to_account == "btc_test":
-        #b_deposit_transaction
-        deposit_data = db_pool.b_deposit_transaction.find_one({"chainId":"btc","TransactionId":trx_data["trxid"]})
-        if deposit_data == None:
-            db_pool.b_deposit_transaction.insert({"chainId":"btc","TransactionId":trx_data["trxid"],"fromAddress":from_address,"toAddress":to_address,"assetName":"btc","amount":amount,"blockNum":block_num,"trxTime":trx_data["trxTime"]})
+    # raw_transaction_input_db = db_pool.b_raw_transaction_input
+    # raw_transaction_output_db = db_pool.b_raw_transaction_output
+    # for trx in trxs:
+    #     if trx["category"] == "send":
+    #         trx_input_data = {}
+    #         trx_input_data["chainId"] = "btc"
+    #         trx_input_data["TransactionId"] = trx_data["trxid"]
+    #         trx_input_data["address"] = trx["address"]
+    #         trx_input_data["blockNum"] = trx_data["blockNum"]
+    #         trx_input_data["assetName"] = "btc"
+    #         trx_input_data["amount"] = str(trx["amount"])
+    #         mongo_data = raw_transaction_input_db.find_one({"TransactionId": base_trx_data["txid"],"address":trx["address"],"chainId":"btc"})
+    #         if mongo_data == None:
+    #             raw_transaction_input_db.insert(trx_input_data)
+    #         else:
+    #             raw_transaction_input_db.update({"trxid": base_trx_data["txid"],"address":trx["address"],"chainId":"btc"}, {"$set": trx_data})
+    #     elif trx["category"] == "receive":
+    #         trx_output_data = {}
+    #         trx_output_data["chainId"] = "btc"
+    #         trx_output_data["TransactionId"] = trx_data["trxid"]
+    #         trx_output_data["blockNum"] = trx_data["blockNum"]
+    #         trx_output_data["address"] = trx["address"]
+    #         trx_output_data["assetName"] = "btc"
+    #         trx_output_data["amount"] = str(trx["amount"])
+    #         mongo_data = raw_transaction_output_db.find({"TransactionId": base_trx_data["txid"], "address":trx["address"],"chainId":"btc"})
+    #         if mongo_data == None:
+    #             raw_transaction_output_db.insert(trx_output_data)
+    #         else:
+    #             for mong in mongo_data:
+    #                 raw_transaction_output_db.update({"_id":mong["_id"],"TransactionId": base_trx_data["txid"], "address":trx["address"],"chainId":"btc"},
+    #                                       {"$set": trx_data})
+
+    # if from_account == "btc_test":
+    #     print "handle address from"
+    #     #b_cash_sweep  b_cash_sweep_plan_detail
+    #     cash_detail_data = db_pool.b_cash_sweep_plan_detail.find_one({"chainId":"btc","trxId":trx_data["trxid"]})
+    #     if cash_detail_data == None:
+    #         logging.info("cash_detail_data is not exist error")
+    #         #db_pool.b_cash_sweep_plan_detail.insert({"chainId":"btc","trxId":trx_data["trxid"],"fromAddress":from_address,"sweepAddress":to_address,"successCoinAmount":amount,"status":1,"createTime":trx_data["createtime"]})
+    #     else:
+    #         db_pool.b_cash_sweep_plan_detail.update({"chainId":"btc","trxId":trx_data["trxid"]},{"$set":{"fromAddress":from_address,"status":1,"createTime":trx_data["createtime"]}})
+    #         cash_data = db_pool.b_cash_sweep.find_one({"_id":cash_detail_data["cash_sweep_id"]})
+    #         if cash_data == None:
+    #             logging.info("cash data is not exist error")
+    #         else:
+    #             db_pool.b_cash_sweep.update({"_id":cash_detail_data["cash_sweep_id"]},{"$set":{"status":2}})
+    # elif from_account == "btc_withdraw_test":
+    #     #b_withdraw_transaction
+    #     withdraw_data = db_pool.b_withdraw_transaction.find_one({"chainId":"btc","TransactionId":trx_data["trxid"]})
+    #     if withdraw_data == None:
+    #         db_pool.b_withdraw_transaction.insert({"chainId":"btc","TransactionId":trx_data["trxid"],"fromAddress":from_address,"toAddress":to_address,"assetName":"btc","amount":amount,"status":2,"trxTime":trx_data["trxTime"]})
+    #     else:
+    #         db_pool.b_withdraw_transaction.update({"chainId":"btc","TransactionId":trx_data["trxid"]},{"$set":{"status":2,"trxTime":trx_data["trxTime"]}})
+    # if to_account == "btc_test":
+    #     #b_deposit_transaction
+    #     deposit_data = db_pool.b_deposit_transaction.find_one({"chainId":"btc","TransactionId":trx_data["trxid"]})
+    #     if deposit_data == None:
+    #         db_pool.b_deposit_transaction.insert({"chainId":"btc","TransactionId":trx_data["trxid"],"fromAddress":from_address,"toAddress":to_address,"assetName":"btc","amount":amount,"blockNum":block_num,"trxTime":trx_data["trxTime"]})
 
     return trx_data
 
