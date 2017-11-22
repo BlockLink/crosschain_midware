@@ -172,14 +172,14 @@ def collect_pretty_transaction(db_pool, base_trx_data,block_num):
     trx_data["blockNum"] = block_num
     vin = base_trx_data["vin"]
     vout = base_trx_data["vout"]
-    # trx_data["toAmounts"] = []
-    # trx_data["fromAmounts"] = []
+    trx_data["vout"] = []
+    trx_data["vin"] = []
     # trx_data["trxFee"] = []
     # trx_data["fromAddresses"] = []
     # trx_data["toAddresses"] = []
     for trx_out in vout:
         out_address = trx_out["scriptPubKey"]["addresses"][0]
-        ret = db.b_btc_multisig_address.find({"address": out_address})
+        ret = db_pool.b_btc_multisig_address.find({"address": out_address})
         if ret is None:
             continue
         trx_data["vout"].append({"value": trx_out["value"], "n": trx_out["n"], "scriptPubKey": trx_out["scriptPubKey"]["hex"], "address": out_address})
