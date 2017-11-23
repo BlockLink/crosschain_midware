@@ -77,6 +77,26 @@ def zchain_trans_createTrx(chainId, from_addr,to_addr,amount):
         'data': result
     }
 
+@jsonrpc.method('Zchain.Trans.DecodeTrx(chainId=str, trx_hex=str)')
+def zchain_trans_createTrx(chainId, trx_hex):
+    logger.info('Zchain.Trans.DecodeTrx')
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+
+    result = ""
+    if chainId == "btc":
+        result = btc_utils.btc_decode_hex_transaction(trx_hex)
+    else:
+        return error_utils.invalid_chainid_type()
+
+    if result == "":
+        return error_utils.error_response("Cannot create transaction.")
+
+    return {
+        'chainId': chainId,
+        'data': result
+    }
+
 
 @jsonrpc.method('Zchain.Crypt.VerifyMessage(chainId=str, addr=str, message=str, signature=str)')
 def zchain_crypt_verify_message(chainId, addr, message, signature):

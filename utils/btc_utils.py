@@ -76,7 +76,11 @@ def btc_verify_signed_message(addr, message, signature):
     if resp["result"] != None:
         result = resp["result"]
     return result
-
+def btc_decode_hex_transaction(trx_hex):
+    resp = btc_request("decoderawtransaction",[trx_hex])
+    if resp["result"] is not None :
+        return resp["result"]
+    return ""
 def btc_create_transaction(from_addr, to_addr, amount):
     resp = btc_request("createrawtransaction", [[{'txid':'d253cf22e4cfb18dfea319c2f60154705eba8b00f0a7bf0ef11cadbd67cc5ff4','vout':0}],{'%s'%to_addr: 44.027}])
     trx_hex = ""
