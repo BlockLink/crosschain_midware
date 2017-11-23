@@ -51,7 +51,7 @@ def do_collect_app(db):
                 GlobalVariable_btc.register_account_dic = {}
                 GlobalVariable_btc.upgrade_contract_dic = {}
                 latest_block_num = get_latest_block_num(db)
-                logging.debug("latest_block_num: %d, GlobalVariable_btc.last_sync_block_num: %d", (latest_block_num, GlobalVariable_btc.last_sync_block_num))
+                logging.debug("latest_block_num: %d, GlobalVariable_btc.last_sync_block_num: %d" % (latest_block_num, GlobalVariable_btc.last_sync_block_num))
                 if GlobalVariable_btc.last_sync_block_num >= latest_block_num:
                     GlobalVariable_btc.sync_start_per_round = latest_block_num
                     GlobalVariable_btc.sync_end_per_round = latest_block_num
