@@ -83,10 +83,9 @@ def btc_decode_hex_transaction(trx_hex):
     return ""
 def btc_create_transaction(from_addr, to_addr, amount):
     resp = btc_request("createrawtransaction", [[{'txid':'d253cf22e4cfb18dfea319c2f60154705eba8b00f0a7bf0ef11cadbd67cc5ff4','vout':0}],{'%s'%to_addr: 44.027}])
-    trx_hex = ""
     if resp["result"] != None:
-        trx_hex = resp["result"]
-    return trx_hex
+        return btc_decode_hex_transaction(resp["result"])
+    return ""
 
 def btc_sign_transaction(trx_hex):
     resp = btc_request("signrawtransaction", [trx_hex,
