@@ -69,10 +69,11 @@ def do_collect_app(db):
                     "\rsync block [%s][%d/%d], %.3f%%\n" % (sync_process, GlobalVariable_btc.sync_start_per_round,
                                                           latest_block_num, sync_rate * 100))
                 while GlobalVariable_btc.sync_start_per_round <=GlobalVariable_btc.sync_end_per_round:
+                    logging.debug("Start collect step from %d" % GlobalVariable_btc.sync_start_per_round)
                     collect_data_cb(db)
                 GlobalVariable_btc.last_sync_block_num = GlobalVariable_btc.sync_start_per_round
                 config.update({"key": "btcsyncblocknum"}, {"$set":{"key": "btcsyncblocknum", "value": str(GlobalVariable_btc.last_sync_block_num)}})
-                if GlobalVariable_btc.sync_start_per_round == latest_block_num+1:
+                if GlobalVariable_btc.sync_start_per_round == latest_block_num + 1:
                     break
 
             print 'ok'
@@ -105,11 +106,10 @@ def clear_last_garbage_data(db_pool):
     ret = config.find_one({"key":"btcsyncblocknum"})
     if ret is None:
         return 0
-    last_sync_block_num = int(ret["value"]) + 1
+    last_sync_block_num = int(ret["value"])
     try:
         db_pool.b_raw_transaction.remove({"blockNum":{"$gte":last_sync_block_num},"chainId":"btc"})
         db_pool.b_block.remove({"blockNumber":{"$gte":last_sync_block_num},"chainId":"btc"})
-
         db_pool.b_raw_transaction_input.remove({"blockNum": {"$gte": last_sync_block_num},"chainId":"btc"})
         db_pool.b_raw_transaction_output.remove({"blockNum": {"$gte": last_sync_block_num},"chainId":"btc"})
         db_pool.b_deposit_transaction.remove({"blockNum": {"$gte": last_sync_block_num},"chainId":"btc"})
@@ -174,12 +174,10 @@ def collect_pretty_transaction(db_pool, base_trx_data,block_num):
     vout = base_trx_data["vout"]
     trx_data["vout"] = []
     trx_data["vin"] = []
-    # trx_data["trxFee"] = []
-    # trx_data["fromAddresses"] = []
-    # trx_data["toAddresses"] = []
+
     for trx_out in vout:
         out_address = trx_out["scriptPubKey"]["addresses"][0]
-        ret = db_pool.b_btc_multisig_address.find({"address": out_address})
+        ret = db_pool.b_btc_multisig_address.find_one({"address": out_address})
         if ret is None:
             continue
         trx_data["vout"].append({"value": trx_out["value"], "n": trx_out["n"], "scriptPubKey": trx_out["scriptPubKey"]["hex"], "address": out_address})
@@ -192,9 +190,11 @@ def collect_pretty_transaction(db_pool, base_trx_data,block_num):
                 logging.error("Fail to get vin transaction [%s] of [%s]" % trx_in["txid"], trx_data["trxid"])
             else:
                 for t in in_trx["vout"]:
-                    if t["n"] == trx_in["vout"]:
+                    if t["n"] == trx_in["vout"] and t.has_key("addresses"):
                         trx_data["vin"].append({"txid": trx_in["txid"], "vout": trx_in["vout"], "value": t["value"], "address": t["addresses"][0]})
 
+    if len(trx_data["vout"]) <= 0 and len(trx_data["vin"]) <= 0:
+        return
     trx_data["trxTime"] = datetime.utcfromtimestamp(base_trx_data['time']).strftime("%Y-%m-%d %H:%M:%S")
     trx_data["createtime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     mongo_data = raw_transaction_db.find_one({"trxid" : base_trx_data["txid"]})
@@ -277,15 +277,15 @@ def collect_data_cb(db_pool):
         count = 0
         while GlobalVariable_btc.sync_start_per_round <= GlobalVariable_btc.sync_end_per_round and count < GlobalVariable_btc.sync_limit_per_step:
             block_num_fetch = GlobalVariable_btc.sync_start_per_round
-            GlobalVariable_btc.sync_start_per_round += 1
 
             # 采集块
             block_info = collect_block(db_pool, block_num_fetch)
             for trx_id in block_info.transactions:
                 # 采集交易
                 base_trx_data = get_transaction_data(trx_id)
-                if base_trx_data == None:
+                if base_trx_data is None:
                     continue
+                logging.debug("Transaction: %s" % base_trx_data)
                 pretty_trx_info = collect_pretty_transaction(db_pool, base_trx_data, block_info.block_num)
                 # 统计块中交易总金额和总手续费
             #     for amount in pretty_trx_info["toAmounts"]:
@@ -294,6 +294,7 @@ def collect_data_cb(db_pool):
             #         block_info.trx_fee = block_info.trx_fee + fee_amount
             # if block_info.trx_amount > 0 or -block_info.trx_fee > 0.0:
             #     update_block_trx_amount(db_pool, block_info)
+            GlobalVariable_btc.sync_start_per_round += 1
             count += 1
 
         # 连接使用完毕，需要释放连接
