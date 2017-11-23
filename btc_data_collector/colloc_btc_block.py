@@ -147,7 +147,7 @@ def collect_block( db_pool, block_num_fetch):
 
 def get_transaction_data(trx_id):
 
-    ret = btc_request("getrawtransaction",[trx_id, true])
+    ret = btc_request("getrawtransaction",[trx_id, True])
     if ret["result"] is None:
         resp_data = None
     else:
@@ -172,19 +172,21 @@ def collect_pretty_transaction(db_pool, base_trx_data,block_num):
     trx_data["blockNum"] = block_num
     vin = base_trx_data["vin"]
     vout = base_trx_data["vout"]
-    # trx_data["toAmounts"] = []
-    # trx_data["fromAmounts"] = []
+    trx_data["vout"] = []
+    trx_data["vin"] = []
     # trx_data["trxFee"] = []
     # trx_data["fromAddresses"] = []
     # trx_data["toAddresses"] = []
     for trx_out in vout:
         out_address = trx_out["scriptPubKey"]["addresses"][0]
-        ret = db.b_btc_multisig_address.find({"address": out_address})
+        ret = db_pool.b_btc_multisig_address.find({"address": out_address})
         if ret is None:
             continue
         trx_data["vout"].append({"value": trx_out["value"], "n": trx_out["n"], "scriptPubKey": trx_out["scriptPubKey"]["hex"], "address": out_address})
     if len(trx_data["vout"]) > 0:
         for trx_in in vin:
+            if not trx_in.has_key("txid"):
+                continue
             in_trx = get_transaction_data(trx_in["txid"])
             if in_trx is None:
                 logging.error("Fail to get vin transaction [%s] of [%s]" % trx_in["txid"], trx_data["trxid"])
@@ -285,12 +287,12 @@ def collect_data_cb(db_pool):
                     continue
                 pretty_trx_info = collect_pretty_transaction(db_pool, base_trx_data, block_info.block_num)
                 # 统计块中交易总金额和总手续费
-                for amount in pretty_trx_info["toAmounts"]:
-                    block_info.trx_amount = block_info.trx_amount + amount
-                for fee_amount in pretty_trx_info["trxFee"]:
-                    block_info.trx_fee = block_info.trx_fee + fee_amount
-            if block_info.trx_amount > 0 or -block_info.trx_fee > 0.0:
-                update_block_trx_amount(db_pool, block_info)
+            #     for amount in pretty_trx_info["toAmounts"]:
+            #         block_info.trx_amount = block_info.trx_amount + amount
+            #     for fee_amount in pretty_trx_info["trxFee"]:
+            #         block_info.trx_fee = block_info.trx_fee + fee_amount
+            # if block_info.trx_amount > 0 or -block_info.trx_fee > 0.0:
+            #     update_block_trx_amount(db_pool, block_info)
 
         # 连接使用完毕，需要释放连接
 
