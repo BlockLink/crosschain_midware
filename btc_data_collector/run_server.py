@@ -11,7 +11,13 @@ from pymongo import MongoClient
 
 if __name__ == '__main__':
     LOG_FORMAT = '%(asctime)-15s %(levelname)s %(funcName)s %(message)s'
-    logging.basicConfig(level=LOG_LEVEL, format=LOG_FORMAT, filename=LOG_FILENAME, filenode="a")
+    logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT, filename=LOG_FILENAME, filenode="a")
+	console = logging.StreamHandler()
+	console.setLevel(logging.DEBUG)
+	formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+	console.setFormatter(formatter)
+	logging.getLogger('').addHandler(console)
+
 
     client = MongoClient(host=MONGO_HOST, port=MONGO_PORT)
     client[MONGO_NAME].authenticate(MONGO_USER, MONGO_PASS)

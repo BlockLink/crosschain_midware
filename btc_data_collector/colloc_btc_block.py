@@ -44,14 +44,14 @@ def do_collect_app(db):
 
             # 清理上一轮的垃圾数据，包括块数据、交易数据以及合约数据
             GlobalVariable_btc.last_sync_block_num = clear_last_garbage_data(db)
+            GlobalVariable_btc.sync_limit_per_step = 10
 
             # 获取当前链上最新块号
             while True:
                 GlobalVariable_btc.register_account_dic = {}
                 GlobalVariable_btc.upgrade_contract_dic = {}
                 latest_block_num = get_latest_block_num(db)
-                print "latest_block_num",latest_block_num
-                print "GlobalVariable_btc.last_sync_block_num",GlobalVariable_btc.last_sync_block_num
+                logging.debug("latest_block_num: %d, GlobalVariable_btc.last_sync_block_num: %d", (latest_block_num, GlobalVariable_btc.last_sync_block_num))
                 if GlobalVariable_btc.last_sync_block_num >= latest_block_num:
                     GlobalVariable_btc.sync_start_per_round = latest_block_num
                     GlobalVariable_btc.sync_end_per_round = latest_block_num
@@ -61,8 +61,8 @@ def do_collect_app(db):
                                                          GlobalVariable_btc.last_sync_block_num + SYNC_BLOCK_PER_ROUND) >= latest_block_num) \
                                                         and latest_block_num or (
                                                         GlobalVariable_btc.last_sync_block_num + SYNC_BLOCK_PER_ROUND)
-                print GlobalVariable_btc.sync_start_per_round
-                print latest_block_num
+                logging.debug("This round start: %d, this round end: %d" % (GlobalVariable_btc.sync_start_per_round, GlobalVariable_btc.sync_end_per_round))
+
                 sync_rate = float(GlobalVariable_btc.sync_start_per_round) / latest_block_num
                 sync_process = '#' * int(40 * sync_rate) + ' ' * (40 - int(40 * sync_rate))
                 sys.stdout.write(
@@ -70,11 +70,10 @@ def do_collect_app(db):
                                                           latest_block_num, sync_rate * 100))
                 while GlobalVariable_btc.sync_start_per_round <=GlobalVariable_btc.sync_end_per_round:
                     collect_data_cb(db)
-                GlobalVariable_btc.last_sync_block_num = GlobalVariable_btc.sync_end_per_round
+                GlobalVariable_btc.last_sync_block_num = GlobalVariable_btc.sync_start_per_round
                 config.update({"key": "btcsyncblocknum"}, {"$set":{"key": "btcsyncblocknum", "value": str(GlobalVariable_btc.last_sync_block_num)}})
                 if GlobalVariable_btc.sync_start_per_round == latest_block_num+1:
                     break
-
 
             print 'ok'
             time.sleep(10)
@@ -91,11 +90,12 @@ def do_collect_app(db):
 def get_latest_block_num(db):
     ret = btc_request("getblockcount",[])
     real_block_num = ret['result']
-    safe_block = db.b_config.find_one({"key":"btcsafeblock"})
-    if safe_block is None:
-        return 6
-    else:
-        return int(real_block_num) - int(safe_block["value"])
+    safe_block = 6
+    safe_block_ret = db.b_config.find_one({"key":"btcsafeblock"})
+    if safe_block_ret is not None:
+        safe_block = int(safe_block_ret["value"])
+
+    return int(real_block_num) - safe_block
 
 
 
@@ -130,8 +130,6 @@ def collect_block( db_pool, block_num_fetch):
     if ret2['result'] == None:
         raise Exception("blockchain_get_block error")
     json_data = ret2['result']
-    if len(json_data["tx"]) > 0:
-        print "has transactions:", block_num_fetch
     block_info = BlockInfoBtc()
     block_info.from_block_resp(json_data)
     block = db_pool.b_block
@@ -141,6 +139,8 @@ def collect_block( db_pool, block_num_fetch):
         block.insert(block_info.get_json_data())
     else:
         block.update({"blockHash":block_info.block_id},{"$set":block_info.get_json_data()})
+
+    logging.debug("Collect block [num:%d], [block_hash:%s], [tx_num:%d]" % (block_num_fetch, block_hash, len(json_data["tx"])))
 
     return block_info
 
@@ -274,7 +274,8 @@ def update_block_trx_amount(db_pool,block_info):
 #采集数据
 def collect_data_cb(db_pool):
     try:
-        while GlobalVariable_btc.sync_start_per_round <= GlobalVariable_btc.sync_end_per_round:
+        count = 0
+        while GlobalVariable_btc.sync_start_per_round <= GlobalVariable_btc.sync_end_per_round and count < GlobalVariable_btc.sync_limit_per_step:
             block_num_fetch = GlobalVariable_btc.sync_start_per_round
             GlobalVariable_btc.sync_start_per_round += 1
 
@@ -293,6 +294,7 @@ def collect_data_cb(db_pool):
             #         block_info.trx_fee = block_info.trx_fee + fee_amount
             # if block_info.trx_amount > 0 or -block_info.trx_fee > 0.0:
             #     update_block_trx_amount(db_pool, block_info)
+            count += 1
 
         # 连接使用完毕，需要释放连接
 
