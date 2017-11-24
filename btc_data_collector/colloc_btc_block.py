@@ -175,25 +175,30 @@ def collect_pretty_transaction(db_pool, base_trx_data,block_num):
     trx_data["vout"] = []
     trx_data["vin"] = []
 
+    # Process deposit transaction.
+    bool need_record = False
     for trx_out in vout:
         out_address = trx_out["scriptPubKey"]["addresses"][0]
-        ret = db_pool.b_btc_multisig_address.find_one({"address": out_address})
-        if ret is None:
-            continue
+        # ret = db_pool.b_btc_multisig_address.find_one({"address": out_address})
+         # if ret is None or out_address[0] != "3":
+            # continue
+        if out_address[0] == "3":
+            need_record = True
         trx_data["vout"].append({"value": trx_out["value"], "n": trx_out["n"], "scriptPubKey": trx_out["scriptPubKey"]["hex"], "address": out_address})
-    if len(trx_data["vout"]) > 0:
-        for trx_in in vin:
-            if not trx_in.has_key("txid"):
-                continue
-            in_trx = get_transaction_data(trx_in["txid"])
-            if in_trx is None:
-                logging.error("Fail to get vin transaction [%s] of [%s]" % trx_in["txid"], trx_data["trxid"])
-            else:
-                for t in in_trx["vout"]:
-                    if t["n"] == trx_in["vout"] and t.has_key("addresses"):
-                        trx_data["vin"].append({"txid": trx_in["txid"], "vout": trx_in["vout"], "value": t["value"], "address": t["addresses"][0]})
+    for trx_in in vin:
+        if not trx_in.has_key("txid"):
+            continue
+        in_trx = get_transaction_data(trx_in["txid"])
+        if in_trx is None:
+            logging.error("Fail to get vin transaction [%s] of [%s]" % trx_in["txid"], trx_data["trxid"])
+        else:
+            for t in in_trx["vout"]:
+                if t["n"] == trx_in["vout"] and t.has_key("addresses"):
+                    trx_data["vin"].append({"txid": trx_in["txid"], "vout": trx_in["vout"], "value": t["value"], "address": t["addresses"][0]})
+                    if t["addresses"][0][0] == "3":
+                        need_record = True
 
-    if len(trx_data["vout"]) <= 0 and len(trx_data["vin"]) <= 0:
+    if not need_record:
         return
     trx_data["trxTime"] = datetime.utcfromtimestamp(base_trx_data['time']).strftime("%Y-%m-%d %H:%M:%S")
     trx_data["createtime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
