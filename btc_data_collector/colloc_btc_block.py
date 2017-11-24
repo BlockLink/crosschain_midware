@@ -179,7 +179,9 @@ def collect_pretty_transaction(db_pool, base_trx_data,block_num):
     # Process deposit transaction.
     need_record = False
     for trx_out in vout:
-        out_address = trx_out["scriptPubKey"]["addresses"][0]
+        out_address = ""
+        if trx_out["scriptPubKey"].has_key("addresses"):
+            out_address = trx_out["scriptPubKey"]["addresses"][0]
         # ret = db_pool.b_btc_multisig_address.find_one({"address": out_address})
          # if ret is None or out_address[0] != "3":
             # continue
