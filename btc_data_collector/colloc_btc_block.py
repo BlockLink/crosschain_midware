@@ -185,7 +185,7 @@ def collect_pretty_transaction(db_pool, base_trx_data,block_num):
         # ret = db_pool.b_btc_multisig_address.find_one({"address": out_address})
          # if ret is None or out_address[0] != "3":
             # continue
-        if out_address[0] == "3":
+        if out_address != "" and out_address[0] == "3":
             need_record = True
         trx_data["vout"].append({"value": trx_out["value"], "n": trx_out["n"], "scriptPubKey": trx_out["scriptPubKey"]["hex"], "address": out_address})
     for trx_in in vin:
