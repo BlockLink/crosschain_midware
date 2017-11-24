@@ -71,8 +71,9 @@ def do_collect_app(db):
                 while GlobalVariable_btc.sync_start_per_round <=GlobalVariable_btc.sync_end_per_round:
                     logging.debug("Start collect step from %d" % GlobalVariable_btc.sync_start_per_round)
                     collect_data_cb(db)
-                GlobalVariable_btc.last_sync_block_num = GlobalVariable_btc.sync_start_per_round
-                config.update({"key": "btcsyncblocknum"}, {"$set":{"key": "btcsyncblocknum", "value": str(GlobalVariable_btc.last_sync_block_num)}})
+                    GlobalVariable_btc.last_sync_block_num = GlobalVariable_btc.sync_start_per_round
+                    config.update({"key": "btcsyncblocknum"}, {"$set":{"key": "btcsyncblocknum", "value": str(GlobalVariable_btc.last_sync_block_num)}})
+
                 if GlobalVariable_btc.sync_start_per_round == latest_block_num + 1:
                     break
 
@@ -176,7 +177,7 @@ def collect_pretty_transaction(db_pool, base_trx_data,block_num):
     trx_data["vin"] = []
 
     # Process deposit transaction.
-    bool need_record = False
+    need_record = False
     for trx_out in vout:
         out_address = trx_out["scriptPubKey"]["addresses"][0]
         # ret = db_pool.b_btc_multisig_address.find_one({"address": out_address})
