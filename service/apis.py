@@ -37,6 +37,47 @@ def zchain_crypt_sign(chainId, addr, message):
     }
 
 
+@jsonrpc.method('Zchain.Trans.Sign(chainId=str, addr=str, trx_hex=str)')
+def zchain_crypt_sign(chainId, addr, trx_hex):
+    logger.info('Zchain.Trans.Sign')
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+
+    signed_trx = ""
+    if chainId == "btc":
+        signed_trx = btc_utils.btc_sign_transaction(addr, trx_hex)
+    else:
+        return error_utils.invalid_chainid_type()
+
+    if signed_trx == "":
+        return error_utils.error_response("Cannot sign message.")
+
+    return {
+        'chainId': chainId,
+        'data': signed_trx
+    }
+
+@jsonrpc.method('Zchain.Crypt.Sign(chainId=str, addr=str, message=str)')
+def zchain_crypt_sign(chainId, addr, message):
+    logger.info('Zchain.Crypt.Sign')
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+
+    signed_message = ""
+    if chainId == "btc":
+        signed_message = btc_utils.btc_sign_message(addr, message)
+    else:
+        return error_utils.invalid_chainid_type()
+
+    if signed_message == "":
+        return error_utils.error_response("Cannot sign message.")
+
+    return {
+        'chainId': chainId,
+        'data': signed_message
+    }
+
+
 @jsonrpc.method('Zchain.Trans.broadcastTrx(chainId=str, trx=str, trxid=str)')
 def zchain_trans_broadcastTrx(chainId, trx, trxid):
     logger.info('Zchain.Trans.broadcastTrx')
