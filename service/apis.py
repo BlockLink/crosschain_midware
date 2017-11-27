@@ -50,7 +50,7 @@ def zchain_crypt_sign(chainId, addr, trx_hex):
         return error_utils.invalid_chainid_type()
 
     if signed_trx == "":
-        return error_utils.error_response("Cannot sign message.")
+        return error_utils.error_response("Cannot sign trans.")
 
     return {
         'chainId': chainId,
