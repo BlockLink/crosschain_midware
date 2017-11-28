@@ -178,13 +178,11 @@ def collect_pretty_transaction(db_pool, base_trx_data,block_num):
 
     # Process deposit transaction.
     need_record = False
+    logging.debug(base_trx_data)
     for trx_out in vout:
         out_address = ""
         if trx_out["scriptPubKey"].has_key("addresses"):
             out_address = trx_out["scriptPubKey"]["addresses"][0]
-        # ret = db_pool.b_btc_multisig_address.find_one({"address": out_address})
-         # if ret is None or out_address[0] != "3":
-            # continue
         if out_address != "" and out_address[0] == "3":
             need_record = True
         trx_data["vout"].append({"value": trx_out["value"], "n": trx_out["n"], "scriptPubKey": trx_out["scriptPubKey"]["hex"], "address": out_address})
@@ -195,10 +193,11 @@ def collect_pretty_transaction(db_pool, base_trx_data,block_num):
         if in_trx is None:
             logging.error("Fail to get vin transaction [%s] of [%s]" % trx_in["txid"], trx_data["trxid"])
         else:
+            logging.debug(in_trx)
             for t in in_trx["vout"]:
-                if t["n"] == trx_in["vout"] and t.has_key("addresses"):
-                    trx_data["vin"].append({"txid": trx_in["txid"], "vout": trx_in["vout"], "value": t["value"], "address": t["addresses"][0]})
-                    if t["addresses"][0][0] == "3":
+                if t["n"] == trx_in["vout"] and t["scriptPubKey"].has_key("addresses"):
+                    trx_data["vin"].append({"txid": trx_in["txid"], "vout": trx_in["vout"], "value": t["value"], "address": t["scriptPubKey"]["addresses"][0]})
+                    if t["scriptPubKey"]["addresses"][0][0] == "3":
                         need_record = True
 
     if not need_record:
