@@ -37,6 +37,25 @@ def zchain_crypt_sign(chainId, addr, message):
     }
 
 
+@jsonrpc.method('Zchain.Trans.Sign(chainId=str, addr=str, trx_hex=str)')
+def zchain_crypt_sign(chainId, addr, trx_hex):
+    logger.info('Zchain.Trans.Sign')
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+
+    signed_trx = ""
+    if chainId == "btc":
+        signed_trx = btc_utils.btc_sign_transaction(addr, trx_hex)
+    else:
+        return error_utils.invalid_chainid_type()
+
+    if signed_trx == "":
+        return error_utils.error_response("Cannot sign trans.")
+
+    return {
+        'chainId': chainId,
+        'data': signed_trx
+    }
 @jsonrpc.method('Zchain.Trans.broadcastTrx(chainId=str, trx=str, trxid=str)')
 def zchain_trans_broadcastTrx(chainId, trx, trxid):
     logger.info('Zchain.Trans.broadcastTrx')
@@ -63,13 +82,13 @@ def zchain_trans_createTrx(chainId, from_addr,to_addr,amount):
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
-    result = ""
+    result = {}
     if chainId == "btc":
         result = btc_utils.btc_create_transaction(from_addr,to_addr,amount)
     else:
         return error_utils.invalid_chainid_type()
 
-    if result == "":
+    if result == {}:
         return error_utils.error_response("Cannot create transaction.")
 
     return {
@@ -78,7 +97,7 @@ def zchain_trans_createTrx(chainId, from_addr,to_addr,amount):
     }
 
 @jsonrpc.method('Zchain.Trans.DecodeTrx(chainId=str, trx_hex=str)')
-def zchain_trans_createTrx(chainId, trx_hex):
+def zchain_trans_decodeTrx(chainId, trx_hex):
     logger.info('Zchain.Trans.DecodeTrx')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
@@ -110,7 +129,7 @@ def zchain_trans_queryTrx(chainId, trxid):
         return error_utils.invalid_chainid_type()
 
     if result == "":
-        return error_utils.error_response("Cannot create transaction.")
+        return error_utils.error_response("Cannot query transaction.")
 
     return {
         'chainId': chainId,
