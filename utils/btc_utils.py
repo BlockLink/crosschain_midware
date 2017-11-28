@@ -90,7 +90,7 @@ def btc_get_transaction(trxid):
 
 
 def btc_create_transaction(from_addr, to_addr, amount):
-    resp = btc_request("createrawtransaction", [[{'txid':'d253cf22e4cfb18dfea319c2f60154705eba8b00f0a7bf0ef11cadbd67cc5ff4','vout':0}],{'%s'%to_addr: amount}])
+    resp = btc_request("createrawtransaction", [[{'txid':'e9bca09ff2ba5e8cf35f4efba36631fa3c7d5d1c701fb80c93dc1d0ac0f2bc63','vout':0}],{'%s'%to_addr: amount}])
     if resp["result"] != None:
         trx_hex = resp['result']
         trx = btc_decode_hex_transaction(trx_hex)
@@ -103,7 +103,7 @@ def btc_sign_transaction(addr,trx_hex):
         return ""
     prikey = resp["result"]
     resp = btc_request("signrawtransaction", [trx_hex,
-        [{"txid":"d253cf22e4cfb18dfea319c2f60154705eba8b00f0a7bf0ef11cadbd67cc5ff4","vout":0,"scriptPubKey":"a914762b215e246c36ec8a05c5b11e0ec1a81a4115dc87", "redeemScript": "522102cafafab50491678c9f676e0bd0fb3ff3130ccf033b230665eea6aabc1f81696521022bab1af9bb4adccc8db0c81a3c2abf09fb53f4f77d3bae040e498d4f7ed38fff52ae"}],
+        [{"txid":"e9bca09ff2ba5e8cf35f4efba36631fa3c7d5d1c701fb80c93dc1d0ac0f2bc63","vout":0,"scriptPubKey":"a914762b215e246c36ec8a05c5b11e0ec1a81a4115dc87", "redeemScript": "522102cafafab50491678c9f676e0bd0fb3ff3130ccf033b230665eea6aabc1f81696521022bab1af9bb4adccc8db0c81a3c2abf09fb53f4f77d3bae040e498d4f7ed38fff52ae"}],
                                               [prikey]])
     trx_hex = ""
     if resp["result"] != None:
