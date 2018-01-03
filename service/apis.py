@@ -188,8 +188,8 @@ def zchain_multisig_create(chainId, addrs, amount):
     }
 
 
-@jsonrpc.method('Zchain.Multisig.Add(chainId=str, addrs=list, amount=int)')
-def zchain_multisig_add(chainId, addrs, amount):
+@jsonrpc.method('Zchain.Multisig.Add(chainId=str, addrs=list, amount=int, addrType=int)')
+def zchain_multisig_add(chainId, addrs, amount, addrType):
     logger.info('Zchain.Multisig.Add')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
@@ -197,6 +197,8 @@ def zchain_multisig_add(chainId, addrs, amount):
         return error_utils.mismatched_parameter_type('addrs', 'ARRAY')
     if type(amount) != int:
         return error_utils.mismatched_parameter_type('amount', 'INTEGER')
+    if type(addrType) != int:
+        return error_utils.mismatched_parameter_type('addrType', 'INTEGER')
 
     address = ""
     if chainId == "btc":
@@ -207,7 +209,7 @@ def zchain_multisig_add(chainId, addrs, amount):
                 multisig_record = db.b_btc_multisig_address.find_one({"address": multisig_addr})
                 if multisig_record is not None:
                     db.b_btc_multisig_address.remove({"address": multisig_addr})
-                data = {"address": addr_info["address"], "redeemScript": addr_info["hex"]}
+                data = {"address": addr_info["address"], "redeemScript": addr_info["hex"], "addr_type": addrType}
                 db.b_btc_multisig_address.insert_one(data)
                 address = addr_info["address"]
 
@@ -236,13 +238,17 @@ def zchain_transaction_withdraw_history(chainId, trxId):
     }
 
 
-@jsonrpc.method('Zchain.Transaction.Deposit.History(chainId=str, blockNum=int)')
-def zchain_transaction_deposit_history(chainId, blockNum):
+@jsonrpc.method('Zchain.Transaction.Deposit.History(chainId=str, account=str, blockNum=int, limit=int)')
+def zchain_transaction_deposit_history(chainId, blockNum, limit):
     logger.info('Zchain.Transaction.Deposit.History')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
+    if type(account) != unicode:
+        return error_utils.mismatched_parameter_type('account', 'STRING')
     if type(blockNum) != int:
         return error_utils.mismatched_parameter_type('blockNum', 'INTEGER')
+    if type(limit) != int:
+        return error_utils.mismatched_parameter_type('limit', 'INTEGER')
 
     depositTrxs = db.b_deposit_transaction.find({"chainId": chainId, "blockNum": {"$gte": blockNum}}, {"_id": 0}).sort(
         "blockNum", pymongo.DESCENDING)
