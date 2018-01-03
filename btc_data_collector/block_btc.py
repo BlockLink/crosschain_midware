@@ -44,7 +44,6 @@ class BlockInfoBtc(object):
         self.trx_digest = (block_result.get("merkleroot"))
         self.block_time = datetime.fromtimestamp(int(block_result.get("time")))
         self.transactions = block_result.get("tx")
-        print self.transactions
         self.block_bonus = 5.0
         self.trx_count = len(self.transactions)
         self.amount = 0.0
