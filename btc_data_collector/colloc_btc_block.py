@@ -221,7 +221,7 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
             logging.error("Invalid withdraw transaction, withdraw to multi-address")
             trx_data['type'] = -1
         else:
-            db.b_withdraw_transaction.insert(trx_data)
+            db_pool.b_withdraw_transaction.insert(trx_data)
             trx_data['type'] = 1
     elif multisig_out: # maybe deposit
         if not len(in_set) == 1:
@@ -236,19 +236,20 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
     trx_data["createtime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     if trx_data['type'] == 2:
-        mongo_data = db.b_deposit_transaction.find_one({"trxid": base_trx_data["txid"]})
+        mongo_data = db_pool.b_deposit_transaction.find_one({"trxid": base_trx_data["txid"]})
         deposit_data = {
             "txid": base_trx_data["txid"],
             "from_account": deposit_in,
             "to_account": deposit_out,
             "amount": str(out_set[deposit_out]),
-            "asset_symbol": "btc",
-            "block_num": block_num
+            "asset_symbol": "BTC",
+            "blockNum": block_num,
+            "chainId":"btc"
         }
         if mongo_data == None:
-            db.b_deposit_transaction.insert(deposit_data)
+            db_pool.b_deposit_transaction.insert(deposit_data)
         else:
-            db.b_deposit_transaction.update({"trxid": base_trx_data["txid"]}, {"$set": deposit_data})
+            db_pool.b_deposit_transaction.update({"trxid": base_trx_data["txid"]}, {"$set": deposit_data})
 
     mongo_data = raw_transaction_db.find_one({"trxid": base_trx_data["txid"]})
     if mongo_data == None:
