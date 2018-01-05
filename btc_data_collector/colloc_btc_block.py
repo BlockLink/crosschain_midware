@@ -241,8 +241,8 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
             "txid": base_trx_data["txid"],
             "from_account": deposit_in,
             "to_account": deposit_out,
-            "amount": str(in_set[deposit_in]),
-            "asset_symbol": "BTC",
+            "amount": str(out_set[deposit_out]),
+            "asset_symbol": "btc",
             "block_num": block_num
         }
         if mongo_data == None:
