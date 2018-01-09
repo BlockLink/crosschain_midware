@@ -37,15 +37,15 @@ def zchain_crypt_sign(chainId, addr, message):
     }
 
 
-@jsonrpc.method('Zchain.Trans.Sign(chainId=str, addr=str, trx_hex=str)')
-def zchain_crypt_sign(chainId, addr, trx_hex):
+@jsonrpc.method('Zchain.Trans.Sign(chainId=str,addr=str, trx_hex=str, redeemScript=str)')
+def zchain_Trans_sign(chainId,addr, trx_hex, redeemScript):
     logger.info('Zchain.Trans.Sign')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
     signed_trx = ""
     if chainId == "btc":
-        signed_trx = btc_utils.btc_sign_transaction(addr, trx_hex)
+        signed_trx = btc_utils.btc_sign_transaction(addr, redeemScript,trx_hex)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -56,8 +56,8 @@ def zchain_crypt_sign(chainId, addr, trx_hex):
         'chainId': chainId,
         'data': signed_trx
     }
-@jsonrpc.method('Zchain.Trans.broadcastTrx(chainId=str, trx=str, trxid=str)')
-def zchain_trans_broadcastTrx(chainId, trx, trxid):
+@jsonrpc.method('Zchain.Trans.broadcastTrx(chainId=str, trx=str)')
+def zchain_trans_broadcastTrx(chainId, trx):
     logger.info('Zchain.Trans.broadcastTrx')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
@@ -76,7 +76,7 @@ def zchain_trans_broadcastTrx(chainId, trx, trxid):
         'data': result
     }
 
-@jsonrpc.method('Zchain.Trans.createTrx(chainId=str, from_addr=str, to_addr=str,amount=float)')
+@jsonrpc.method('Zchain.Trans.createTrx(chainId=str, from_addr=str,to_addr=str,amount=float)')
 def zchain_trans_createTrx(chainId, from_addr,to_addr,amount):
     logger.info('Zchain.Trans.createTrx')
     if type(chainId) != unicode:
@@ -95,6 +95,28 @@ def zchain_trans_createTrx(chainId, from_addr,to_addr,amount):
         'chainId': chainId,
         'data': result
     }
+
+
+@jsonrpc.method('Zchain.Trans.CombineTrx(chainId=str, transactions=list)')
+def zchain_trans_CombineTrx(chainId, transactions):
+    logger.info('Zchain.Trans.CombineTrx')
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+
+    result = ""
+    if chainId == "btc":
+        result = btc_utils.btc_combineTrx(transactions)
+    else:
+        return error_utils.invalid_chainid_type()
+
+    if result == "":
+        return error_utils.error_response("Cannot combine transaction.")
+
+    return {
+        'chainId': chainId,
+        'data': result
+    }
+
 
 @jsonrpc.method('Zchain.Trans.DecodeTrx(chainId=str, trx_hex=str)')
 def zchain_trans_decodeTrx(chainId, trx_hex):
