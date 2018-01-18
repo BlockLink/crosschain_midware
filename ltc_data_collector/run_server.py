@@ -9,6 +9,7 @@ from colloc_ltc_block import do_collect_app
 import logging
 from pymongo import MongoClient
 
+
 if __name__ == '__main__':
     LOG_FORMAT = '%(asctime)-15s %(levelname)s %(funcName)s %(message)s'
     logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT, filename=LOG_FILENAME, filenode="a")

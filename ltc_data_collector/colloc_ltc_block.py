@@ -22,19 +22,14 @@ import sys
 import traceback
 
 from collector_conf import  SYNC_BLOCK_PER_ROUND
-#from utility import to_utf8
-#from base import TRX_TYPE_REGISTER_CONTRACT, TRX_TYPE_UPGRADE_CONTRACT, TRX_TYPE_DESTROY_CONTRACT
 from base import GlobalVariable_ltc
 from ltc_utils import ltc_request
-#from httprequest import do_post
-#import rpc_biz
 import time
 from block_ltc import BlockInfoLtc
 from datetime import datetime
 
 
 def do_collect_app(db):
-
     while True:
         try:
             #程序启动，设置为同步状态
@@ -48,8 +43,6 @@ def do_collect_app(db):
 
             # 获取当前链上最新块号
             while True:
-                GlobalVariable_ltc.register_account_dic = {}
-                GlobalVariable_ltc.upgrade_contract_dic = {}
                 latest_block_num = get_latest_block_num(db)
                 logging.debug("latest_block_num: %d, GlobalVariable_ltc.last_sync_block_num: %d" % (latest_block_num, GlobalVariable_ltc.last_sync_block_num))
                 if GlobalVariable_ltc.last_sync_block_num >= latest_block_num:
@@ -264,7 +257,6 @@ def update_block_trx_amount(db_pool,block_info):
     block.update({"blockHash":block_info.block_id},{"$set" : {"trxamount:":str(block_info.trx_amount),"trxfee":block_info.trx_fee}})
 
 
-
 #采集数据
 def collect_data_cb(db_pool):
     try:
@@ -285,7 +277,6 @@ def collect_data_cb(db_pool):
             count += 1
 
         # 连接使用完毕，需要释放连接
-
     except Exception, ex:
         raise ex
 

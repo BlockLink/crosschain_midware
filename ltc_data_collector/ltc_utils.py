@@ -3,6 +3,8 @@ import requests
 from base64 import encodestring
 import json
 from collector_conf import LTC_URL,LTC_PORT
+
+
 def ltc_request(method,args):
     #url = "http://192.168.1.104:60011/"
     url = "http://%s:%s" % (LTC_URL,LTC_PORT)
@@ -18,5 +20,5 @@ def ltc_request(method,args):
         }
     response = requests.request("POST", url, data=payload, headers=headers)
     rep = response.json()
-    #print(rep)
+
     return rep

@@ -189,8 +189,6 @@ def zchain_crypt_verify_message(chainId, addr, message, signature):
         result = btc_utils.btc_verify_signed_message(addr, message, signature)
     elif chainId == "ltc":
         result = ltc_utils.ltc_verify_signed_message(addr, message, signature)
-    elif chainId == "ltc":
-        result = ltc_utils.ltc_verify_signed_message(addr, message, signature)
     else:
         return error_utils.invalid_chainid_type()
 

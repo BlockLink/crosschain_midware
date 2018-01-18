@@ -15,19 +15,13 @@ __author__ = 'hasee'
 
 
 
-
-
 import logging
 import sys
 import traceback
 
 from collector_conf import  SYNC_BLOCK_PER_ROUND
-#from utility import to_utf8
-#from base import TRX_TYPE_REGISTER_CONTRACT, TRX_TYPE_UPGRADE_CONTRACT, TRX_TYPE_DESTROY_CONTRACT
 from base import GlobalVariable_btc
 from btc_utils import btc_request
-#from httprequest import do_post
-#import rpc_biz
 import time
 from block_btc import BlockInfoBtc
 from datetime import datetime
@@ -41,15 +35,12 @@ def do_collect_app(db):
             config = db.b_config
             config.update({"key":"btcsyncstate"},{"key":"btcsyncstate","value":"true"})
 
-
             # 清理上一轮的垃圾数据，包括块数据、交易数据以及合约数据
             GlobalVariable_btc.last_sync_block_num = clear_last_garbage_data(db)
             GlobalVariable_btc.sync_limit_per_step = 10
 
             # 获取当前链上最新块号
             while True:
-                GlobalVariable_btc.register_account_dic = {}
-                GlobalVariable_btc.upgrade_contract_dic = {}
                 latest_block_num = get_latest_block_num(db)
                 logging.debug("latest_block_num: %d, GlobalVariable_btc.last_sync_block_num: %d" % (latest_block_num, GlobalVariable_btc.last_sync_block_num))
                 if GlobalVariable_btc.last_sync_block_num >= latest_block_num:
@@ -100,9 +91,7 @@ def get_latest_block_num(db):
     return int(real_block_num) - safe_block
 
 
-
 def clear_last_garbage_data(db_pool):
-
     config = db_pool.b_config
     ret = config.find_one({"key":"btcsyncblocknum"})
     if ret is None:
@@ -154,7 +143,6 @@ def get_transaction_data(trx_id):
     else:
         resp_data = ret["result"]
     return resp_data
-
 
 
 def collect_pretty_transaction(db_pool, base_trx_data, block_num):
