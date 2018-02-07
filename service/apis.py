@@ -5,6 +5,7 @@ from config import logger
 from utils import eth_utils
 from utils import btc_utils
 from utils import etp_utils
+from utils import ltc_utils
 from service import models
 from service import db
 from utils import error_utils
@@ -85,17 +86,17 @@ def zchain_trans_broadcastTrx(chainId, trx):
     }
 
 
-@jsonrpc.method('Zchain.Trans.createTrx(chainId=str, from_addr=str,to_addr=str,amount=float)')
-def zchain_trans_createTrx(chainId, from_addr,to_addr,amount):
+@jsonrpc.method('Zchain.Trans.createTrx(chainId=str, from_addr=str,dest_info=dict)')
+def zchain_trans_createTrx(chainId, from_addr,dest_info):
     logger.info('Zchain.Trans.createTrx')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
     result = {}
     if chainId == "btc":
-        result = btc_utils.btc_create_transaction(from_addr,to_addr,amount)
+        result = btc_utils.btc_create_transaction(from_addr,dest_info)
     elif chainId == "ltc":
-        result = ltc_utils.ltc_create_transaction(from_addr,to_addr,amount)
+        result = ltc_utils.ltc_create_transaction(from_addr,dest_info)
     else:
         return error_utils.invalid_chainid_type()
 

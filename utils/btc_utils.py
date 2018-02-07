@@ -105,13 +105,18 @@ def btc_get_transaction(trxid):
     return ""
 
 
-def btc_create_transaction(from_addr, redeemScript,to_addr, amount):
+def btc_create_transaction(from_addr,dest_info):
     txout = btc_query_tx_out(from_addr)
     if txout == None :
         return ""
     sum = 0.0
     vin_need =[]
     fee = 0.001
+    amount =0.0
+    vouts ={}
+    for addr,num in dest_info.items() :
+        amount += num
+        vouts[addr]=num
     for out in txout :
         if sum >= amount+fee:
             break
@@ -126,9 +131,10 @@ def btc_create_transaction(from_addr, redeemScript,to_addr, amount):
     #set a fee
     resp = ""
     if sum-amount == fee:
-        resp = btc_request("createrawtransaction", [vins, {'%s' % to_addr: amount}])
+        resp = btc_request("createrawtransaction", [vins, vouts])
     else:
-        resp = btc_request("createrawtransaction", [vins,{'%s'%to_addr: amount,'%s'%from_addr:sum-amount-fee}])
+        vouts[from_addr]=sum-amount-fee
+        resp = btc_request("createrawtransaction", [vins,vouts])
     if resp["result"] != None:
         trx_hex = resp['result']
         trx = btc_decode_hex_transaction(trx_hex)
