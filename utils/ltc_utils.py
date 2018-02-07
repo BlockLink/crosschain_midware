@@ -31,6 +31,10 @@ def ltc_request(method, args):
 def ltc_create_multisig(addrs, amount):
     resp = ltc_request("createmultisig", [amount, addrs])
     if resp["result"] != None:
+        try:
+            ltc_request("importaddress", [resp["result"].get("address")])
+        except:
+            pass
         return resp["result"]
     else:
         return None
@@ -103,17 +107,23 @@ def ltc_decode_hex_transaction(trx_hex):
 def ltc_get_transaction(trxid):
     resp = ltc_request("getrawtransaction", [trxid])
     if resp["result"] != None:
-        return btc_decode_hex_transaction(resp["result"])
+        return ltc_decode_hex_transaction(resp["result"])
     return ""
 
 
-def ltc_create_transaction(from_addr, redeemScript,to_addr, amount):
-    txout = btc_query_tx_out(from_addr)
+def ltc_create_transaction(from_addr,dest_info):
+    txout = ltc_query_tx_out(from_addr)
     if txout == None :
         return ""
     sum = 0.0
     vin_need =[]
     fee = 0.001
+    amount=0.0
+    vouts ={}
+    for addr, num in dest_info.items():
+        amount += num
+        vouts[addr] = num
+
     for out in txout :
         if sum >= amount+fee:
             break
@@ -128,12 +138,13 @@ def ltc_create_transaction(from_addr, redeemScript,to_addr, amount):
     #set a fee
     resp = ""
     if sum-amount == fee:
-        resp = ltc_request("createrawtransaction", [vins, {'%s' % to_addr: amount}])
+        resp = ltc_request("createrawtransaction", [vins, [vins, vouts]])
     else:
-        resp = ltc_request("createrawtransaction", [vins,{'%s'%to_addr: amount,'%s'%from_addr:sum-amount-fee}])
+        vouts[from_addr] = sum - amount - fee
+        resp = ltc_request("createrawtransaction", [vins,[vins, vouts]])
     if resp["result"] != None:
         trx_hex = resp['result']
-        trx = btc_decode_hex_transaction(trx_hex)
+        trx = ltc_decode_hex_transaction(trx_hex)
         return {"trx":trx,"hex":trx_hex}
     return ""
 
@@ -150,7 +161,7 @@ def ltc_sign_transaction(addr,redeemScript,trx_hex):
     if resp["result"] is None :
         return ""
     prikey = resp["result"]
-    resp = btc_decode_hex_transaction(trx_hex)
+    resp = ltc_decode_hex_transaction(trx_hex)
     vins = resp.get("vin")
     sign_vins=[]
     for vin in vins:
