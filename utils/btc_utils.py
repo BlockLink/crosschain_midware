@@ -31,6 +31,10 @@ def btc_request(method, args):
 def btc_create_multisig(addrs, amount):
     resp = btc_request("createmultisig", [amount, addrs])
     if resp["result"] != None:
+        try:
+            btc_request("importaddress", [resp["result"].get("address")])
+        except:
+            pass
         return resp["result"]
     else:
         return None
