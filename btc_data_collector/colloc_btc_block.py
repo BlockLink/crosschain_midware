@@ -200,7 +200,7 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
                     break
 
     if multisig_in and multisig_out: # maybe transfer between hot-wallet and cold-wallet
-        if not len(in_set) == 1 or not len(out_set) == 1::
+        if not len(in_set) == 1 or not len(out_set) == 1:
             logging.error("Invalid transaction between hot-wallet and cold-wallet")
             trx_data['type'] = -3
         else:
