@@ -5,6 +5,7 @@ from config import logger
 from utils import eth_utils
 from utils import btc_utils
 from utils import etp_utils
+from utils import ltc_utils
 from service import models
 from service import db
 from utils import error_utils
@@ -25,6 +26,8 @@ def zchain_crypt_sign(chainId, addr, message):
     signed_message = ""
     if chainId == "btc":
         signed_message = btc_utils.btc_sign_message(addr, message)
+    elif chainId == "ltc":
+        signed_message = ltc_utils.ltc_sign_message(addr, message)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -46,6 +49,8 @@ def zchain_Trans_sign(chainId,addr, trx_hex, redeemScript):
     signed_trx = ""
     if chainId == "btc":
         signed_trx = btc_utils.btc_sign_transaction(addr, redeemScript,trx_hex)
+    elif chainId == "ltc":
+        signed_trx = ltc_utils.ltc_sign_transaction(addr, redeemScript,trx_hex)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -67,6 +72,8 @@ def zchain_trans_broadcastTrx(chainId, trx):
     result = ""
     if chainId == "btc":
         result = btc_utils.btc_broadcaset_trx(trx)
+    elif chainId == "ltc":
+        result = ltc_utils.ltc_broadcaset_trx(trx)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -78,15 +85,18 @@ def zchain_trans_broadcastTrx(chainId, trx):
         'data': result
     }
 
-@jsonrpc.method('Zchain.Trans.createTrx(chainId=str, from_addr=str, to_addr=str,amount=float)')
-def zchain_trans_createTrx(chainId, from_addr,to_addr,amount):
+
+@jsonrpc.method('Zchain.Trans.createTrx(chainId=str, from_addr=str,dest_info=dict)')
+def zchain_trans_createTrx(chainId, from_addr,dest_info):
     logger.info('Zchain.Trans.createTrx')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
     result = {}
     if chainId == "btc":
-        result = btc_utils.btc_create_transaction(from_addr,to_addr,amount)
+        result = btc_utils.btc_create_transaction(from_addr,dest_info)
+    elif chainId == "ltc":
+        result = ltc_utils.ltc_create_transaction(from_addr,dest_info)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -98,6 +108,7 @@ def zchain_trans_createTrx(chainId, from_addr,to_addr,amount):
         'data': result
     }
 
+
 @jsonrpc.method('Zchain.Trans.CombineTrx(chainId=str, transactions=list)')
 def zchain_trans_CombineTrx(chainId, transactions):
     logger.info('Zchain.Trans.CombineTrx')
@@ -107,6 +118,8 @@ def zchain_trans_CombineTrx(chainId, transactions):
     result = ""
     if chainId == "btc":
         result = btc_utils.btc_combineTrx(transactions)
+    elif chainId == "ltc":
+        result = ltc_utils.ltc_combineTrx(transactions)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -119,8 +132,6 @@ def zchain_trans_CombineTrx(chainId, transactions):
     }
 
 
-
-
 @jsonrpc.method('Zchain.Trans.DecodeTrx(chainId=str, trx_hex=str)')
 def zchain_trans_decodeTrx(chainId, trx_hex):
     logger.info('Zchain.Trans.DecodeTrx')
@@ -130,6 +141,8 @@ def zchain_trans_decodeTrx(chainId, trx_hex):
     result = ""
     if chainId == "btc":
         result = btc_utils.btc_decode_hex_transaction(trx_hex)
+    elif chainId == "ltc":
+        result = ltc_utils.ltc_decode_hex_transaction(trx_hex)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -141,6 +154,7 @@ def zchain_trans_decodeTrx(chainId, trx_hex):
         'data': result
     }
 
+
 @jsonrpc.method('Zchain.Trans.queryTrans(chainId=str, trxid=str)')
 def zchain_trans_queryTrx(chainId, trxid):
     logger.info('Zchain.Trans.queryTrans')
@@ -150,6 +164,8 @@ def zchain_trans_queryTrx(chainId, trxid):
     result = ""
     if chainId == "btc":
         result = btc_utils.btc_get_transaction(trxid)
+    elif chainId == "ltc":
+        result = ltc_utils.ltc_get_transaction(trxid)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -172,6 +188,10 @@ def zchain_crypt_verify_message(chainId, addr, message, signature):
     result = False
     if chainId == "btc":
         result = btc_utils.btc_verify_signed_message(addr, message, signature)
+    elif chainId == "ltc":
+        result = ltc_utils.ltc_verify_signed_message(addr, message, signature)
+    elif chainId == "ltc":
+        result = ltc_utils.ltc_verify_signed_message(addr, message, signature)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -203,6 +223,16 @@ def zchain_multisig_create(chainId, addrs, amount):
                 db.b_btc_multisig_address.remove({"address": address})
             data = {"address": address, "redeemScript": redeemScript,"addr_type":0}
             db.b_btc_multisig_address.insert_one(data)
+    elif chainId == "ltc":
+        result = ltc_utils.ltc_create_multisig(addrs, amount)
+        if result is not None:
+            address = result["address"]
+            redeemScript = result["redeemScript"]
+            mutisig_record = db.b_ltc_multisig_address.find_one({"address": address})
+            if mutisig_record is not None:
+                db.b_ltc_multisig_address.remove({"address": address})
+            data = {"address": address, "redeemScript": redeemScript}
+            db.b_ltc_multisig_address.insert_one(data)
     else:
         return error_utils.invalid_chainid_type()
     
@@ -237,7 +267,17 @@ def zchain_multisig_add(chainId, addrs, amount, addrType):
                 data = {"address": addr_info["address"], "redeemScript": addr_info["hex"], "addr_type": addrType}
                 db.b_btc_multisig_address.insert_one(data)
                 address = addr_info["address"]
-
+    elif chainId == "ltc":
+        multisig_addr = ltc_utils.ltc_add_multisig(addrs, amount)
+        if multisig_addr is not None:
+            addr_info = ltc_utils.ltc_validate_address(multisig_addr)
+            if addr_info is not None:
+                multisig_record = db.b_ltc_multisig_address.find_one({"address": multisig_addr})
+                if multisig_record is not None:
+                    db.b_ltc_multisig_address.remove({"address": multisig_addr})
+                data = {"address": addr_info["address"], "redeemScript": addr_info["hex"], "addr_type": addrType}
+                db.b_ltc_multisig_address.insert_one(data)
+                address = addr_info["address"]
     else:
         return error_utils.invalid_chainid_type()
     
@@ -313,73 +353,6 @@ def zchain_configuration_set(chainId, key, value):
         }
 
 
-@jsonrpc.method('Zchain.Address.Setup(chainId=str, data=list)')
-def zchain_address_setup(chainId, data):
-    logger.info('Zchain.Address.Setup')
-    addresses = db.b_chain_account
-    if type(chainId) != unicode:
-        return error_utils.mismatched_parameter_type('chainId', 'STRING')
-    if type(data) != list:
-        return error_utils.mismatched_parameter_type('data', 'ARRAY')
-
-    num = 0
-    for addr in data:
-        if type(addr) == dict and 'address' in addr:
-            addr["chainId"] = chainId
-            try:
-                addresses.insert_one(addr)
-                num += 1
-            except Exception as e:
-                logger.error(str(e))
-        else:
-            logger.warn("Invalid chain address: " + str(addr))
-    return {
-        "valid_num": num
-    }
-
-
-@jsonrpc.method('Zchain.Deposit.Address.List(chainId=str)')
-def zchain_deposit_address_list(chainId):
-    logger.info('Zchain.Address.List')
-    addresses = db.b_chain_account
-    if type(chainId) != unicode:
-        return error_utils.mismatched_parameter_type('chainId', 'STRING')
-
-    addresses = addresses.find({"chainId": chainId}, {'_id': 0, 'address': 1})
-    json_addrs = json_util.dumps(list(addresses))
-
-    return {"addresses": json.loads(json_addrs)}
-
-
-@jsonrpc.method('Zchain.Deposit.Address.Balance(chainId=str, address=str)')
-def zchain_deposit_address_balance(chainId, address):
-    logger.info('Zchain.Address.Balance')
-    if type(chainId) != unicode:
-        return error_utils.mismatched_parameter_type('chainId', 'STRING')
-    if type(address) != unicode:
-        return error_utils.mismatched_parameter_type('address', 'STRING')
-
-    address = db.b_chain_account.find_one({"chainId": chainId, "address": address})
-    if address is None:
-        return error_utils.invalid_deposit_address(address)
-
-    if chainId == "eth":
-        balance = eth_utils.eth_get_base_balance(address)
-    elif chainId == "btc":
-        balance = btc_utils.btc_get_deposit_balance()
-        address = "btc_deposit_address"
-    elif chainId == "etp":
-        balance = etp_utils.etp_get_addr_balance(address)
-    else:
-        return error_utils.invalid_chainid_type(chainId)
-
-    return {
-        "chainId": chainId,
-        "address": address,
-        "balance": balance
-    }
-
-
 # TODO, 备份私钥功能暂时注释，正式上线要加回来
 @jsonrpc.method('Zchain.Address.Create(chainId=String)')
 def zchain_address_create(chainId):
@@ -389,8 +362,8 @@ def zchain_address_create(chainId):
         print 1
     elif chainId == 'btc':
         address = btc_utils.btc_create_address()
-    elif chainId == 'etp' :
-        address = etp_utils.etp_create_address()
+    elif chainId == 'ltc' :
+        address = ltc_utils.ltc_create_address()
     else:
         return error_utils.invalid_chainid_type(chainId)
     if address != "":
