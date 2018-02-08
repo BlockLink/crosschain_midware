@@ -55,7 +55,13 @@ def btc_create_address():
     if resp["result"] != None:
         address = resp["result"]
     return address
-
+def btc_query_tx_out(addr):
+    message=[addr]
+    resp = btc_request("listunspent",[1,9999999,[addr]])
+    if resp["result"] != None:
+        return resp["result"]
+    else:
+        return None
 def btc_broadcaset_trx(trx):
     resp = btc_request("sendrawtransaction", [trx])
     result = ""
@@ -90,25 +96,69 @@ def btc_get_transaction(trxid):
 
 
 def btc_create_transaction(from_addr, to_addr, amount):
-    resp = btc_request("createrawtransaction", [[{'txid':'e9bca09ff2ba5e8cf35f4efba36631fa3c7d5d1c701fb80c93dc1d0ac0f2bc63','vout':0}],{'%s'%to_addr: amount}])
+    txout = btc_query_tx_out(from_addr)
+    if txout == None :
+        return "xxxxx"
+    print "txout is ",txout 
+    sum = 0.0
+    vin_need =[]
+    fee = 0.001
+    for out in txout :
+        if sum >= amount+fee:
+            break
+         
+        sum+=float(out.get("amount"))
+        vin_need.append(out)
+    print sum,amount
+    if sum < amount+fee:
+        return ""
+    vins=[]
+    for need in vin_need :
+        vin={'txid':need.get('txid'),'vout':need.get('vout'),'scriptPubKey':need.get('scriptPubKey')}
+        vins.append(vin)
+    #set a fee
+    resp = ""
+    if sum-amount == fee:
+        resp = btc_request("createrawtransaction", [vins, {'%s' % to_addr: amount}])
+    else:
+        resp = btc_request("createrawtransaction", [vins,{'%s'%to_addr: amount,'%s'%from_addr:"%.8f"%(sum-amount-fee)}])
+    print "resp is ",resp
     if resp["result"] != None:
         trx_hex = resp['result']
         trx = btc_decode_hex_transaction(trx_hex)
         return {"trx":trx,"hex":trx_hex}
     return ""
 
-def btc_sign_transaction(addr,trx_hex):
+def btc_combineTrx(signatures) :
+    resp = btc_request("combinerawtransaction",[signatures])
+    if resp["result"] is None:
+        return ""
+    return {"hex":resp['result']}
+
+
+def btc_sign_transaction(addr,redeemScript,trx_hex):
     resp = btc_request("dumpprivkey",[addr])
     if resp["result"] is None :
         return ""
     prikey = resp["result"]
-    resp = btc_request("signrawtransaction", [trx_hex,
-        [{"txid":"e9bca09ff2ba5e8cf35f4efba36631fa3c7d5d1c701fb80c93dc1d0ac0f2bc63","vout":0,"scriptPubKey":"a914762b215e246c36ec8a05c5b11e0ec1a81a4115dc87", "redeemScript": "522102cafafab50491678c9f676e0bd0fb3ff3130ccf033b230665eea6aabc1f81696521022bab1af9bb4adccc8db0c81a3c2abf09fb53f4f77d3bae040e498d4f7ed38fff52ae"}],
-                                              [prikey]])
+    resp = btc_decode_hex_transaction(trx_hex)
+    vins = resp.get("vin")
+    sign_vins=[]
+    for vin in vins:
+        ret = btc_request("gettxout",[vin.get('txid'),vin.get('vout')])
+        if ret.get("result") is None:
+            return ""
+        ret = ret.get("result")
+        sign_vins.append({"txid":vin.get('txid'),"vout":vin.get('vout'),"scriptPubKey":ret.get("scriptPubKey").get("hex"),"redeemScript": redeemScript})
+            #"54210204cf519681cc19aa9a9fea60b641daecae99d48bce37570ec4a141eec1d16b87210376d1033db8ca28a837394f8280d8982620668c609aa1692baca1496a294271c42103bc770094d5fe4f2be6eeb7db1c7ee4c29315d75f9da15abea4d2f9dfee9578462102ca5209ff1d0cfbaeeb1ff7511a089110e0da3ea8f9e11f5a38c7a198b2c6d8f3210215e01b25a3d10919e335267f6b95ad5dab4589659cee33983e3cf97e80f13ad721030f610c3a4cad41c87eec4aa1dc40ab0ca8cd3cd8338156da076defa03ed057db2103065d0cd3c5f1f21394200597e4fa56ce676a91ad8c26f5fe8d87dd8afbea947b57ae"})
+    resp = btc_request("signrawtransaction", [trx_hex,sign_vins,[prikey]])
     trx_hex = ""
     if resp["result"] != None:
         trx_hex = resp["result"]
     return trx_hex
+
+
+
 
 def btc_create_withdraw_address():
     resp = btc_request("getnewaddress", ["btc_withdraw_test"])
@@ -211,3 +261,4 @@ def btc_get_withdraw_balance():
         balance = rep["result"]
     return balance
     # btc_collect_money("1ERjyPUWpDH7mLmAHZzwCJ6jsn4tyHfj2Y")
+
