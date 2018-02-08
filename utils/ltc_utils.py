@@ -32,7 +32,7 @@ def ltc_create_multisig(addrs, amount):
     resp = ltc_request("createmultisig", [amount, addrs])
     if resp["result"] != None:
         try:
-            ltc_request("importaddress", [resp["result"].get("address")])
+            ltc_request("importaddress", [resp["result"].get("address"),"",False])
         except:
             pass
         return resp["result"]
