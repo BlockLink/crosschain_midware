@@ -219,7 +219,7 @@ def zchain_multisig_create(chainId, addrs, amount):
             mutisig_record = db.b_btc_multisig_address.find_one({"address": address})
             if mutisig_record is not None:
                 db.b_btc_multisig_address.remove({"address": address})
-            data = {"address": address, "redeemScript": redeemScript}
+            data = {"address": address, "redeemScript": redeemScript,"addr_type":0}
             db.b_btc_multisig_address.insert_one(data)
     elif chainId == "ltc":
         result = ltc_utils.ltc_create_multisig(addrs, amount)
@@ -302,7 +302,7 @@ def zchain_transaction_withdraw_history(chainId, trxId):
 
 
 @jsonrpc.method('Zchain.Transaction.Deposit.History(chainId=str, account=str, blockNum=int, limit=int)')
-def zchain_transaction_deposit_history(chainId, blockNum, limit):
+def zchain_transaction_deposit_history(chainId,account ,blockNum, limit):
     logger.info('Zchain.Transaction.Deposit.History')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
