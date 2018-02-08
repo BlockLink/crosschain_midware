@@ -169,14 +169,14 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
     for trx_out in vout:
         if trx_out["scriptPubKey"].has_key("addresses"):
             out_address = trx_out["scriptPubKey"]["addresses"][0]
-            if (out_set.has_key(out_address)):
-                out_set[out_address] += trx_out["value"]
-            else:
-                out_set[out_address] = trx_out["value"]
             trx_data["vout"].append({"value": trx_out["value"], "n": trx_out["n"], "scriptPubKey": trx_out["scriptPubKey"]["hex"], "address": out_address})
             if db_pool.b_btc_multisig_address.find_one({"address": out_address, "addr_type": 0}) is not None:
-                deposit_out = out_address
+                if (out_set.has_key(out_address)):
+                    out_set[out_address] += trx_out["value"]
+                else:
+                    out_set[out_address] = trx_out["value"]
                 multisig_out = True     # maybe deposit
+                deposit_out = out_address
         
     for trx_in in vin:
         if not trx_in.has_key("txid"):
@@ -196,17 +196,18 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
                     trx_data["vin"].append({"txid": trx_in["txid"], "vout": trx_in["vout"], "value": t["value"], "address": in_address})
                     if db_pool.b_btc_multisig_address.find_one({"address": in_address, "addr_type": 0}) is not None:
                         multisig_in = True
-                    else:
-                        deposit_in = in_address
+                    deposit_in = in_address
                     break
 
-
-    if multisig_in and multisig_out:
-        logging.error("Invalid deposit or withdraw transaction")
-        trx_data['type'] = 0
+    if multisig_in and multisig_out: # maybe transfer between hot-wallet and cold-wallet
+        if not len(in_set) == 1 or not len(out_set) == 1::
+            logging.error("Invalid transaction between hot-wallet and cold-wallet")
+            trx_data['type'] = -3
+        else:
+            trx_data['type'] = 0
     elif multisig_in: # maybe withdraw
-        if not len(out_set) == 1:
-            logging.error("Invalid withdraw transaction, withdraw to multi-address")
+        if not len(in_set) == 1:
+            logging.error("Invalid withdraw transaction, withdraw from multi-address")
             trx_data['type'] = -1
         else:
             db_pool.b_withdraw_transaction.insert(trx_data)
@@ -215,6 +216,9 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
         if not len(in_set) == 1:
             logging.error("Invalid deposit transaction, deposit from multi-address")
             trx_data['type'] = -2
+        elif not len(out_set) == 1:
+            logging.error("Invalid deposit transaction, deposit to multi-address")
+            trx_data['type'] = -4
         else:
             trx_data['type'] = 2
     else:
@@ -223,8 +227,8 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
     trx_data["trxTime"] = datetime.utcfromtimestamp(base_trx_data['time']).strftime("%Y-%m-%d %H:%M:%S")
     trx_data["createtime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    if trx_data['type'] == 2:
-        mongo_data = db_pool.b_deposit_transaction.find_one({"trxid": base_trx_data["txid"]})
+    if trx_data['type'] == 2 or trx_data['type'] == 0:
+        mongo_data = db_pool.b_deposit_transaction.find_one({"txid": base_trx_data["txid"]})
         deposit_data = {
             "txid": base_trx_data["txid"],
             "from_account": deposit_in,
