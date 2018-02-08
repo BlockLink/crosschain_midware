@@ -63,7 +63,7 @@ def btc_create_address():
 
 
 def btc_query_tx_out(addr):
-    message="[\""+addr+"\"]"
+    message=[addr]
     resp = btc_request("listunspent",[1,9999999,message])
     if resp["result"] != None:
         return resp["result"]
@@ -124,7 +124,7 @@ def btc_create_transaction(from_addr,dest_info):
     for out in txout :
         if sum >= amount+fee:
             break
-        sum+=int(out.get("amount"))
+        sum+=float(out.get("amount"))
         vin_need.append(out)
     if sum < amount+fee:
         return ""
