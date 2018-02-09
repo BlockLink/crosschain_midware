@@ -140,7 +140,7 @@ def ltc_create_transaction(from_addr,dest_info):
     if sum-amount == fee:
         resp = ltc_request("createrawtransaction", [vins, [vins, vouts]])
     else:
-        vouts[from_addr] = sum - amount - fee
+        vouts[from_addr] = round(sum - amount - fee,8)
         resp = ltc_request("createrawtransaction", [vins,[vins, vouts]])
     if resp["result"] != None:
         trx_hex = resp['result']
