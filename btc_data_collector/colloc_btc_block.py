@@ -146,9 +146,7 @@ def get_transaction_data(trx_id):
 
 
 def collect_pretty_transaction(db_pool, base_trx_data, block_num):
-    #处理交易
     raw_transaction_db = db_pool.b_raw_transaction
-
     trx_data = {}
     trx_data["chainId"] = "btc"
     trx_data["trxid"] = base_trx_data["txid"]
@@ -158,26 +156,13 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
     trx_data["vout"] = []
     trx_data["vin"] = []
 
-    # Process deposit transaction.
-    multisig_in = False
-    multisig_out = False
     out_set = {}
     in_set = {}
-    deposit_in = ""
-    deposit_out = ""
+    multisig_in_addr = ""
+    multisig_out_addr = ""
+    is_valid_tx = True
     logging.debug(base_trx_data)
-    for trx_out in vout:
-        if trx_out["scriptPubKey"].has_key("addresses"):
-            out_address = trx_out["scriptPubKey"]["addresses"][0]
-            trx_data["vout"].append({"value": trx_out["value"], "n": trx_out["n"], "scriptPubKey": trx_out["scriptPubKey"]["hex"], "address": out_address})
-            if db_pool.b_btc_multisig_address.find_one({"address": out_address, "addr_type": 0}) is not None:
-                if (out_set.has_key(out_address)):
-                    out_set[out_address] += trx_out["value"]
-                else:
-                    out_set[out_address] = trx_out["value"]
-                multisig_out = True     # maybe deposit
-                deposit_out = out_address
-        
+
     for trx_in in vin:
         if not trx_in.has_key("txid"):
             continue
@@ -195,30 +180,44 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
                         in_set[in_address] = t["value"]
                     trx_data["vin"].append({"txid": trx_in["txid"], "vout": trx_in["vout"], "value": t["value"], "address": in_address})
                     if db_pool.b_btc_multisig_address.find_one({"address": in_address, "addr_type": 0}) is not None:
-                        multisig_in = True
-                    deposit_in = in_address
+                        if multisig_in_addr == "":
+                            multisig_in_addr = in_address
+                        else:
+                            is_valid_tx = False
                     break
 
-    if multisig_in and multisig_out: # maybe transfer between hot-wallet and cold-wallet
-        if not len(in_set) == 1 or not len(out_set) == 1:
+    for trx_out in vout:
+        if trx_out["scriptPubKey"].has_key("addresses"):
+            out_address = trx_out["scriptPubKey"]["addresses"][0]
+            trx_data["vout"].append({"value": trx_out["value"], "n": trx_out["n"], "scriptPubKey": trx_out["scriptPubKey"]["hex"], "address": out_address})
+            if in_set.has_key(out_address): # remove change
+                continue
+            if (out_set.has_key(out_address)):
+                out_set[out_address] += trx_out["value"]
+            else:
+                out_set[out_address] = trx_out["value"]
+            elif db_pool.b_btc_multisig_address.find_one({"address": out_address, "addr_type": 0}) is not None:
+                if multisig_out_addr == "":
+                    multisig_out_addr = out_address
+                else:
+                    is_valid_tx = False
+
+    if not multisig_in_addr == "" and not multisig_out_addr == "": # maybe transfer between hot-wallet and cold-wallet
+        if not is_valid_tx:
             logging.error("Invalid transaction between hot-wallet and cold-wallet")
             trx_data['type'] = -3
         else:
             trx_data['type'] = 0
-    elif multisig_in: # maybe withdraw
-        if not len(in_set) == 1:
-            logging.error("Invalid withdraw transaction, withdraw from multi-address")
+    elif not multisig_in_addr == "": # maybe withdraw
+        if not is_valid_tx:
+            logging.error("Invalid withdraw transaction")
             trx_data['type'] = -1
         else:
-            db_pool.b_withdraw_transaction.insert(trx_data)
             trx_data['type'] = 1
-    elif multisig_out: # maybe deposit
-        if not len(in_set) == 1:
-            logging.error("Invalid deposit transaction, deposit from multi-address")
+    elif not multisig_out_addr == "": # maybe deposit
+        if not is_valid_tx:
+            logging.error("Invalid deposit transaction")
             trx_data['type'] = -2
-        elif not len(out_set) == 1:
-            logging.error("Invalid deposit transaction, deposit to multi-address")
-            trx_data['type'] = -4
         else:
             trx_data['type'] = 2
     else:
@@ -231,9 +230,9 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
         mongo_data = db_pool.b_deposit_transaction.find_one({"txid": base_trx_data["txid"]})
         deposit_data = {
             "txid": base_trx_data["txid"],
-            "from_account": deposit_in,
-            "to_account": deposit_out,
-            "amount": str(out_set[deposit_out]),
+            "from_account": in_set.keys()[0],
+            "to_account": multisig_out_addr,
+            "amount": str(out_set.values()[0]),
             "asset_symbol": "BTC",
             "blockNum": block_num,
             "chainId":"btc"
@@ -242,6 +241,22 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
             db_pool.b_deposit_transaction.insert(deposit_data)
         else:
             db_pool.b_deposit_transaction.update({"trxid": base_trx_data["txid"]}, {"$set": deposit_data})
+    elif trx_data['type'] == 1:
+        for k, v in out_set.items():
+            mongo_data = db_pool.b_deposit_transaction.find_one({"txid": base_trx_data["txid"], "from_account": multisig_in_addr, "to_account": k, "blockNum": block_num})
+            withdraw_data = {
+                "txid": base_trx_data["txid"],
+                "from_account": multisig_in_addr,
+                "to_account": k,
+                "amount": str(v),
+                "asset_symbol": "BTC",
+                "blockNum": block_num,
+                "chainId":"btc"
+            }
+            if mongo_data == None:
+                db_pool.b_withdraw_transaction.insert(withdraw_data)
+            else:
+                db_pool.b_withdraw_transaction.update({"trxid": base_trx_data["txid"], "from_account": multisig_in_addr, "to_account": k, "blockNum": block_num}, {"$set": withdraw_data})
 
     mongo_data = raw_transaction_db.find_one({"trxid": base_trx_data["txid"]})
     if mongo_data == None:
