@@ -285,19 +285,29 @@ def zchain_multisig_add(chainId, addrs, amount, addrType):
     }
 
 
-@jsonrpc.method('Zchain.Transaction.Withdraw.History(chainId=str, trxId=str)')
-def zchain_transaction_withdraw_history(chainId, trxId):
+@jsonrpc.method('Zchain.Transaction.Withdraw.History(chainId=str, account=str, blockNum=int, limit=int)')
+def zchain_transaction_withdraw_history(chainId,account ,blockNum, limit):
     logger.info('Zchain.Transaction.Withdraw.History')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
-    if type(trxId) != unicode:
-        return error_utils.mismatched_parameter_type('trxId', 'STRING')
+    if type(account) != unicode:
+        return error_utils.mismatched_parameter_type('account', 'STRING')
+    if type(blockNum) != int:
+        return error_utils.mismatched_parameter_type('blockNum', 'INTEGER')
+    if type(limit) != int:
+        return error_utils.mismatched_parameter_type('limit', 'INTEGER')
 
-    withdrawTrxs = db.b_withdraw_transaction.find({"TransactionId": trxId, "chainId": chainId}, {"_id": 0})
-
+    withdrawTrxs = db.b_withdraw_transaction.find({"chainId": chainId, "blockNum": {"$gte": blockNum}}, {"_id": 0}).sort(
+        "blockNum", pymongo.DESCENDING)
+    trxs = list(withdrawTrxs)
+    if len(trxs) == 0:
+        blockNum = 0
+    else:
+        blockNum = trxs[0]['blockNum']
     return {
         'chainId': chainId,
-        'data': list(withdrawTrxs)
+        'blockNum': blockNum,
+        'data': trxs
     }
 
 

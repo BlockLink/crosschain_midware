@@ -32,7 +32,7 @@ def btc_create_multisig(addrs, amount):
     resp = btc_request("createmultisig", [amount, addrs])
     if resp["result"] != None:
         try:
-            btc_request("importaddress", [resp["result"].get("address")])
+            btc_request("importaddress", [resp["result"].get("address"),"",False])
         except:
             pass
         return resp["result"]
@@ -63,7 +63,7 @@ def btc_create_address():
 
 
 def btc_query_tx_out(addr):
-    message="[\""+addr+"\"]"
+    message=[addr]
     resp = btc_request("listunspent",[1,9999999,message])
     if resp["result"] != None:
         return resp["result"]
@@ -124,7 +124,7 @@ def btc_create_transaction(from_addr,dest_info):
     for out in txout :
         if sum >= amount+fee:
             break
-        sum+=int(out.get("amount"))
+        sum+=float(out.get("amount"))
         vin_need.append(out)
     if sum < amount+fee:
         return ""
@@ -137,7 +137,7 @@ def btc_create_transaction(from_addr,dest_info):
     if sum-amount == fee:
         resp = btc_request("createrawtransaction", [vins, vouts])
     else:
-        vouts[from_addr]=sum-amount-fee
+        vouts[from_addr]=round(sum-amount-fee,8)
         resp = btc_request("createrawtransaction", [vins,vouts])
     if resp["result"] != None:
         trx_hex = resp['result']
