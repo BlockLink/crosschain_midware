@@ -150,9 +150,7 @@ def get_transaction_data(trx_id):
 
 
 def collect_pretty_transaction(db_pool, base_trx_data, block_num):
-    #处理交易
     raw_transaction_db = db_pool.b_raw_transaction
-
     trx_data = {}
     trx_data["chainId"] = "ltc"
     trx_data["trxid"] = base_trx_data["txid"]
@@ -162,26 +160,32 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
     trx_data["vout"] = []
     trx_data["vin"] = []
 
-    # Process deposit transaction.
-    multisig_in = False
-    multisig_out = False
     out_set = {}
     in_set = {}
-    deposit_in = ""
-    deposit_out = ""
+    multisig_in_addr = ""
+    multisig_out_addr = ""
+    is_valid_tx = True
     logging.debug(base_trx_data)
-    for trx_out in vout:
-        if trx_out["scriptPubKey"].has_key("addresses"):
-            out_address = trx_out["scriptPubKey"]["addresses"][0]
-            if (out_set.has_key(out_address)):
-                out_set[out_address] += trx_out["value"]
-            else:
-                out_set[out_address] = trx_out["value"]
-            trx_data["vout"].append({"value": trx_out["value"], "n": trx_out["n"], "scriptPubKey": trx_out["scriptPubKey"]["hex"], "address": out_address})
-            if db_pool.b_ltc_multisig_address.find_one({"address": out_address, "addr_type": 0}) is not None:
-                deposit_out = out_address
-                multisig_out = True     # maybe deposit
-        
+
+
+    """
+    Only 3 types of transactions will be filtered out and be record in database.
+    1. deposit transaction (vin contains only one no LINK address and vout contains only one LINK address)
+    2. withdraw transaction (vin contains only one LINK address and vout contains no other LINK address)
+    3. transaction between hot-wallet and cold-wallet (vin contains only one LINK address and vout contains only one other LINK address)
+
+    Check logic:
+    1. check all tx in vin and store addresses & values (if more than one LINK address set invalid)
+    2. check all tx in vout and store all non-change addresses & values (if more than one LINK address set invalid)
+    3. above logic filter out the situation - more than one LINK address in vin or vout but there is one condition
+       should be filter out - more than one normal address in vin for deposit transaction
+    4. then we can record the transaction according to transaction type
+       only one other addres in vin and only one LINK address in vout - deposit
+       only one LINK addres in vin and only other addresses in vout - withdraw
+       only one LINK addres in vin and only one other LINK address in vout - transaction between hot-wallet and cold-wallet
+       no LINK address in vin and no LINK address in vout - transaction that we don't care about, record nothing
+    5. record original transaction in raw table if we care about it.
+    """
     for trx_in in vin:
         if not trx_in.has_key("txid"):
             continue
@@ -199,25 +203,43 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
                         in_set[in_address] = t["value"]
                     trx_data["vin"].append({"txid": trx_in["txid"], "vout": trx_in["vout"], "value": t["value"], "address": in_address})
                     if db_pool.b_ltc_multisig_address.find_one({"address": in_address, "addr_type": 0}) is not None:
-                        multisig_in = True
-                    else:
-                        deposit_in = in_address
+                        if multisig_in_addr == "":
+                            multisig_in_addr = in_address
+                        else:
+                            is_valid_tx = False
                     break
 
+    for trx_out in vout:
+        if trx_out["scriptPubKey"].has_key("addresses"):
+            out_address = trx_out["scriptPubKey"]["addresses"][0]
+            trx_data["vout"].append({"value": trx_out["value"], "n": trx_out["n"], "scriptPubKey": trx_out["scriptPubKey"]["hex"], "address": out_address})
+            if in_set.has_key(out_address): # remove change
+                continue
+            if (out_set.has_key(out_address)):
+                out_set[out_address] += trx_out["value"]
+            else:
+                out_set[out_address] = trx_out["value"]
+            if db_pool.b_ltc_multisig_address.find_one({"address": out_address, "addr_type": 0}) is not None:
+                if multisig_out_addr == "":
+                    multisig_out_addr = out_address
+                else:
+                    is_valid_tx = False
 
-    if multisig_in and multisig_out:
-        logging.error("Invalid deposit or withdraw transaction")
-        trx_data['type'] = 0
-    elif multisig_in: # maybe withdraw
-        if not len(out_set) == 1:
-            logging.error("Invalid withdraw transaction, withdraw to multi-address")
+    if not multisig_in_addr == "" and not multisig_out_addr == "": # maybe transfer between hot-wallet and cold-wallet
+        if not is_valid_tx:
+            logging.error("Invalid transaction between hot-wallet and cold-wallet")
+            trx_data['type'] = -3
+        else:
+            trx_data['type'] = 0
+    elif not multisig_in_addr == "": # maybe withdraw
+        if not is_valid_tx:
+            logging.error("Invalid withdraw transaction")
             trx_data['type'] = -1
         else:
-            db_pool.b_withdraw_transaction.insert(trx_data)
             trx_data['type'] = 1
-    elif multisig_out: # maybe deposit
-        if not len(in_set) == 1:
-            logging.error("Invalid deposit transaction, deposit from multi-address")
+    elif not multisig_out_addr == "": # maybe deposit
+        if not is_valid_tx or not len(in_set) == 1:
+            logging.error("Invalid deposit transaction")
             trx_data['type'] = -2
         else:
             trx_data['type'] = 2
@@ -227,13 +249,13 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
     trx_data["trxTime"] = datetime.utcfromtimestamp(base_trx_data['time']).strftime("%Y-%m-%d %H:%M:%S")
     trx_data["createtime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    if trx_data['type'] == 2:
-        mongo_data = db_pool.b_deposit_transaction.find_one({"trxid": base_trx_data["txid"]})
+    if trx_data['type'] == 2 or trx_data['type'] == 0:
+        mongo_data = db_pool.b_deposit_transaction.find_one({"txid": base_trx_data["txid"]})
         deposit_data = {
             "txid": base_trx_data["txid"],
-            "from_account": deposit_in,
-            "to_account": deposit_out,
-            "amount": str(out_set[deposit_out]),
+            "from_account": in_set.keys()[0],
+            "to_account": multisig_out_addr,
+            "amount": str(out_set.values()[0]),
             "asset_symbol": "LTC",
             "blockNum": block_num,
             "chainId":"ltc"
@@ -242,6 +264,22 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
             db_pool.b_deposit_transaction.insert(deposit_data)
         else:
             db_pool.b_deposit_transaction.update({"trxid": base_trx_data["txid"]}, {"$set": deposit_data})
+    elif trx_data['type'] == 1:
+        for k, v in out_set.items():
+            mongo_data = db_pool.b_deposit_transaction.find_one({"txid": base_trx_data["txid"], "from_account": multisig_in_addr, "to_account": k, "blockNum": block_num})
+            withdraw_data = {
+                "txid": base_trx_data["txid"],
+                "from_account": multisig_in_addr,
+                "to_account": k,
+                "amount": str(v),
+                "asset_symbol": "LTC",
+                "blockNum": block_num,
+                "chainId":"ltc"
+            }
+            if mongo_data == None:
+                db_pool.b_withdraw_transaction.insert(withdraw_data)
+            else:
+                db_pool.b_withdraw_transaction.update({"trxid": base_trx_data["txid"], "from_account": multisig_in_addr, "to_account": k, "blockNum": block_num}, {"$set": withdraw_data})
 
     mongo_data = raw_transaction_db.find_one({"trxid": base_trx_data["txid"]})
     if mongo_data == None:

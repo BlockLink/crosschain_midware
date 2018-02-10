@@ -163,6 +163,25 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
     is_valid_tx = True
     logging.debug(base_trx_data)
 
+
+    """
+    Only 3 types of transactions will be filtered out and be record in database.
+    1. deposit transaction (vin contains only one no LINK address and vout contains only one LINK address)
+    2. withdraw transaction (vin contains only one LINK address and vout contains no other LINK address)
+    3. transaction between hot-wallet and cold-wallet (vin contains only one LINK address and vout contains only one other LINK address)
+
+    Check logic:
+    1. check all tx in vin and store addresses & values (if more than one LINK address set invalid)
+    2. check all tx in vout and store all non-change addresses & values (if more than one LINK address set invalid)
+    3. above logic filter out the situation - more than one LINK address in vin or vout but there is one condition
+       should be filter out - more than one normal address in vin for deposit transaction
+    4. then we can record the transaction according to transaction type
+       only one other addres in vin and only one LINK address in vout - deposit
+       only one LINK addres in vin and only other addresses in vout - withdraw
+       only one LINK addres in vin and only one other LINK address in vout - transaction between hot-wallet and cold-wallet
+       no LINK address in vin and no LINK address in vout - transaction that we don't care about, record nothing
+    5. record original transaction in raw table if we care about it.
+    """
     for trx_in in vin:
         if not trx_in.has_key("txid"):
             continue
@@ -196,7 +215,7 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
                 out_set[out_address] += trx_out["value"]
             else:
                 out_set[out_address] = trx_out["value"]
-            elif db_pool.b_btc_multisig_address.find_one({"address": out_address, "addr_type": 0}) is not None:
+            if db_pool.b_btc_multisig_address.find_one({"address": out_address, "addr_type": 0}) is not None:
                 if multisig_out_addr == "":
                     multisig_out_addr = out_address
                 else:
@@ -215,7 +234,7 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
         else:
             trx_data['type'] = 1
     elif not multisig_out_addr == "": # maybe deposit
-        if not is_valid_tx:
+        if not is_valid_tx or not len(in_set) == 1:
             logging.error("Invalid deposit transaction")
             trx_data['type'] = -2
         else:
