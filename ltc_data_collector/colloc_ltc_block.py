@@ -250,7 +250,6 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
     trx_data["createtime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     if trx_data['type'] == 2 or trx_data['type'] == 0:
-        mongo_data = db_pool.b_deposit_transaction.find_one({"txid": base_trx_data["txid"]})
         deposit_data = {
             "txid": base_trx_data["txid"],
             "from_account": in_set.keys()[0],
@@ -260,13 +259,13 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
             "blockNum": block_num,
             "chainId":"ltc"
         }
+        mongo_data = db_pool.b_deposit_transaction.find_one({"txid": base_trx_data["txid"]})
         if mongo_data == None:
             db_pool.b_deposit_transaction.insert(deposit_data)
         else:
             db_pool.b_deposit_transaction.update({"trxid": base_trx_data["txid"]}, {"$set": deposit_data})
     elif trx_data['type'] == 1:
         for k, v in out_set.items():
-            mongo_data = db_pool.b_deposit_transaction.find_one({"txid": base_trx_data["txid"], "from_account": multisig_in_addr, "to_account": k, "blockNum": block_num})
             withdraw_data = {
                 "txid": base_trx_data["txid"],
                 "from_account": multisig_in_addr,
@@ -276,6 +275,7 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
                 "blockNum": block_num,
                 "chainId":"ltc"
             }
+            mongo_data = db_pool.b_withdraw_transaction.find_one({"txid": base_trx_data["txid"], "from_account": multisig_in_addr, "to_account": k, "blockNum": block_num})
             if mongo_data == None:
                 db_pool.b_withdraw_transaction.insert(withdraw_data)
             else:
