@@ -148,9 +148,11 @@ def btc_create_transaction(from_addr,dest_info):
 
 def btc_combineTrx(signatures) :
     resp = btc_request("combinerawtransaction",[signatures])
+    trx=""
     if resp["result"] is None:
         return ""
-    return {"hex":resp["result"]}
+    trx = btc_decode_hex_transaction(resp["result"])
+    return {"hex":resp["result"],"trx":trx}
 
 
 def btc_sign_transaction(addr,redeemScript,trx_hex):
