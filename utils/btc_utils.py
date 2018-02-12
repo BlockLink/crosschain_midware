@@ -64,7 +64,7 @@ def btc_create_address():
 
 def btc_query_tx_out(addr):
     message=[addr]
-    resp = btc_request("listunspent",[1,9999999,message])
+    resp = btc_request("listunspent",[0,9999999,message])
     if resp["result"] != None:
         return resp["result"]
     else:
