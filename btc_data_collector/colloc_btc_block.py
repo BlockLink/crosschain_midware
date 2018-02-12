@@ -19,13 +19,16 @@ import logging
 import sys
 import traceback
 
-from collector_conf import  SYNC_BLOCK_PER_ROUND
+from collector_conf import  SYNC_BLOCK_PER_ROUND, BTC_URL, BTC_PORT
 from base import GlobalVariable_btc
-from btc_utils import btc_request
+from wallet_api import WalletApi
 import time
 from block_btc import BlockInfoBtc
 from datetime import datetime
 
+
+conf = {"host": BTC_URL, "port": BTC_PORT}
+btc_wallet_api = WalletApi("btc", conf)
 
 def do_collect_app(db):
 
@@ -81,7 +84,7 @@ def do_collect_app(db):
 
 
 def get_latest_block_num(db):
-    ret = btc_request("getblockcount",[])
+    ret = btc_wallet_api.http_request("getblockcount",[])
     real_block_num = ret['result']
     safe_block = 6
     safe_block_ret = db.b_config.find_one({"key":"btcsafeblock"})
@@ -112,11 +115,11 @@ def clear_last_garbage_data(db_pool):
 
 #采集块数据
 def collect_block( db_pool, block_num_fetch):
-    ret1 = btc_request("getblockhash",[block_num_fetch])
+    ret1 = btc_wallet_api.http_request("getblockhash",[block_num_fetch])
     if ret1['result'] == None:
         raise Exception("blockchain_get_block error")
     block_hash = ret1['result']
-    ret2 = btc_request("getblock",[str(block_hash)])
+    ret2 = btc_wallet_api.http_request("getblock",[str(block_hash)])
     if ret2['result'] == None:
         raise Exception("blockchain_get_block error")
     json_data = ret2['result']
@@ -137,7 +140,7 @@ def collect_block( db_pool, block_num_fetch):
 
 def get_transaction_data(trx_id):
 
-    ret = btc_request("getrawtransaction",[trx_id, True])
+    ret = btc_wallet_api.http_request("getrawtransaction",[trx_id, True])
     if ret["result"] is None:
         resp_data = None
     else:
