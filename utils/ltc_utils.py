@@ -66,7 +66,7 @@ def ltc_create_address():
 
 def ltc_query_tx_out(addr):
     message="[\""+addr+"\"]"
-    resp = ltc_request("listunspent",[1,9999999,message])
+    resp = ltc_request("listunspent",[0,9999999,message])
     if resp["result"] != None:
         return resp["result"]
     else:

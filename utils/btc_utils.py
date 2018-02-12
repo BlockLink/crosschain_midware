@@ -64,7 +64,7 @@ def btc_create_address():
 
 def btc_query_tx_out(addr):
     message=[addr]
-    resp = btc_request("listunspent",[1,9999999,message])
+    resp = btc_request("listunspent",[0,9999999,message])
     if resp["result"] != None:
         return resp["result"]
     else:
@@ -148,9 +148,11 @@ def btc_create_transaction(from_addr,dest_info):
 
 def btc_combineTrx(signatures) :
     resp = btc_request("combinerawtransaction",[signatures])
+    trx=""
     if resp["result"] is None:
         return ""
-    return {"hex":resp["result"]}
+    trx = btc_decode_hex_transaction(resp["result"])
+    return {"hex":resp["result"],"trx":trx}
 
 
 def btc_sign_transaction(addr,redeemScript,trx_hex):
