@@ -19,7 +19,7 @@ import logging
 import sys
 import traceback
 
-from collector_conf import  SYNC_BLOCK_PER_ROUND, BTC_URL, BTC_PORT
+from collector_conf import  SYNC_BLOCK_PER_ROUND, config
 from base import GlobalVariable_btc
 from wallet_api import WalletApi
 import time
@@ -27,48 +27,54 @@ from block_btc import BlockInfoBtc
 from datetime import datetime
 
 
-conf = {"host": BTC_URL, "port": BTC_PORT}
+conf = {"host": config.BTC.RPC_HOST, "port": config.BTC.RPC_PORT}
 btc_wallet_api = WalletApi("btc", conf)
+last_sync_block_num = 0
+sync_start_per_round = 0
+sync_end_per_round = 0
+sync_limit_per_step = 0
 
 def do_collect_app(db):
-
+    global sync_start_per_round
+    global last_sync_block_num
+    global sync_end_per_round
+    global sync_limit_per_step
     while True:
         try:
             #程序启动，设置为同步状态
             config = db.b_config
-            config.update({"key":"btcsyncstate"},{"key":"btcsyncstate","value":"true"})
+            config.update({"key":"btcsyncstate"}, {"key":"btcsyncstate", "value":"true"})
 
             # 清理上一轮的垃圾数据，包括块数据、交易数据以及合约数据
-            GlobalVariable_btc.last_sync_block_num = clear_last_garbage_data(db)
-            GlobalVariable_btc.sync_limit_per_step = 10
+            last_sync_block_num = clear_last_garbage_data(db)
+            sync_limit_per_step = 10
 
             # 获取当前链上最新块号
             while True:
                 latest_block_num = get_latest_block_num(db)
-                logging.debug("latest_block_num: %d, GlobalVariable_btc.last_sync_block_num: %d" % (latest_block_num, GlobalVariable_btc.last_sync_block_num))
-                if GlobalVariable_btc.last_sync_block_num >= latest_block_num:
-                    GlobalVariable_btc.sync_start_per_round = latest_block_num
-                    GlobalVariable_btc.sync_end_per_round = latest_block_num
+                logging.debug("latest_block_num: %d, last_sync_block_num: %d" % (latest_block_num, last_sync_block_num))
+                if last_sync_block_num >= latest_block_num:
+                    sync_start_per_round = latest_block_num
+                    sync_end_per_round = latest_block_num
                 else:
-                    GlobalVariable_btc.sync_start_per_round = GlobalVariable_btc.last_sync_block_num
-                    GlobalVariable_btc.sync_end_per_round = ((
-                                                         GlobalVariable_btc.last_sync_block_num + SYNC_BLOCK_PER_ROUND) >= latest_block_num) \
-                                                        and latest_block_num or (
-                                                        GlobalVariable_btc.last_sync_block_num + SYNC_BLOCK_PER_ROUND)
-                logging.debug("This round start: %d, this round end: %d" % (GlobalVariable_btc.sync_start_per_round, GlobalVariable_btc.sync_end_per_round))
+                    sync_start_per_round = last_sync_block_num
+                    sync_end_per_round = ((
+                            last_sync_block_num + SYNC_BLOCK_PER_ROUND) >= latest_block_num) \
+                            and latest_block_num or (last_sync_block_num + SYNC_BLOCK_PER_ROUND)
+                logging.debug("This round start: %d, this round end: %d" % (sync_start_per_round, sync_end_per_round))
 
-                sync_rate = float(GlobalVariable_btc.sync_start_per_round) / latest_block_num
+                sync_rate = float(sync_start_per_round) / latest_block_num
                 sync_process = '#' * int(40 * sync_rate) + ' ' * (40 - int(40 * sync_rate))
                 sys.stdout.write(
-                    "\rsync block [%s][%d/%d], %.3f%%\n" % (sync_process, GlobalVariable_btc.sync_start_per_round,
+                    "\rsync block [%s][%d/%d], %.3f%%\n" % (sync_process, sync_start_per_round,
                                                           latest_block_num, sync_rate * 100))
-                while GlobalVariable_btc.sync_start_per_round <=GlobalVariable_btc.sync_end_per_round:
-                    logging.debug("Start collect step from %d" % GlobalVariable_btc.sync_start_per_round)
+                while sync_start_per_round <= sync_end_per_round:
+                    logging.debug("Start collect step from %d" % sync_start_per_round)
                     collect_data_cb(db)
-                    GlobalVariable_btc.last_sync_block_num = GlobalVariable_btc.sync_start_per_round
-                    config.update({"key": "btcsyncblocknum"}, {"$set":{"key": "btcsyncblocknum", "value": str(GlobalVariable_btc.last_sync_block_num)}})
+                    last_sync_block_num = sync_start_per_round
+                    config.update({"key": "btcsyncblocknum"}, {"$set":{"key": "btcsyncblocknum", "value": str(last_sync_block_num)}})
 
-                if GlobalVariable_btc.sync_start_per_round == latest_block_num + 1:
+                if sync_start_per_round == latest_block_num + 1:
                     break
 
             print 'ok'
@@ -297,10 +303,12 @@ def update_block_trx_amount(db_pool,block_info):
 
 #采集数据
 def collect_data_cb(db_pool):
+    global sync_limit_per_step
+    global sync_start_per_round
     try:
         count = 0
-        while GlobalVariable_btc.sync_start_per_round <= GlobalVariable_btc.sync_end_per_round and count < GlobalVariable_btc.sync_limit_per_step:
-            block_num_fetch = GlobalVariable_btc.sync_start_per_round
+        while sync_start_per_round <= sync_end_per_round and count < sync_limit_per_step:
+            block_num_fetch = sync_start_per_round
 
             # 采集块
             block_info = collect_block(db_pool, block_num_fetch)
@@ -311,7 +319,7 @@ def collect_data_cb(db_pool):
                     continue
                 logging.debug("Transaction: %s" % base_trx_data)
                 pretty_trx_info = collect_pretty_transaction(db_pool, base_trx_data, block_info.block_num)
-            GlobalVariable_btc.sync_start_per_round += 1
+            sync_start_per_round += 1
             count += 1
 
         # 连接使用完毕，需要释放连接

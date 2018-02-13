@@ -4,7 +4,6 @@
 __author__ = 'hasee'
 
 
-from btc_utils import btc_request
 from datetime import datetime
 
 
