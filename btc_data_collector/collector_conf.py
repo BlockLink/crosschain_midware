@@ -21,6 +21,9 @@ class DevelopmentConfig():
     LOG_FORMAT = '%(asctime)-15s %(levelname)s %(funcName)s %(message)s'
     LOG_FILENAME = "btc_data_collector.log"
 
+    # SYNC configure
+    SYNC_BLOCK_PER_ROUND = 10000
+
     class BTC:
         RPC_HOST = '192.168.1.123'
         RPC_PORT = 60012
@@ -28,7 +31,5 @@ class DevelopmentConfig():
 
 config = DevelopmentConfig
 
-# SYNC configure
-SYNC_BLOCK_PER_ROUND = 10000
 
 

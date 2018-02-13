@@ -19,7 +19,7 @@ import logging
 import sys
 import traceback
 
-from collector_conf import  SYNC_BLOCK_PER_ROUND, config
+from collector_conf import config
 from wallet_api import WalletApi
 import time
 from block_btc import BlockInfoBtc
@@ -58,8 +58,8 @@ def do_collect_app(db):
                 else:
                     sync_start_per_round = last_sync_block_num
                     sync_end_per_round = ((
-                            last_sync_block_num + SYNC_BLOCK_PER_ROUND) >= latest_block_num) \
-                            and latest_block_num or (last_sync_block_num + SYNC_BLOCK_PER_ROUND)
+                            last_sync_block_num + config.SYNC_BLOCK_PER_ROUND) >= latest_block_num) \
+                            and latest_block_num or (last_sync_block_num + config.SYNC_BLOCK_PER_ROUND)
                 logging.debug("This round start: %d, this round end: %d" % (sync_start_per_round, sync_end_per_round))
 
                 sync_rate = float(sync_start_per_round) / latest_block_num
@@ -297,7 +297,6 @@ def collect_pretty_transaction(db_pool, base_trx_data, block_num):
 def update_block_trx_amount(db_pool,block_info):
     block = db_pool.b_block
     block.update({"blockHash":block_info.block_id},{"$set" : {"trxamount:":str(block_info.trx_amount),"trxfee":block_info.trx_fee}})
-
 
 
 #采集数据
