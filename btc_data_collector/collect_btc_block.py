@@ -20,7 +20,6 @@ import sys
 import traceback
 
 from collector_conf import  SYNC_BLOCK_PER_ROUND, config
-from base import GlobalVariable_btc
 from wallet_api import WalletApi
 import time
 from block_btc import BlockInfoBtc
