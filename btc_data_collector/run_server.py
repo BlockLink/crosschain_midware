@@ -4,7 +4,7 @@
 __author__ = 'ted'
 
 from collector_conf import config
-from colloc_btc_block import do_collect_app
+from collect_btc_block import do_collect_app
 import logging
 from pymongo import MongoClient
 
