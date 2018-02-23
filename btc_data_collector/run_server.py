@@ -3,12 +3,15 @@
 
 __author__ = 'ted'
 
-from collector_conf import config
-from collect_btc_block import do_collect_app
+from collector_conf import CollectorConfig
+from collect_btc_block import BTCCoinTxCollecter
+from collect_ltc_block import LTCCoinTxCollecter
 import logging
+import sys
 from pymongo import MongoClient
 
 if __name__ == '__main__':
+    config = CollectorConfig()
     logging.basicConfig(level=config.LOG_LEVEL, format=config.LOG_FORMAT, filename=config.LOG_FILENAME, filemode="a")
     console = logging.StreamHandler()
     console.setLevel(logging.DEBUG)
@@ -20,4 +23,16 @@ if __name__ == '__main__':
     client[config.MONGO_NAME].authenticate(config.MONGO_USER, config.MONGO_PASS)
     db = client[config.MONGO_NAME]
 
-    do_collect_app(db)
+    # collector = BTCCoinTxCollecter(db)
+    if not len(sys.argv) == 2:
+        print "Please indicate which type of coin tx to collect [btc|ltc]"
+        exit(1)
+    elif sys.argv[1] == "btc":
+        collector = BTCCoinTxCollecter(db)
+    elif sys.argv[1] == "ltc":
+        collector = LTCCoinTxCollecter(db)
+    else:
+        print "Please indicate correct type of coin tx to collect [btc|ltc]"
+        exit(1)
+
+    collector.do_collect_app()

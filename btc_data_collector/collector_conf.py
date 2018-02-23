@@ -4,9 +4,8 @@
 __author__ = 'hasee'
 
 import logging
-import os
 
-class DevelopmentConfig():
+class CollectorConfig(object):
     # DB configure
     DB_POOL_SIZE = 10
     CONNECT_TIMEOUT = 50
@@ -24,12 +23,22 @@ class DevelopmentConfig():
     # SYNC configure
     SYNC_BLOCK_PER_ROUND = 10000
 
-    class BTC:
-        RPC_HOST = '192.168.1.123'
-        RPC_PORT = 60012
+class BTCCollectorConfig(CollectorConfig):
+    ASSET_SYMBOL = "BTC"
+    RPC_HOST = '192.168.1.123'
+    RPC_PORT = 60012
+    SYNC_STATE_FIELD = "btcsyncstate"
+    SYNC_BLOCK_NUM = "btcsyncblocknum"
+    SAFE_BLOCK_FIELD = "btcsafeblock"
 
+class LTCCollectorConfig(CollectorConfig):
+    ASSET_SYMBOL = "LTC"
+    RPC_HOST = '192.168.1.123'
+    RPC_PORT = 50001
+    SYNC_STATE_FIELD = "ltcsyncstate"
+    SYNC_BLOCK_NUM = "ltcsyncblocknum"
+    SAFE_BLOCK_FIELD = "ltcsafeblock"
 
-config = DevelopmentConfig
 
 
 
