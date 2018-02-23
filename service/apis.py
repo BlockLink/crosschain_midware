@@ -367,7 +367,6 @@ def zchain_address_create(chainId):
     logger.info('Create_address coin: %s' % (chainId))
     if chainId == 'eth':
         address = eth_utils.eth_create_address()
-        print 1
     elif chainId == 'btc':
         address = btc_utils.btc_create_address()
     elif chainId == 'ltc' :
@@ -384,7 +383,6 @@ def zchain_address_create(chainId):
         data = db.b_chain_account.find_one({"chainId": chainId, "address": address})
         if data != None:
             return {'chainId': chainId, 'error': '创建地址失败'}
-        print 2
         d = {"chainId": chainId, "address": address, "name": "", "pubKey": "", "securedPrivateKey": "",
              "creatorUserId": "", "balance": {}, "memo": "", "createTime": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
         db.b_chain_account.insert(d)
