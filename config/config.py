@@ -39,6 +39,8 @@ class DevelopmentConfig(Config):
     BTC_PORT = 60011
     ETP_PORT = 8820
     ETP_URL = 'etp_wallet'
+    LTC_HOST = 'btc_wallet'
+    LTC_PORT = 60011
 
 
 class DaConfig(Config):
