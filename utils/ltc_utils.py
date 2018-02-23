@@ -7,7 +7,7 @@ import traceback
 
 
 def ltc_request(method, args):
-    url = "http://%s:%s" % (app.config['BTC_HOST'], app.config['BTC_PORT'])
+    url = "http://%s:%s" % (app.config['LTC_HOST'], app.config['LTC_PORT'])
     user = 'a'
     passwd = 'b'
     basestr = encodestring('%s:%s' % (user, passwd))[:-1]
