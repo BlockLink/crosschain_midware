@@ -237,7 +237,7 @@ def zchain_multisig_create(chainId, addrs, amount):
             mutisig_record = db.b_btc_multisig_address.find_one({"address": address})
             if mutisig_record is not None:
                 db.b_btc_multisig_address.remove({"address": address})
-            data = {"address": address, "redeemScript": redeemScript,"addr_type":0}
+            data = {"address": address, "redeemScript": redeemScript, "addr_type":0}
             db.b_btc_multisig_address.insert_one(data)
     elif chainId == "ltc":
         result = ltc_utils.ltc_create_multisig(addrs, amount)
@@ -247,7 +247,7 @@ def zchain_multisig_create(chainId, addrs, amount):
             mutisig_record = db.b_ltc_multisig_address.find_one({"address": address})
             if mutisig_record is not None:
                 db.b_ltc_multisig_address.remove({"address": address})
-            data = {"address": address, "redeemScript": redeemScript}
+            data = {"address": address, "redeemScript": redeemScript, "addr_type":0}
             db.b_ltc_multisig_address.insert_one(data)
     else:
         return error_utils.invalid_chainid_type()
@@ -401,7 +401,6 @@ def zchain_address_create(chainId):
     logger.info('Create_address coin: %s' % (chainId))
     if chainId == 'eth':
         address = eth_utils.eth_create_address()
-        print 1
     elif chainId == 'btc':
         address = btc_utils.btc_create_address()
     elif chainId == 'ltc' :
@@ -418,7 +417,6 @@ def zchain_address_create(chainId):
         data = db.b_chain_account.find_one({"chainId": chainId, "address": address})
         if data != None:
             return {'chainId': chainId, 'error': '创建地址失败'}
-        print 2
         d = {"chainId": chainId, "address": address, "name": "", "pubKey": "", "securedPrivateKey": "",
              "creatorUserId": "", "balance": {}, "memo": "", "createTime": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
         db.b_chain_account.insert(d)
