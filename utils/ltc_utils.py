@@ -57,7 +57,7 @@ def ltc_validate_address(addr):
 
 
 def ltc_create_address():
-    resp = ltc_request("getnewaddress", ["btc_test"])
+    resp = ltc_request("getnewaddress", [""])
     address = ""
     if resp["result"] != None:
         address = resp["result"]
@@ -65,7 +65,7 @@ def ltc_create_address():
 
 
 def ltc_query_tx_out(addr):
-    message="[\""+addr+"\"]"
+    message = [addr]
     resp = ltc_request("listunspent",[0,9999999,message])
     if resp["result"] != None:
         return resp["result"]
@@ -127,7 +127,7 @@ def ltc_create_transaction(from_addr,dest_info):
     for out in txout :
         if sum >= amount+fee:
             break
-        sum+=int(out.get("amount"))
+        sum+=float(out.get("amount"))
         vin_need.append(out)
     if sum < amount+fee:
         return ""
@@ -138,10 +138,10 @@ def ltc_create_transaction(from_addr,dest_info):
     #set a fee
     resp = ""
     if sum-amount == fee:
-        resp = ltc_request("createrawtransaction", [vins, [vins, vouts]])
+        resp = ltc_request("createrawtransaction", [vins, vouts])
     else:
         vouts[from_addr] = round(sum - amount - fee,8)
-        resp = ltc_request("createrawtransaction", [vins,[vins, vouts]])
+        resp = ltc_request("createrawtransaction", [vins, vouts])
     if resp["result"] != None:
         trx_hex = resp['result']
         trx = ltc_decode_hex_transaction(trx_hex)
@@ -153,7 +153,8 @@ def ltc_combineTrx(signatures) :
     resp = ltc_request("combinerawtransaction",[signatures])
     if resp["result"] is None:
         return ""
-    return {"hex":resp["result"]}
+    trx = ltc_decode_hex_transaction(resp["result"])
+    return {"hex":resp["result"], "trx":trx}
 
 
 def ltc_sign_transaction(addr,redeemScript,trx_hex):

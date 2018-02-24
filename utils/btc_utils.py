@@ -39,12 +39,14 @@ def btc_create_multisig(addrs, amount):
     else:
         return None
 
+
 def btc_add_multisig(addrs, amount):
     resp = btc_request("addmultisigaddress", [amount, addrs])
     if resp["result"] != None:
         return resp["result"]
     else:
         return None
+
 
 def btc_validate_address(addr):
     resp = btc_request("validateaddress", [addr])
@@ -55,7 +57,7 @@ def btc_validate_address(addr):
 
 
 def btc_create_address():
-    resp = btc_request("getnewaddress", ["btc_test"])
+    resp = btc_request("getnewaddress", [""])
     address = ""
     if resp["result"] != None:
         address = resp["result"]
@@ -121,6 +123,7 @@ def btc_create_transaction(from_addr,dest_info):
     for addr,num in dest_info.items() :
         amount += num
         vouts[addr]=num
+
     for out in txout :
         if sum >= amount+fee:
             break
@@ -148,7 +151,6 @@ def btc_create_transaction(from_addr,dest_info):
 
 def btc_combineTrx(signatures) :
     resp = btc_request("combinerawtransaction",[signatures])
-    trx=""
     if resp["result"] is None:
         return ""
     trx = btc_decode_hex_transaction(resp["result"])
