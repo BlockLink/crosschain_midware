@@ -60,7 +60,12 @@ def btc_create_address():
     if resp["result"] != None:
         address = resp["result"]
     return address
-
+def btc_validate_address(addr):
+    resp = btc_request("validateaddress", [addr])
+    address = ""
+    if resp["result"] != None:
+        address = resp["result"]
+    return address
 
 def btc_query_tx_out(addr):
     message=[addr]

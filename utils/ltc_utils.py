@@ -102,6 +102,12 @@ def ltc_decode_hex_transaction(trx_hex):
     if resp["result"] is not None :
         return resp["result"]
     return ""
+def ltc_validate_address(addr):
+    resp = ltc_request("validateaddress", [addr])
+    address = ""
+    if resp["result"] != None:
+        address = resp["result"]
+    return address
 
 
 def ltc_get_transaction(trxid):

@@ -177,6 +177,24 @@ def zchain_trans_queryTrx(chainId, trxid):
         'data': result
     }
 
+@jsonrpc.method('Zchain.Trans.getTrxOuts(chainId=str, addr=str)')
+def zchain_trans_getTrxOuts(chainId, addr):
+    logger.info('Zchain.Trans.getTrxOuts')
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+
+    result = False
+    if chainId == "btc":
+        result = btc_utils.btc_query_tx_out(addr)
+    elif chainId == "ltc":
+        result = ltc_utils.ltc_query_tx_out(addr)
+    else:
+        return error_utils.invalid_chainid_type()
+
+    return {
+        'chainId': chainId,
+        'data': result
+    }
 
 
 @jsonrpc.method('Zchain.Crypt.VerifyMessage(chainId=str, addr=str, message=str, signature=str)')
@@ -239,7 +257,23 @@ def zchain_multisig_create(chainId, addrs, amount):
         'address': address,
         'redeemScript': redeemScript
     }
+@jsonrpc.method('Zchain.Address.validate(chainId=str, addr=str)')
+def zchain_address_validate(chainId,addr):
+    logger.info("Zchain.Address.validate")
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+    if type(addr) != str:
+        return error_utils.mismatched_parameter_type('addr', 'STRING')
+    result = None
+    if chainId == "btc" :
+        result = btc_utils.btc_validate_address(addr)
+    elif chainId == "ltc":
+        result = ltc_utils.ltc_validate_address(addr)
 
+    return {
+        "chainId":chainId,
+        "valid"  : result.get("isvalid")
+    }
 
 @jsonrpc.method('Zchain.Multisig.Add(chainId=str, addrs=list, amount=int, addrType=int)')
 def zchain_multisig_add(chainId, addrs, amount, addrType):
