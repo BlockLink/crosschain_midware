@@ -219,7 +219,7 @@ def zchain_multisig_create(chainId, addrs, amount):
             mutisig_record = db.b_btc_multisig_address.find_one({"address": address})
             if mutisig_record is not None:
                 db.b_btc_multisig_address.remove({"address": address})
-            data = {"address": address, "redeemScript": redeemScript,"addr_type":0}
+            data = {"address": address, "redeemScript": redeemScript, "addr_type":0}
             db.b_btc_multisig_address.insert_one(data)
     elif chainId == "ltc":
         result = ltc_utils.ltc_create_multisig(addrs, amount)
@@ -229,7 +229,7 @@ def zchain_multisig_create(chainId, addrs, amount):
             mutisig_record = db.b_ltc_multisig_address.find_one({"address": address})
             if mutisig_record is not None:
                 db.b_ltc_multisig_address.remove({"address": address})
-            data = {"address": address, "redeemScript": redeemScript}
+            data = {"address": address, "redeemScript": redeemScript, "addr_type":0}
             db.b_ltc_multisig_address.insert_one(data)
     else:
         return error_utils.invalid_chainid_type()
