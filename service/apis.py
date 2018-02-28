@@ -262,7 +262,7 @@ def zchain_address_validate(chainId,addr):
     logger.info("Zchain.Address.validate")
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
-    if type(addr) != str:
+    if type(addr) != unicode:
         return error_utils.mismatched_parameter_type('addr', 'STRING')
     result = None
     if chainId == "btc" :
