@@ -126,15 +126,15 @@ def btc_create_transaction(from_addr,dest_info):
     amount =0.0
     vouts ={}
     for addr,num in dest_info.items() :
-        amount += num
-        vouts[addr]=num
+        amount = round(amount + num,8)
+        vouts[addr]=round(num,8)
 
     for out in txout :
-        if sum >= amount+fee:
+        if sum >= round(amount+fee,8):
             break
-        sum+=float(out.get("amount"))
+        sum = round(sum +float(out.get("amount")),8)
         vin_need.append(out)
-    if sum < amount+fee:
+    if sum < round(amount+fee,8):
         return ""
     vins=[]
     for need in vin_need :
@@ -142,7 +142,7 @@ def btc_create_transaction(from_addr,dest_info):
         vins.append(vin)
     #set a fee
     resp = ""
-    if sum-amount == fee:
+    if round(sum-amount,8) == fee:
         resp = btc_request("createrawtransaction", [vins, vouts])
     else:
         vouts[from_addr]=round(sum-amount-fee,8)
