@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+ #!/usr/bin/env python
 # encoding=utf8
 
 __author__ = 'hasee'
@@ -211,7 +211,8 @@ class BTCCoinTxCollecter(CoinTxCollecter):
                             if multisig_in_addr == "":
                                 multisig_in_addr = in_address
                             else:
-                                is_valid_tx = False
+                                if multisig_in_addr != in_address:
+                                    is_valid_tx = False
                         break
 
         for trx_out in vout:
