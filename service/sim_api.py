@@ -3,17 +3,11 @@
 from service import jsonrpc
 from config import logger
 from utils import eth_utils
-from utils import btc_utils
 from utils import etp_utils
-from utils import ltc_utils
-from service import models
 from service import db
+from service import sim_btc_plugin
 from utils import error_utils
-from bson import json_util
-from bson import ObjectId
 import pymongo
-import time
-import json
 from datetime import datetime
 
 
@@ -24,16 +18,14 @@ def zchain_crypt_sign(chainId, addr, message):
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
     signed_message = ""
-    if chainId == "btc":
-        signed_message = btc_utils.btc_sign_message(addr, message)
-    elif chainId == "ltc":
-        signed_message = ltc_utils.ltc_sign_message(addr, message)
+    if sim_btc_plugin.has_key(chainId):
+        signed_message = sim_btc_plugin[chainId].sim_btc_sign_message(addr, message)
     else:
         return error_utils.invalid_chainid_type()
 
     if signed_message == "":
         return error_utils.error_response("Cannot sign message.")
-    
+
     return {
         'chainId': chainId,
         'data': signed_message
@@ -47,10 +39,8 @@ def zchain_Trans_sign(chainId,addr, trx_hex, redeemScript):
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
     signed_trx = ""
-    if chainId == "btc":
-        signed_trx = btc_utils.btc_sign_transaction(addr, redeemScript,trx_hex)
-    elif chainId == "ltc":
-        signed_trx = ltc_utils.ltc_sign_transaction(addr, redeemScript,trx_hex)
+    if sim_btc_plugin.has_key(chainId):
+        signed_trx = sim_btc_plugin[chainId].sim_btc_sign_transaction(addr, redeemScript,trx_hex)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -70,10 +60,8 @@ def zchain_trans_broadcastTrx(chainId, trx):
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
     result = ""
-    if chainId == "btc":
-        result = btc_utils.btc_broadcaset_trx(trx)
-    elif chainId == "ltc":
-        result = ltc_utils.ltc_broadcaset_trx(trx)
+    if sim_btc_plugin.has_key(chainId):
+        result = sim_btc_plugin[chainId].sim_btc_broadcaset_trx(trx)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -93,10 +81,8 @@ def zchain_trans_createTrx(chainId, from_addr,dest_info):
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
     result = {}
-    if chainId == "btc":
-        result = btc_utils.btc_create_transaction(from_addr,dest_info)
-    elif chainId == "ltc":
-        result = ltc_utils.ltc_create_transaction(from_addr,dest_info)
+    if sim_btc_plugin.has_key(chainId):
+        result = sim_btc_plugin[chainId].sim_btc_create_transaction(from_addr,dest_info)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -116,10 +102,8 @@ def zchain_trans_CombineTrx(chainId, transactions):
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
     result = ""
-    if chainId == "btc":
-        result = btc_utils.btc_combineTrx(transactions)
-    elif chainId == "ltc":
-        result = ltc_utils.ltc_combineTrx(transactions)
+    if sim_btc_plugin.has_key(chainId):
+        result = sim_btc_plugin[chainId].sim_btc_combine_trx(transactions)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -139,10 +123,8 @@ def zchain_trans_decodeTrx(chainId, trx_hex):
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
     result = ""
-    if chainId == "btc":
-        result = btc_utils.btc_decode_hex_transaction(trx_hex)
-    elif chainId == "ltc":
-        result = ltc_utils.ltc_decode_hex_transaction(trx_hex)
+    if sim_btc_plugin.has_key(chainId):
+        result = sim_btc_plugin[chainId].sim_btc_decode_hex_transaction(trx_hex)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -162,10 +144,8 @@ def zchain_trans_queryTrx(chainId, trxid):
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
     result = ""
-    if chainId == "btc":
-        result = btc_utils.btc_get_transaction(trxid)
-    elif chainId == "ltc":
-        result = ltc_utils.ltc_get_transaction(trxid)
+    if sim_btc_plugin.has_key(chainId):
+        result = sim_btc_plugin[chainId].sim_btc_get_transaction(trxid)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -184,10 +164,8 @@ def zchain_trans_getTrxOuts(chainId, addr):
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
     result = False
-    if chainId == "btc":
-        result = btc_utils.btc_query_tx_out(addr)
-    elif chainId == "ltc":
-        result = ltc_utils.ltc_query_tx_out(addr)
+    if sim_btc_plugin.has_key(chainId):
+        result = sim_btc_plugin[chainId].sim_btc_query_tx_out(addr)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -204,10 +182,8 @@ def zchain_crypt_verify_message(chainId, addr, message, signature):
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
     result = False
-    if chainId == "btc":
-        result = btc_utils.btc_verify_signed_message(addr, message, signature)
-    elif chainId == "ltc":
-        result = ltc_utils.ltc_verify_signed_message(addr, message, signature)
+    if sim_btc_plugin.has_key(chainId):
+        result = sim_btc_plugin[chainId].sim_btc_verify_signed_message(addr, message, signature)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -229,29 +205,19 @@ def zchain_multisig_create(chainId, addrs, amount):
 
     address = ""
     redeemScript = ""
-    if chainId == "btc":
-        result = btc_utils.btc_create_multisig(addrs, amount)
+    if sim_btc_plugin.has_key(chainId):
+        result = sim_btc_plugin[chainId].sim_btc_create_multisig(addrs, amount)
         if result is not None:
             address = result["address"]
             redeemScript = result["redeemScript"]
-            mutisig_record = db.b_btc_multisig_address.find_one({"address": address})
+            mutisig_record = db.get_collection("b_"+chainId+"_multisig_address").find_one({"address": address})
             if mutisig_record is not None:
-                db.b_btc_multisig_address.remove({"address": address})
+                db.get_collection("b_"+chainId+"_multisig_address").remove({"address": address})
             data = {"address": address, "redeemScript": redeemScript, "addr_type":0}
-            db.b_btc_multisig_address.insert_one(data)
-    elif chainId == "ltc":
-        result = ltc_utils.ltc_create_multisig(addrs, amount)
-        if result is not None:
-            address = result["address"]
-            redeemScript = result["redeemScript"]
-            mutisig_record = db.b_ltc_multisig_address.find_one({"address": address})
-            if mutisig_record is not None:
-                db.b_ltc_multisig_address.remove({"address": address})
-            data = {"address": address, "redeemScript": redeemScript, "addr_type":0}
-            db.b_ltc_multisig_address.insert_one(data)
+            db.get_collection("b_"+chainId+"_multisig_address").insert_one(data)
     else:
         return error_utils.invalid_chainid_type()
-    
+
     return {
         'chainId': chainId,
         'address': address,
@@ -265,10 +231,10 @@ def zchain_address_validate(chainId,addr):
     if type(addr) != unicode:
         return error_utils.mismatched_parameter_type('addr', 'STRING')
     result = None
-    if chainId == "btc" :
-        result = btc_utils.btc_validate_address(addr)
-    elif chainId == "ltc":
-        result = ltc_utils.ltc_validate_address(addr)
+    if sim_btc_plugin.has_key(chainId):
+        result = sim_btc_plugin[chainId].sim_btc_validate_address(addr)
+    else:
+        return error_utils.invalid_chainid_type()
 
     return {
         "chainId":chainId,
@@ -288,31 +254,20 @@ def zchain_multisig_add(chainId, addrs, amount, addrType):
         return error_utils.mismatched_parameter_type('addrType', 'INTEGER')
 
     address = ""
-    if chainId == "btc":
-        multisig_addr = btc_utils.btc_add_multisig(addrs, amount)
+    if sim_btc_plugin.has_key(chainId):
+        multisig_addr = sim_btc_plugin[chainId].sim_btc_add_multisig(addrs, amount)
         if multisig_addr is not None:
-            addr_info = btc_utils.btc_validate_address(multisig_addr)
+            addr_info = sim_btc_plugin[chainId].sim_btc_validate_address(multisig_addr)
             if addr_info is not None:
-                multisig_record = db.b_btc_multisig_address.find_one({"address": multisig_addr})
+                multisig_record = db.get_collection("b_"+chainId+"_multisig_address").find_one({"address": multisig_addr})
                 if multisig_record is not None:
-                    db.b_btc_multisig_address.remove({"address": multisig_addr})
+                    db.get_collection("b_"+chainId+"_multisig_address").remove({"address": multisig_addr})
                 data = {"address": addr_info["address"], "redeemScript": addr_info["hex"], "addr_type": addrType}
-                db.b_btc_multisig_address.insert_one(data)
-                address = addr_info["address"]
-    elif chainId == "ltc":
-        multisig_addr = ltc_utils.ltc_add_multisig(addrs, amount)
-        if multisig_addr is not None:
-            addr_info = ltc_utils.ltc_validate_address(multisig_addr)
-            if addr_info is not None:
-                multisig_record = db.b_ltc_multisig_address.find_one({"address": multisig_addr})
-                if multisig_record is not None:
-                    db.b_ltc_multisig_address.remove({"address": multisig_addr})
-                data = {"address": addr_info["address"], "redeemScript": addr_info["hex"], "addr_type": addrType}
-                db.b_ltc_multisig_address.insert_one(data)
+                db.get_collection("b_"+chainId+"_multisig_address").insert_one(data)
                 address = addr_info["address"]
     else:
         return error_utils.invalid_chainid_type()
-    
+
     return {
         'chainId': chainId,
         'data': address
@@ -401,10 +356,8 @@ def zchain_address_create(chainId):
     logger.info('Create_address coin: %s' % (chainId))
     if chainId == 'eth':
         address = eth_utils.eth_create_address()
-    elif chainId == 'btc':
-        address = btc_utils.btc_create_address()
-    elif chainId == 'ltc' :
-        address = ltc_utils.ltc_create_address()
+    elif sim_btc_plugin.has_key(chainId):
+        address = sim_btc_plugin[chainId].sim_btc_create_address()
     else:
         return error_utils.invalid_chainid_type(chainId)
     if address != "":
@@ -451,20 +404,20 @@ def zchain_withdraw_getinfo(chainId):
             address = eth_utils.eth_create_address()
             # eth_utils.eth_backup()
             records["value"].append({"chainId": "eth", "address": address})
-        elif chainId == "btc":
-            address = btc_utils.btc_create_withdraw_address()
-            btc_utils.btc_backup_wallet()
-            records["value"].append({"chainId": "btc", "address": address})
-        elif chainId == "etp" :
+        elif sim_btc_plugin.has_key(chainId):
+            address = sim_btc_plugin[chainId].sim_btc_create_withdraw_address()
+            sim_btc_plugin.sim_btc_backup_wallet()
+            records["value"].append({"chainId": chainId, "address": address})
+        elif chainId == "etp":
             address = etp_utils.etp_create_withdraw_address()
             records["value"].append({"chainId": "etp", "address": address})
     db.b_config.update({"key": "withdrawaddress"}, {"$set": {"value": records["value"]}})
     balance = 0.0
     if chainId == "eth":
         balance = eth_utils.eth_get_base_balance(address)
-    elif chainId == "btc":
-        balance = btc_utils.btc_get_withdraw_balance()
-    elif chainId == "etp" :
+    elif sim_btc_plugin.has_key(chainId):
+        balance = sim_btc_plugin.sim_btc_get_withdraw_balance()
+    elif chainId == "etp":
         balance = etp_utils.etp_get_addr_balance(address)
     else:
         return error_utils.invalid_chainid_type(chainId)
