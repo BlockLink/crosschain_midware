@@ -115,7 +115,8 @@ def ltc_get_transaction(trxid):
     if resp["result"] != None:
         return ltc_decode_hex_transaction(resp["result"])
     return ""
-
+def ltc_import_addr(addr):
+    ltc_request("importaddress",[addr,"",False])
 
 def ltc_create_transaction(from_addr,dest_info):
     txout = ltc_query_tx_out(from_addr)
