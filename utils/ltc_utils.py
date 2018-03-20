@@ -127,6 +127,7 @@ def ltc_create_transaction(from_addr,dest_info):
     fee = 0.001
     amount=0.0
     vouts ={}
+    scriptPubKey = []
     for addr, num in dest_info.items():
         amount += num
         vouts[addr] = num
@@ -139,10 +140,11 @@ def ltc_create_transaction(from_addr,dest_info):
     if sum < amount+fee:
         return ""
     vins=[]
-    scriptPubKey = []
+
     for need in vin_need :
-        scriptPubKey.append(need.get("scriptPubkey"))
-        vin={'txid':need.get('txid'),'vout':need.get('vout'),'scriptPubKey':need.get('scriptPubKey')}
+        pubkey=need.get('scriptPubKey')
+        scriptPubKey.append(pubkey)
+        vin={'txid':need.get('txid'),'vout':need.get('vout'),'scriptPubKey':pubkey}
         vins.append(vin)
     #set a fee
     resp = ""

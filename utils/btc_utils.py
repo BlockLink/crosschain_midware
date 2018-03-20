@@ -140,8 +140,9 @@ def btc_create_transaction(from_addr,dest_info):
     vins=[]
     scriptPubKey = []
     for need in vin_need :
-        scriptPubKey.append(need.get("scriptPubkey"))
-        vin={'txid':need.get('txid'),'vout':need.get('vout'),'scriptPubKey':need.get('scriptPubKey')}
+        pubkey = need.get("scriptPubkey")
+        scriptPubKey.append(pubkey)
+        vin={'txid':need.get('txid'),'vout':need.get('vout'),'scriptPubKey':pubkey}
         vins.append(vin)
     #set a fee
     resp = ""
