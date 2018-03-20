@@ -91,18 +91,12 @@ def zchain_addr_importaddr(chainId, addr):
     logger.info('Zchain.Addr.importAddr')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
-
-    result = {}
     if chainId == "btc":
         btc_utils.btc_import_addr(addr)
     elif chainId == "ltc":
         ltc_utils.ltc_import_addr(addr)
     else:
         return error_utils.invalid_chainid_type()
-
-    if result == {}:
-        return error_utils.error_response("Cannot create transaction.")
-
     return {
         'chainId': chainId,
         'data': ""
