@@ -138,11 +138,9 @@ def btc_create_transaction(from_addr,dest_info):
     if sum < round(amount+fee,8):
         return ""
     vins=[]
-    scriptPubKey = []
     for need in vin_need :
         pubkey = need.get("scriptPubKey")
-        scriptPubKey.append(pubkey)
-        vin={'txid':need.get('txid'),'vout':need.get('vout'),'scriptPubKey':pubkey}
+        vin={'txid':need.get('txid'),'vout':need.get('vout')}
         vins.append(vin)
     #set a fee
     resp = ""
