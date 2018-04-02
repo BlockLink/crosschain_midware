@@ -152,7 +152,7 @@ def btc_create_transaction(from_addr,dest_info):
     if resp["result"] != None:
         trx_hex = resp['result']
         trx = btc_decode_hex_transaction(trx_hex)
-        return {"trx":trx,"hex":trx_hex,"script":scriptPubKey}
+        return {"trx":trx,"hex":trx_hex}
     return ""
 
 
