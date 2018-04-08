@@ -114,7 +114,8 @@ def btc_get_transaction(trxid):
     if resp["result"] != None:
         return btc_decode_hex_transaction(resp["result"])
     return ""
-
+def btc_import_addr(addr):
+    btc_request("importaddress",[addr,"",False])
 
 def btc_create_transaction(from_addr,dest_info):
     txout = btc_query_tx_out(from_addr)

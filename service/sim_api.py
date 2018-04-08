@@ -74,6 +74,23 @@ def zchain_trans_broadcastTrx(chainId, trx):
     }
 
 
+@jsonrpc.method('Zchain.Addr.importAddr(chainId=str, addr=str)')
+def zchain_addr_importaddr(chainId, addr):
+    logger.info('Zchain.Addr.importAddr')
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+    if sim_btc_plugin.has_key(chainId):
+        sim_btc_plugin[chainId].btc_import_addr(addr)
+    else:
+        return error_utils.invalid_chainid_type()
+    return {
+        'chainId': chainId,
+        'data': ""
+    }
+
+
+
+
 @jsonrpc.method('Zchain.Trans.createTrx(chainId=str, from_addr=str,dest_info=dict)')
 def zchain_trans_createTrx(chainId, from_addr,dest_info):
     logger.info('Zchain.Trans.createTrx')
@@ -350,7 +367,7 @@ def zchain_configuration_set(chainId, key, value):
         }
 
 
-# TODO, 备份私钥功能暂时注释，正式上线要加回来
+# TODO, 备份私钥功能暂时注释，正式上线要加回�?
 @jsonrpc.method('Zchain.Address.Create(chainId=String)')
 def zchain_address_create(chainId):
     logger.info('Create_address coin: %s' % (chainId))
@@ -382,7 +399,7 @@ def zchain_address_create(chainId):
 @jsonrpc.method('Zchain.Withdraw.GetInfo(chainId=str)')
 def zchain_withdraw_getinfo(chainId):
     """
-    查询提现账户的信息
+    查询提现账户的信�?
     :param chainId:
     :return:
     """

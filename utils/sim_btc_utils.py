@@ -37,12 +37,12 @@ class sim_btc_utils:
         else:
             return None
 
-    def sim_btc_add_multisig(self, addrs, amount):
-        resp = self.http_request("addmultisigaddress", [amount, addrs])
+    def sim_btc_validate_address(self, addr):
+        resp = self.http_request("validateaddress", [addr])
+        address = ""
         if resp["result"] != None:
-            return resp["result"]
-        else:
-            return None
+            address = resp["result"]
+        return address
 
     def sim_btc_validate_address(self, addr):
         resp = self.http_request("validateaddress", [addr])
@@ -93,18 +93,15 @@ class sim_btc_utils:
             return resp["result"]
         return ""
 
-    def sim_btc_validate_address(self, addr):
-        resp = self.http_request("validateaddress", [addr])
-        address = ""
-        if resp["result"] != None:
-            address = resp["result"]
-        return address
+    
 
     def sim_btc_get_transaction(self, trxid):
         resp = self.http_request("getrawtransaction", [trxid])
         if resp["result"] != None:
             return self.sim_btc_decode_hex_transaction(resp["result"])
         return ""
+    def sim_btc_import_addr(self, addr):
+        self.http_request("importaddress",[addr,"",False])
 
     def sim_btc_create_transaction(self, from_addr, dest_info):
         txout = self.sim_btc_query_tx_out(from_addr)
@@ -116,15 +113,15 @@ class sim_btc_utils:
         amount = 0.0
         vouts = {}
         for addr, num in dest_info.items():
-            amount += num
-            vouts[addr] = num
+            amount = round(amount + num,8)
+            vouts[addr]=round(num,8)
 
         for out in txout:
-            if sum >= amount+fee:
-                break
-            sum += float(out.get("amount"))
+            if sum >= round(amount+fee,8):
+               break
+            sum = round(sum +float(out.get("amount")),8)
             vin_need.append(out)
-        if sum < amount+fee:
+        if sum < round(amount+fee,8):
             return ""
         vins = []
         for need in vin_need :
@@ -132,7 +129,7 @@ class sim_btc_utils:
             vins.append(vin)
         #set a fee
         resp = ""
-        if sum-amount == fee:
+        if round(sum-amount,8) == fee:
             resp = self.http_request("createrawtransaction", [vins, vouts])
         else:
             vouts[from_addr] = round(sum - amount - fee,8)
