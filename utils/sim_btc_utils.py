@@ -124,8 +124,11 @@ class sim_btc_utils:
         if sum < round(amount+fee,8):
             return ""
         vins = []
+        script = []
         for need in vin_need :
-            vin = {'txid': need.get('txid'), 'vout': need.get('vout'), 'scriptPubKey': need.get('scriptPubKey')}
+            pubkey=need.get('scriptPubKey')
+            script.append(pubkey)
+            vin = {'txid': need.get('txid'), 'vout': need.get('vout'), 'scriptPubKey': pubkey}
             vins.append(vin)
         #set a fee
         resp = ""
@@ -137,7 +140,7 @@ class sim_btc_utils:
         if resp["result"] != None:
             trx_hex = resp['result']
             trx = self.sim_btc_decode_hex_transaction(trx_hex)
-            return {"trx":trx,"hex":trx_hex}
+            return {"trx":trx,"hex":trx_hex,"scriptPubkey":script}
         return ""
 
     def sim_btc_combine_trx(self, signatures):
