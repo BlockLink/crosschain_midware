@@ -3,23 +3,27 @@
 
 __author__ = 'ted'
 
+from twisted.internet import reactor
 from collector_conf import CollectorConfig
 from collect_btc_block import BTCCoinTxCollecter
 from collect_ltc_block import LTCCoinTxCollecter
+from collect_ub_block import UBCoinTxCollecter
 import logging
 import sys
-from pymongo import MongoClient
+import txmongo
+
 
 if __name__ == '__main__':
     config = CollectorConfig()
     logging.basicConfig(level=config.LOG_LEVEL, format=config.LOG_FORMAT, filename=config.LOG_FILENAME, filemode="a")
     console = logging.StreamHandler()
-    console.setLevel(logging.DEBUG)
+    console.setLevel(logging.ERROR)
     formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
 
-    client = MongoClient(host=config.MONGO_HOST, port=config.MONGO_PORT)
+    client = txmongo.MongoConnectionPool(host=config.MONGO_HOST, port=config.MONGO_PORT, pool_size=config.DB_POOL_SIZE)
+    #client = MongoClient(host=config.MONGO_HOST, port=config.MONGO_PORT)
     client[config.MONGO_NAME].authenticate(config.MONGO_USER, config.MONGO_PASS)
     db = client[config.MONGO_NAME]
 
@@ -31,8 +35,12 @@ if __name__ == '__main__':
         collector = BTCCoinTxCollecter(db)
     elif sys.argv[1] == "ltc":
         collector = LTCCoinTxCollecter(db)
+    elif sys.argv[1] == "ub":
+        collector = UBCoinTxCollecter(db)
     else:
         print "Please indicate correct type of coin tx to collect [btc|ltc]"
         exit(1)
-
-    collector.do_collect_app()
+    reactor.callWhenRunning(collector.do_collect_app)
+    reactor.callWhenRunning(collector.flush_mongo_db)
+    reactor.callWhenRunning(collector.flush_block_db)
+    reactor.run()

@@ -79,6 +79,30 @@ if (db.auth("dbAdmin", "admin12#$%") != 1) {
         'value': 'false'
     });
     db.b_config.insert({
+        'key': 'ltcsyncblocknum',
+        'value': '0'
+    });
+    db.b_config.insert({
+        'key': 'ltcsafeblock',
+        'value': '2'
+    });
+    db.b_config.insert({
+        'key': 'ltcsyncstate',
+        'value': 'false'
+    });
+     db.b_config.insert({
+        'key': 'ubsyncblocknum',
+        'value': '0'
+    });
+    db.b_config.insert({
+        'key': 'ubsafeblock',
+        'value': '2'
+    });
+    db.b_config.insert({
+        'key': 'ubsyncstate',
+        'value': 'false'
+    });
+    db.b_config.insert({
         'key': 'etpsyncblocknum',
         'value': '0'
     });

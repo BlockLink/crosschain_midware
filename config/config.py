@@ -26,7 +26,7 @@ class DevelopmentConfig(Config):
     MAIL_USE_TLS = True
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    MONGO_HOST = 'chaindb'
+    MONGO_HOST = '192.168.1.123'
     MONGO_PORT = 27017
     MONGO_NAME = 'chaindb'
     MONGO_USER = 'chaindb_user'
@@ -35,8 +35,9 @@ class DevelopmentConfig(Config):
     ETH_URL = 'eth_wallet'
     ETH_PORT = 8545
     ETH_Minimum = 0.5
-    BTC_HOST = 'btc_wallet'
-    BTC_PORT = 60011
+    BTC_HOST = '192.168.1.123'
+    BTC_PORT = 60012
+    BTC_FEE = 0.001
     ETP_PORT = 8820
     ETP_URL = 'etp_wallet'
     LTC_HOST = 'btc_wallet'
@@ -50,11 +51,15 @@ class DaConfig(Config):
     MAIL_USE_TLS = True
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    MONGO_HOST = '192.168.127.128'
-    MONGO_PORT = 27017
-    MONGO_NAME = 'test'
-    BTC_HOST = 'btc_wallet'
+    MONGO_USER = 'chaindb_user'
+    BTC_HOST = '192.168.1.124'
     BTC_PORT = 60011
+    BTC_FEE = 0.001
+    MONGO_HOST = '127.0.0.1'
+    MONGO_PORT = 27017
+    MONGO_PASS = 'yqr.1010'
+    MONGO_NAME = 'chaindb'
+
 
 
 class SunnyConfig(Config):
@@ -65,7 +70,7 @@ class SunnyConfig(Config):
     MAIL_USE_TLS = True
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    MONGO_HOST = '192.168.1.121'
+    MONGO_HOST = '192.168.1.123'
     MONGO_PORT = 27017
     MONGO_NAME = 'chaindb'
     MONGO_USER = 'chaindb_user'
@@ -74,8 +79,8 @@ class SunnyConfig(Config):
     ETH_URL = '192.168.1.121'
     ETH_PORT = 8546
     ETH_Minimum = 1
-    BTC_HOST = '192.168.1.104'
-    BTC_PORT = 60011
+    BTC_HOST = '192.168.1.123'
+    BTC_PORT = 60012
 
 
 class TestingConfig(Config):

@@ -14,9 +14,11 @@ class CollectorConfig(object):
     MONGO_NAME = 'chaindb'
     MONGO_USER = 'chaindb_user'
     MONGO_PASS = 'yqr.1010'
+    DB_POOL_SIZE = 10
+    RPC_COROUTINE_MAX = 10
 
     # LOG configure
-    LOG_LEVEL = logging.DEBUG
+    LOG_LEVEL = logging.ERROR
     LOG_FORMAT = '%(asctime)-15s %(levelname)s %(funcName)s %(message)s'
     LOG_FILENAME = "btc_data_collector.log"
 
@@ -26,10 +28,13 @@ class CollectorConfig(object):
 class BTCCollectorConfig(CollectorConfig):
     ASSET_SYMBOL = "BTC"
     RPC_HOST = '192.168.1.123'
-    RPC_PORT = 60012
+    RPC_PORT = 10888
     SYNC_STATE_FIELD = "btcsyncstate"
     SYNC_BLOCK_NUM = "btcsyncblocknum"
     SAFE_BLOCK_FIELD = "btcsafeblock"
+    SKIP_ANALYSIS_BLOCK_NUM = "btcskipanalysisblocknum"
+    # mainest 5   testnet 196
+    MULTISIG_VERSION = 196
 
 class LTCCollectorConfig(CollectorConfig):
     ASSET_SYMBOL = "LTC"
@@ -38,6 +43,21 @@ class LTCCollectorConfig(CollectorConfig):
     SYNC_STATE_FIELD = "ltcsyncstate"
     SYNC_BLOCK_NUM = "ltcsyncblocknum"
     SAFE_BLOCK_FIELD = "ltcsafeblock"
+    # mainest 5   testnet 196
+    MULTISIG_VERSION = 196
+    SKIP_ANALYSIS_BLOCK_NUM = "ltcskipanalysisblocknum"
+
+class UBCollectorConfig(CollectorConfig):
+    ASSET_SYMBOL = "UB"
+    RPC_HOST = '192.168.1.124'
+    RPC_PORT = 60011
+    SYNC_STATE_FIELD = "ubsyncstate"
+    SYNC_BLOCK_NUM = "ubsyncblocknum"
+    SAFE_BLOCK_FIELD = "ubsafeblock"
+    SKIP_ANALYSIS_BLOCK_NUM = "ubskipanalysisblocknum"
+    # mainest 5   testnet 196
+    MULTISIG_VERSION = 196
+
 
 
 

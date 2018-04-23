@@ -48,11 +48,17 @@ class BlockInfoBtc(object):
         self.amount = 0.0
         self.fee = 0.0
 
-    def get_json_data(self):
-        return {"blockHash":self.block_id,"chainId":"btc","blockNumber":self.block_num,"blockSize":self.block_size,
+    def get_json_data(self,chainid):
+        return {"blockHash":self.block_id,"chainId":chainid,"blockNumber":self.block_num,"blockSize":self.block_size,
                 "previous":self.previous,"trxDigest":self.trx_digest,"transactionsCount":self.trx_count,
         "trxamount":self.trx_amount,"trxfee":self.trx_fee,"createtime":datetime.now()}
 #UT
 '''test = BlockInfoBtc()
 test.from_block_resp(btc_request("getblock",["002379afa908f31f31fd0ad139656aefdaec526af074db583acda9c679c5a536"])['result'])
 print test.get_json_data()'''
+
+import json
+if __name__ == '__main__':
+    data = ''
+    json_data = json.loads(data)
+    print json_data

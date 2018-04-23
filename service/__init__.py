@@ -9,7 +9,7 @@ from flask import Flask
 from config import config
 from pymongo import MongoClient
 from flask_jsonrpc import JSONRPC
-
+from utils.sim_btc_utils import sim_btc_utils
 
 logger.info('Start app...')
 
@@ -25,6 +25,14 @@ client = MongoClient(app.config['MONGO_HOST'], app.config['MONGO_PORT'])
 client[app.config['MONGO_NAME']].authenticate(app.config['MONGO_USER'], app.config['MONGO_PASS'])
 
 db = client[app.config['MONGO_NAME']]
-
-
-from service import apis
+sim_btc_utils_all = ["btc", "ltc", "ub"]
+sim_btc_plugin = {}
+for value in sim_btc_utils_all:
+    upper = value.upper()
+    sim_btc_config = {}
+    if app.config.has_key(upper+"_HOST") and app.config.has_key(upper+"_PORT") and app.config.has_key(upper + "_FEE"):
+        sim_btc_config["host"] = app.config[upper+"_HOST"]
+        sim_btc_config["port"] = app.config[upper+"_PORT"]
+        sim_btc_config["fee"] = app.config[upper+"_FEE"]
+        sim_btc_plugin[value] = sim_btc_utils(value, sim_btc_config)
+from service import sim_api
