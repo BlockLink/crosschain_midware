@@ -140,7 +140,7 @@ class sim_btc_utils:
         if resp["result"] != None:
             trx_hex = resp['result']
             trx = self.sim_btc_decode_hex_transaction(trx_hex)
-            return {"trx":trx,"hex":trx_hex,"scriptPubkey":script}
+            return {"trx":trx,"hex":trx_hex,"scriptPubKey":script}
         return ""
 
     def sim_btc_combine_trx(self, signatures):
