@@ -103,6 +103,55 @@ def zchain_addr_importaddr(chainId, addr):
     }
 
 
+@jsonrpc.method('Zchain.Exchange.queryContracts(from_asset=str, to_asset=str, price_limit=str, limit=int)')
+def zchain_exchange_queryContracts(from_asset, to_asset, price_limit, limit):
+    logger.info('Zchain.Exchange.queryContracts')
+
+    try:
+        price = float(price_limit)
+    except:
+        return error_utils.mismatched_parameter_type('limit', 'FLOAT')
+    if type(limit) != int:
+        return error_utils.mismatched_parameter_type('limit', 'INTEGER')
+    if limit <= 0:
+        limit = 10
+
+    contracts = db.b_exchange_contracts.find(
+        {
+            "from_asset": from_asset,
+            "to_asset": to_asset,
+            "price_limit": {"$gte": price}
+        },
+        {"_id": 0}
+    ).sort("price").limit(limit)
+
+    return {
+        'data': contracts
+    }
+
+
+@jsonrpc.method('Zchain.Guarantee.queryOrders(provider_asset=str, price_limit=str, limit=int)')
+def zchain_exchange_queryContracts(provider_asset, price_limit, limit):
+    logger.info('Zchain.Guarantee.queryOrders')
+
+    try:
+        price = float(price_limit)
+    except:
+        return error_utils.mismatched_parameter_type('limit', 'FLOAT')
+    if type(limit) != int:
+        return error_utils.mismatched_parameter_type('limit', 'INTEGER')
+
+    contracts = db.b_exchange_contracts.find(
+        {
+            "provider_asset": provider_asset,
+            "price_limit": {"$gte": price}
+        },
+        {"_id": 0}
+    ).sort("price")
+
+    return {
+        'data': contracts
+    }
 
 
 @jsonrpc.method('Zchain.Trans.createTrx(chainId=str, from_addr=str,dest_info=dict)')
@@ -196,6 +245,7 @@ def zchain_trans_queryTrx(chainId, trxid):
         'data': result
     }
 
+
 @jsonrpc.method('Zchain.Trans.getTrxOuts(chainId=str, addr=str)')
 def zchain_trans_getTrxOuts(chainId, addr):
     logger.info('Zchain.Trans.getTrxOuts')
@@ -276,6 +326,8 @@ def zchain_multisig_create(chainId, addrs, amount):
         'address': address,
         'redeemScript': redeemScript
     }
+
+
 @jsonrpc.method('Zchain.Address.validate(chainId=str, addr=str)')
 def zchain_address_validate(chainId,addr):
     logger.info("Zchain.Address.validate")
@@ -293,6 +345,7 @@ def zchain_address_validate(chainId,addr):
         "chainId":chainId,
         "valid"  : result.get("isvalid")
     }
+
 
 @jsonrpc.method('Zchain.Multisig.Add(chainId=str, addrs=list, amount=int, addrType=int)')
 def zchain_multisig_add(chainId, addrs, amount, addrType):
@@ -442,7 +495,6 @@ def zchain_address_create(chainId):
         return {'chainId': chainId, 'address': address}
     else:
         return {'chainId': chainId, 'error': '创建地址失败'}
-
 
 
 @jsonrpc.method('Zchain.Withdraw.GetInfo(chainId=str)')
