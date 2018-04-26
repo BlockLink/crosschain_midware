@@ -3,7 +3,7 @@
 import requests
 import json
 from base64 import encodestring
-
+from service import logger
 
 class sim_btc_utils:
     def __init__(self, name, conf):
@@ -22,8 +22,10 @@ class sim_btc_utils:
             'authorization': "Basic %s" % (basestr),
             'cache-control': "no-cache",
         }
+        logger.info(payload)
         response = requests.request("POST", url, data=payload, headers=headers)
         rep = response.json()
+        logger.info(rep)
         return rep
 
     def sim_btc_create_multisig(self, addrs, amount):
