@@ -149,7 +149,7 @@ class BTCCoinTxCollecter(CoinTxCollecter):
 
     def get_transaction_data(self, trx_id):
 
-        ret = self.wallet_api.http_request("getrawtransaction", [trx_id, True])
+        ret = self.wallet_api.http_request("getrawtransaction", [trx_id, 1])
         if ret["result"] is None:
             resp_data = None
         else:
