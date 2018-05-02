@@ -18,15 +18,26 @@ __author__ = 'hasee'
 import logging
 import sys
 import traceback
-
-from collector_conf import BTCCollectorConfig
-from wallet_api import WalletApi
+import leveldb
 import time
+import threading
+import pybitcointools
 from block_btc import BlockInfoBtc
 from datetime import datetime
 from coin_tx_collector import CoinTxCollecter
+from collector_conf import BTCCollectorConfig
+from wallet_api import WalletApi
 
 
+class CollectBlockThread(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.counter = counter
+
+
+    def run(self):
+        print "Starting " + self.name
+        print "Exiting " + self.name
 
 
 class BTCCoinTxCollecter(CoinTxCollecter):
@@ -39,16 +50,14 @@ class BTCCoinTxCollecter(CoinTxCollecter):
         self.sync_end_per_round = 0
         self.sync_limit_per_step = 10
         self.config = BTCCollectorConfig()
+        try:
+            self.utxo_db_cache = leveldb.LevelDB('./cache_utxo_db')
+        except Exception, ex:
+            logging.error(ex)
+        self.utxo_cached = {}
         conf = {"host": self.config.RPC_HOST, "port": self.config.RPC_PORT}
         self.wallet_api = WalletApi(self.config.ASSET_SYMBOL, conf)
 
-
-    def show_progress(self):
-        sync_rate = float(self.sync_start_per_round) / self.latest_block_num
-        sync_process = '#' * int(40 * sync_rate) + ' ' * (40 - int(40 * sync_rate))
-        sys.stdout.write(
-            "\rsync block [%s][%d/%d], %.3f%%\n" % (sync_process, self.sync_start_per_round,
-                                                    self.latest_block_num, sync_rate * 100))
 
     def do_collect_app(self):
         while True:
@@ -148,7 +157,6 @@ class BTCCoinTxCollecter(CoinTxCollecter):
 
 
     def get_transaction_data(self, trx_id):
-
         ret = self.wallet_api.http_request("getrawtransaction", [trx_id, True])
         if ret["result"] is None:
             resp_data = None
@@ -167,14 +175,13 @@ class BTCCoinTxCollecter(CoinTxCollecter):
         vout = base_trx_data["vout"]
         trx_data["vout"] = []
         trx_data["vin"] = []
-
+        # is_coinbase_trx = self.is_coinbase_transaction(base_trx_data)
         out_set = {}
         in_set = {}
         multisig_in_addr = ""
         multisig_out_addr = ""
         is_valid_tx = True
         logging.debug(base_trx_data)
-
 
         """
         Only 3 types of transactions will be filtered out and be record in database.
@@ -219,6 +226,16 @@ class BTCCoinTxCollecter(CoinTxCollecter):
                         break
 
         for trx_out in vout:
+            # Update UBXO cache
+            # if is_coinbase_trx and trx_out.has_key("scriptPubKey"):
+            #     if trx_out["scriptPubKey"]["type"] == "nonstandard":
+            #         self.utxo_cached[self._cal_UTXO_prefix(base_trx_data["txid"], trx_out["n"])] = \
+            #             {"address": "", "value": 0 if (not trx_out.has_key("value")) else trx_out["value"]}
+            #     elif trx_out["scriptPubKey"].has_key("addresses"):
+            #         address = self._get_vout_address(trx_out)
+            #         self.utxo_cached[self._cal_UTXO_prefix(base_trx_data["txid"], trx_out["n"])] = \
+            #             {"address": address, "value": 0 if (not trx_out.has_key("value")) else trx_out["value"]}
+            # Check vout
             if trx_out["scriptPubKey"].has_key("addresses"):
                 out_address = trx_out["scriptPubKey"]["addresses"][0]
                 trx_data["vout"].append({"value": trx_out["value"], "n": trx_out["n"], "scriptPubKey": trx_out["scriptPubKey"]["hex"], "address": out_address})
@@ -300,11 +317,6 @@ class BTCCoinTxCollecter(CoinTxCollecter):
         return trx_data
 
 
-    def update_block_trx_amount(self, db_pool, block_info):
-        block = db_pool.b_block
-        block.update({"blockHash":block_info.block_id},{"$set" : {"trxamount:":str(block_info.trx_amount),"trxfee":block_info.trx_fee}})
-
-
     #采集数据
     def collect_data_cb(self, db_pool):
         try:
@@ -314,20 +326,52 @@ class BTCCoinTxCollecter(CoinTxCollecter):
 
                 # 采集块
                 block_info = self.collect_block(db_pool, block_num_fetch)
-                for trx_data in block_info.transactions:
+                # for trx_data in block_info.transactions:
                     # 采集交易
                     # base_trx_data = self.get_transaction_data(trx_id)
                     # if trx_data is None:
                     #     continue
-                    logging.debug("Transaction: %s" % trx_data)
-                    pretty_trx_info = self.collect_pretty_transaction(db_pool, trx_data, block_info.block_num)
+                    # logging.debug("Transaction: %s" % trx_data)
+                    # pretty_trx_info = self.collect_pretty_transaction(db_pool, trx_data, block_info.block_num)
                 self.sync_start_per_round += 1
                 count += 1
 
-            self.show_progress()
+            self._show_progress()
 
             # 连接使用完毕，需要释放连接
-
         except Exception, ex:
             raise ex
 
+
+    def _cal_UTXO_prefix(self, txid, vout):
+        return self.config.ASSET_SYMBOL + txid + "I" + str(vout)
+
+
+    def _get_vout_address(self, vout_data):
+        if vout_data["scriptPubKey"]["type"] == "multisig":
+            address = pybitcointools.bin_to_b58check(pybitcointools.hash160(vout_data["scriptPubKey"]["hex"]),
+                                                     self.config.MULTISIG_VERSION)
+        else:
+            if not vout_data["scriptPubKey"].has_key("addresses"):
+                #ToDo: OP_ADD and other OP_CODE may add exectuing function
+                return ""
+            elif len(vout_data["scriptPubKey"]["addresses"]) > 1:
+                logging.error("error data: ", vout_data)
+                pass
+            address = vout_data["scriptPubKey"]["addresses"][0]
+        return address
+
+
+    def _show_progress(self):
+        sync_rate = float(self.sync_start_per_round) / self.latest_block_num
+        sync_process = '#' * int(40 * sync_rate) + ' ' * (40 - int(40 * sync_rate))
+        sys.stdout.write(
+            "\rsync block [%s][%d/%d], %.3f%%\n" % (sync_process, self.sync_start_per_round,
+                                                    self.latest_block_num, sync_rate * 100))
+
+
+    @staticmethod
+    def _is_coinbase_transaction(trx_data):
+        if len(trx_data["vin"]) == 1 and trx_data["vin"][0].has_key("coinbase"):
+            return True
+        return False
