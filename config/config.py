@@ -50,11 +50,15 @@ class DaConfig(Config):
     MAIL_USE_TLS = True
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    MONGO_HOST = '192.168.127.128'
-    MONGO_PORT = 27017
-    MONGO_NAME = 'test'
-    BTC_HOST = 'btc_wallet'
+    MONGO_USER = 'chaindb_user'
+    BTC_HOST = '192.168.1.124'
     BTC_PORT = 60011
+    BTC_FEE = 0.001
+    MONGO_HOST = '127.0.0.1'
+    MONGO_PORT = 27017
+    MONGO_PASS = 'yqr.1010'
+    MONGO_NAME = 'chaindb'
+
 
 
 class SunnyConfig(Config):

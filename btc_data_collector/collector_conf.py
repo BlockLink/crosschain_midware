@@ -39,6 +39,15 @@ class LTCCollectorConfig(CollectorConfig):
     SYNC_BLOCK_NUM = "ltcsyncblocknum"
     SAFE_BLOCK_FIELD = "ltcsafeblock"
 
+class UBCollectorConfig(CollectorConfig):
+    ASSET_SYMBOL = "UB"
+    RPC_HOST = '192.168.1.124'
+    RPC_PORT = 60011
+    SYNC_STATE_FIELD = "ubsyncstate"
+    SYNC_BLOCK_NUM = "ubsyncblocknum"
+    SAFE_BLOCK_FIELD = "ubsafeblock"
+
+
 
 
 
