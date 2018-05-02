@@ -42,6 +42,14 @@ class BTCCoinTxCollecter(CoinTxCollecter):
         conf = {"host": self.config.RPC_HOST, "port": self.config.RPC_PORT}
         self.wallet_api = WalletApi(self.config.ASSET_SYMBOL, conf)
 
+
+    def show_progress(self):
+        sync_rate = float(self.sync_start_per_round) / self.latest_block_num
+        sync_process = '#' * int(40 * sync_rate) + ' ' * (40 - int(40 * sync_rate))
+        sys.stdout.write(
+            "\rsync block [%s][%d/%d], %.3f%%\n" % (sync_process, self.sync_start_per_round,
+                                                    self.latest_block_num, sync_rate * 100))
+
     def do_collect_app(self):
         while True:
             try:
@@ -55,30 +63,25 @@ class BTCCoinTxCollecter(CoinTxCollecter):
 
                 # 获取当前链上最新块号
                 while True:
-                    latest_block_num = self.get_latest_block_num()
-                    logging.debug("latest_block_num: %d, last_sync_block_num: %d" % (latest_block_num, self.last_sync_block_num))
-                    if self.last_sync_block_num >= latest_block_num:
-                        self.sync_start_per_round = latest_block_num
-                        self.sync_end_per_round = latest_block_num
+                    self.latest_block_num = self.get_latest_block_num()
+                    logging.debug("latest_block_num: %d, last_sync_block_num: %d" % (self.latest_block_num, self.last_sync_block_num))
+                    if self.last_sync_block_num >= self.latest_block_num:
+                        self.sync_start_per_round = self.latest_block_num
+                        self.sync_end_per_round = self.latest_block_num
                     else:
                         self.sync_start_per_round = self.last_sync_block_num
                         self.sync_end_per_round = ((
-                                self.last_sync_block_num + self.config.SYNC_BLOCK_PER_ROUND) >= latest_block_num) \
-                                and latest_block_num or (self.last_sync_block_num + self.config.SYNC_BLOCK_PER_ROUND)
+                                self.last_sync_block_num + self.config.SYNC_BLOCK_PER_ROUND) >= self.latest_block_num) \
+                                and self.latest_block_num or (self.last_sync_block_num + self.config.SYNC_BLOCK_PER_ROUND)
                     logging.debug("This round start: %d, this round end: %d" % (self.sync_start_per_round, self.sync_end_per_round))
 
-                    sync_rate = float(self.sync_start_per_round) / latest_block_num
-                    sync_process = '#' * int(40 * sync_rate) + ' ' * (40 - int(40 * sync_rate))
-                    sys.stdout.write(
-                        "\rsync block [%s][%d/%d], %.3f%%\n" % (sync_process, self.sync_start_per_round,
-                                                              latest_block_num, sync_rate * 100))
                     while self.sync_start_per_round <= self.sync_end_per_round:
                         logging.debug("Start collect step from %d" % self.sync_start_per_round)
                         self.collect_data_cb(self.db)
                         self.last_sync_block_num = self.sync_start_per_round
                         config_db.update({"key": self.config.SYNC_BLOCK_NUM}, {"$set":{"key": self.config.SYNC_BLOCK_NUM, "value": str(self.last_sync_block_num)}})
 
-                    if self.sync_start_per_round == latest_block_num + 1:
+                    if self.sync_start_per_round == self.latest_block_num + 1:
                         break
 
                 time.sleep(10)
@@ -125,7 +128,7 @@ class BTCCoinTxCollecter(CoinTxCollecter):
         if ret1['result'] == None:
             raise Exception("blockchain_get_block error")
         block_hash = ret1['result']
-        ret2 = self.wallet_api.http_request("getblock", [str(block_hash)])
+        ret2 = self.wallet_api.http_request("getblock", [str(block_hash), 2])
         if ret2['result'] == None:
             raise Exception("blockchain_get_block error")
         json_data = ret2['result']
@@ -250,8 +253,9 @@ class BTCCoinTxCollecter(CoinTxCollecter):
             else:
                 trx_data['type'] = 2
         else:
-            logging.info("Nothing to record")
+            logging.debug("Nothing to record")
             return
+
         trx_data["trxTime"] = datetime.utcfromtimestamp(base_trx_data['time']).strftime("%Y-%m-%d %H:%M:%S")
         trx_data["createtime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -310,15 +314,17 @@ class BTCCoinTxCollecter(CoinTxCollecter):
 
                 # 采集块
                 block_info = self.collect_block(db_pool, block_num_fetch)
-                for trx_id in block_info.transactions:
+                for trx_data in block_info.transactions:
                     # 采集交易
-                    base_trx_data = self.get_transaction_data(trx_id)
-                    if base_trx_data is None:
-                        continue
-                    logging.debug("Transaction: %s" % base_trx_data)
-                    pretty_trx_info = self.collect_pretty_transaction(db_pool, base_trx_data, block_info.block_num)
+                    # base_trx_data = self.get_transaction_data(trx_id)
+                    # if trx_data is None:
+                    #     continue
+                    logging.debug("Transaction: %s" % trx_data)
+                    pretty_trx_info = self.collect_pretty_transaction(db_pool, trx_data, block_info.block_num)
                 self.sync_start_per_round += 1
                 count += 1
+
+            self.show_progress()
 
             # 连接使用完毕，需要释放连接
 

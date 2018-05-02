@@ -103,14 +103,10 @@ def zchain_addr_importaddr(chainId, addr):
     }
 
 
-@jsonrpc.method('Zchain.Exchange.queryContracts(from_asset=str, to_asset=str, price_limit=str, limit=int)')
-def zchain_exchange_queryContracts(from_asset, to_asset, price_limit, limit):
+@jsonrpc.method('Zchain.Exchange.queryContracts(from_asset=str, to_asset=str, limit=int)')
+def zchain_exchange_queryContracts(from_asset, to_asset, limit):
     logger.info('Zchain.Exchange.queryContracts')
 
-    try:
-        price = float(price_limit)
-    except:
-        return error_utils.mismatched_parameter_type('limit', 'FLOAT')
     if type(limit) != int:
         return error_utils.mismatched_parameter_type('limit', 'INTEGER')
     if limit <= 0:
@@ -119,8 +115,7 @@ def zchain_exchange_queryContracts(from_asset, to_asset, price_limit, limit):
     contracts = db.b_exchange_contracts.find(
         {
             "from_asset": from_asset,
-            "to_asset": to_asset,
-            "price_limit": {"$gte": price}
+            "to_asset": to_asset
         },
         {"_id": 0}
     ).sort("price").limit(limit)
