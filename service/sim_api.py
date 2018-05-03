@@ -107,7 +107,7 @@ def zchain_exchange_queryContracts(from_asset, to_asset, limit):
     ).sort("price").limit(limit)
 
     return {
-        'data': contracts
+        'data': list(contracts)
     }
 
 
