@@ -35,6 +35,10 @@ class BlockInfoBtc(object):
         self.trx_fee = 0.0
 
 
+    def __cmp__(self, other):
+        return cmp(self.block_num, other.block_num)
+
+
     def from_block_resp(self, block_result):
         self.block_id = (block_result.get("hash"))
         self.block_num = int(block_result.get("height"))
