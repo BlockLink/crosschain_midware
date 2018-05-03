@@ -22,6 +22,8 @@ import leveldb
 import time
 import threading
 import pybitcointools
+import pymongo
+import signal
 from block_btc import BlockInfoBtc
 from datetime import datetime
 from coin_tx_collector import CoinTxCollecter
@@ -32,10 +34,66 @@ from Queue import PriorityQueue
 
 q = PriorityQueue()
 
+
+def signal_handler(signum, frame):
+    BTCCoinTxCollecter.stop_flag = True
+
+
+signal.signal(signal.SIGINT, signal_handler)
+
+
+class CacheManager(object):
+    def __init__(self, sync_key):
+        self.sync_key = sync_key
+        self.multisig_address_cache = set()
+        self.raw_transaction_cache = []
+        self.block_cache = []
+        self.withdraw_transaction_cache = []
+        self.deposit_transaction_cache = []
+
+
+    def flush_to_db(self, db):
+        blocks = self.block_cache
+        raw_trasaction = self.raw_transaction_cache
+        withdraw_transaction = self.withdraw_transaction_cache
+        deposit_transaction = self.deposit_transaction_cache
+        self.raw_transaction_cache = []
+        self.withdraw_transaction_cache = []
+        self.deposit_transaction_cache = []
+        flush_thread = threading.Thread(target=self.flush_process,
+                                        args=([
+                                                  db.b_block,
+                                                  db.raw_transaction_db,
+                                                  db.b_deposit_transaction,
+                                                  db.b_withdraw_transaction
+                                              ],
+                                              [
+                                                  blocks,
+                                                  raw_trasaction,
+                                                  withdraw_transaction,
+                                                  deposit_transaction
+                                              ],
+                                              self.sync_key))
+        flush_thread.start()
+
+
+    def flush_process(db, tables, data, sync_key):
+        for i, t in tables:
+            bulk = pymongo.bulk.BulkOperationBuilder(t, ordered=False)
+            for task in data[i]:
+                bulk.insert(task)
+            bulk.execute()
+            # TODO, update sync block number
+        block_num = data[0][len(data[0])].block_num
+        db.b_config.update({"key": sync_key}, {
+            "$set": {"key": sync_key, "value": str(block_num)}})
+
+
 class CollectBlockThread(threading.Thread):
     # self.config.ASSET_SYMBOL.lower()
     def __init__(self, db, config, wallet_api):
         threading.Thread.__init__(self)
+        self.stop_flag = False
         self.db = db
         self.config = config
         self.wallet_api = wallet_api
@@ -48,27 +106,31 @@ class CollectBlockThread(threading.Thread):
         self.process_blocks()
 
 
+    def stop(self):
+        self.stop_flag = True
+
+
     def clear_last_garbage_data(self):
-     ret = self.db.b_config.find_one({"key": self.config.SYNC_BLOCK_NUM})
-     if ret is None:
-         return 0
-     last_sync_block_num = int(ret["value"])
-     try:
-         self.db.b_raw_transaction.remove(
-             {"blockNum": {"$gte": last_sync_block_num}, "chainId": self.config.ASSET_SYMBOL.lower()})
-         self.db.b_block.remove(
-             {"blockNumber": {"$gte": last_sync_block_num}, "chainId": self.config.ASSET_SYMBOL.lower()})
-         self.db.b_raw_transaction_input.remove(
-             {"blockNum": {"$gte": last_sync_block_num}, "chainId": self.config.ASSET_SYMBOL.lower()})
-         self.db.b_raw_transaction_output.remove(
-             {"blockNum": {"$gte": last_sync_block_num}, "chainId": self.config.ASSET_SYMBOL.lower()})
-         self.db.b_deposit_transaction.remove(
-             {"blockNum": {"$gte": last_sync_block_num}, "chainId": self.config.ASSET_SYMBOL.lower()})
-         self.db.b_withdraw_transaction.remove(
-             {"blockNum": {"$gte": last_sync_block_num}, "chainId": self.config.ASSET_SYMBOL.lower()})
-     except Exception, ex:
-         print ex
-     return int(last_sync_block_num)
+        ret = self.db.b_config.find_one({"key": self.config.SYNC_BLOCK_NUM})
+        if ret is None:
+            return 0
+        last_sync_block_num = int(ret["value"])
+        try:
+            self.db.b_raw_transaction.remove(
+                {"blockNum": {"$gte": last_sync_block_num}, "chainId": self.config.ASSET_SYMBOL.lower()})
+            self.db.b_block.remove(
+                {"blockNumber": {"$gte": last_sync_block_num}, "chainId": self.config.ASSET_SYMBOL.lower()})
+            self.db.b_raw_transaction_input.remove(
+                {"blockNum": {"$gte": last_sync_block_num}, "chainId": self.config.ASSET_SYMBOL.lower()})
+            self.db.b_raw_transaction_output.remove(
+                {"blockNum": {"$gte": last_sync_block_num}, "chainId": self.config.ASSET_SYMBOL.lower()})
+            self.db.b_deposit_transaction.remove(
+                {"blockNum": {"$gte": last_sync_block_num}, "chainId": self.config.ASSET_SYMBOL.lower()})
+            self.db.b_withdraw_transaction.remove(
+                {"blockNum": {"$gte": last_sync_block_num}, "chainId": self.config.ASSET_SYMBOL.lower()})
+        except Exception, ex:
+            print ex
+        return int(last_sync_block_num)
 
 
     def process_blocks(self):
@@ -76,26 +138,22 @@ class CollectBlockThread(threading.Thread):
         config_db = self.db.b_config
         config_db.update({"key": self.config.SYNC_STATE_FIELD},
                          {"key": self.config.SYNC_STATE_FIELD, "value": "true"})
-        while True:
-            self.latest_block_num = self._get_latest_block_num()
+        self.latest_block_num = self._get_latest_block_num()
+        while self.stop_flag is False and self.last_sync_block_num <= self.latest_block_num:
             try:
                 # 获取当前链上最新块号
-                while self.last_sync_block_num <= self.latest_block_num:
-                    logging.debug("latest_block_num: %d, last_sync_block_num: %d" %
-                                  (self.latest_block_num, self.last_sync_block_num))
-                    if q.qsize() > 100:
-                        logging.info(q.qsize())
-                        time.sleep(1)
-                        continue
-                    # Collect single block info
-                    block_info = self.collect_block(self.db, self.last_sync_block_num)
-                    q.put(block_info)
-                    self.last_sync_block_num += 1
-                    if self.last_sync_block_num % 20 == 0:
-                        self._show_progress(self.last_sync_block_num, self.latest_block_num)
-
-                # config_db.update({"key": self.config.SYNC_BLOCK_NUM}, {
-                        #     "$set": {"key": self.config.SYNC_BLOCK_NUM, "value": str(self.last_sync_block_num)}})
+                logging.debug("latest_block_num: %d, last_sync_block_num: %d" %
+                              (self.latest_block_num, self.last_sync_block_num))
+                if q.qsize() > 100:
+                    logging.info(q.qsize())
+                    time.sleep(1)
+                    continue
+                # Collect single block info
+                block_info = self.collect_block(self.db, self.last_sync_block_num)
+                q.put(block_info)
+                self.last_sync_block_num += 1
+                if self.last_sync_block_num % 20 == 0:
+                    self._show_progress(self.last_sync_block_num, self.latest_block_num)
             except Exception, ex:
                 logging.info(traceback.format_exc())
                 print ex
@@ -131,15 +189,18 @@ class CollectBlockThread(threading.Thread):
         ret = self.wallet_api.http_request("getblockcount", [])
         real_block_num = ret['result']
         safe_block = 6
-        # safe_block_ret = self.db.b_config.find_one({"key": self.config.SAFE_BLOCK_FIELD})
-        # if safe_block_ret is not None:
-        #     safe_block = int(safe_block_ret["value"])
+        safe_block_ret = self.db.b_config.find_one({"key": self.config.SAFE_BLOCK_FIELD})
+        if safe_block_ret is not None:
+            safe_block = int(safe_block_ret["value"])
         return int(real_block_num) - safe_block
 
 
 class BTCCoinTxCollecter(CoinTxCollecter):
+    stop_flag = False
+
     def __init__(self, db):
         super(BTCCoinTxCollecter, self).__init__()
+
         self.db = db
         self.t_multisig_address = self.db.b_btc_multisig_address
         self.multisig_address_cache = set()
@@ -151,6 +212,7 @@ class BTCCoinTxCollecter(CoinTxCollecter):
         self.utxo_cached = {}
         conf = {"host": self.config.RPC_HOST, "port": self.config.RPC_PORT}
         self.wallet_api = WalletApi(self.config.ASSET_SYMBOL, conf)
+        self.cache = CacheManager(self.config.SYNC_BLOCK_NUM)
 
 
     def _update_cache(self):
@@ -164,24 +226,22 @@ class BTCCoinTxCollecter(CoinTxCollecter):
         self.collect_thread.start()
 
         count = 0
-        while True:
+        while self.stop_flag is False:
             count += 1
             block = q.get()
-            # logging.info(q.qsize())
             # Update block table
             t_block = self.db.b_block
-            #TODO, optimize db writting
-            # mongo_data = t_block.find_one({"blockHash": block.block_id})
-            # if mongo_data == None:
-            #     t_block.insert(block.get_json_data())
-            # else:
-            #     t_block.update({"blockHash": block.block_id}, {"$set": block.get_json_data()})
+            self.cache.block_cache.append(block.get_json_data())
             # Process each transaction
             for trx_data in block.transactions:
                 logging.debug("Transaction: %s" % trx_data)
                 pretty_trx_info = self.collect_pretty_transaction(self.db, trx_data, block.block_num)
             if count % 100 == 0:
                 logging.info(str(count) + " blocks processed")
+
+        self.collect_thread.stop()
+        self.collect_thread.join()
+
 
     def get_transaction_data(self, trx_id):
         ret = self.wallet_api.http_request("getrawtransaction", [trx_id, 1])
@@ -193,7 +253,6 @@ class BTCCoinTxCollecter(CoinTxCollecter):
 
 
     def collect_pretty_transaction(self, db_pool, base_trx_data, block_num):
-        raw_transaction_db = db_pool.b_raw_transaction
         trx_data = {}
         trx_data["chainId"] = self.config.ASSET_SYMBOL.lower()
         trx_data["trxid"] = base_trx_data["txid"]
@@ -315,11 +374,7 @@ class BTCCoinTxCollecter(CoinTxCollecter):
                 "blockNum": block_num,
                 "chainId": self.config.ASSET_SYMBOL.lower()
             }
-            # mongo_data = db_pool.b_deposit_transaction.find_one({"txid": base_trx_data["txid"]})
-            # if mongo_data == None:
-            #     db_pool.b_deposit_transaction.insert(deposit_data)
-            # else:
-            #     db_pool.b_deposit_transaction.update({"trxid": base_trx_data["txid"]}, {"$set": deposit_data})
+            self.cache.deposit_transaction_cache.append(deposit_data)
         elif trx_data['type'] == 1:
             for k, v in out_set.items():
                 withdraw_data = {
@@ -331,24 +386,11 @@ class BTCCoinTxCollecter(CoinTxCollecter):
                     "blockNum": block_num,
                     "chainId": self.config.ASSET_SYMBOL.lower()
                 }
-                # mongo_data = db_pool.b_withdraw_transaction.find_one({"txid": base_trx_data["txid"], "from_account": multisig_in_addr, "to_account": k, "blockNum": block_num})
-                # if mongo_data == None:
-                #     db_pool.b_withdraw_transaction.insert(withdraw_data)
-                # else:
-                #     db_pool.b_withdraw_transaction.update({"trxid": base_trx_data["txid"], "from_account": multisig_in_addr, "to_account": k, "blockNum": block_num}, {"$set": withdraw_data})
+                self.cache.withdraw_transaction_cache.append(withdraw_data)
 
-        # mongo_data = raw_transaction_db.find_one({"trxid": base_trx_data["txid"]})
-        # if mongo_data == None:
-        #     raw_transaction_db.insert(trx_data)
-        # else:
-        #     raw_transaction_db.update({"trxid": base_trx_data["txid"]}, {"$set": trx_data})
+        self.cache.raw_transaction_cache.append(trx_data)
 
         return trx_data
-
-
-    #采集数据
-    def collect_data_cb(self, db_pool):
-        pass
 
 
     def _cal_UTXO_prefix(self, txid, vout):
@@ -375,3 +417,4 @@ class BTCCoinTxCollecter(CoinTxCollecter):
         if len(trx_data["vin"]) == 1 and trx_data["vin"][0].has_key("coinbase"):
             return True
         return False
+
