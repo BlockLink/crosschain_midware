@@ -57,11 +57,8 @@ class CacheManager(object):
         raw_trasaction = self.raw_transaction_cache
         withdraw_transaction = self.withdraw_transaction_cache
         deposit_transaction = self.deposit_transaction_cache
-        self.raw_transaction_cache = []
-        self.withdraw_transaction_cache = []
-        self.deposit_transaction_cache = []
-        flush_thread = threading.Thread(target=self.flush_process,
-                                        args=([
+        flush_thread = threading.Thread(target=CacheManager.flush_process,
+                                        args=(db, [
                                                   db.b_block,
                                                   db.raw_transaction_db,
                                                   db.b_deposit_transaction,
@@ -75,16 +72,25 @@ class CacheManager(object):
                                               ],
                                               self.sync_key))
         flush_thread.start()
+        self.block_cache = []
+        self.raw_transaction_cache = []
+        self.withdraw_transaction_cache = []
+        self.deposit_transaction_cache = []
 
 
+    @staticmethod
     def flush_process(db, tables, data, sync_key):
-        for i, t in tables:
-            bulk = pymongo.bulk.BulkOperationBuilder(t, ordered=False)
-            for task in data[i]:
-                bulk.insert(task)
-            bulk.execute()
-            # TODO, update sync block number
-        block_num = data[0][len(data[0])].block_num
+        for i, t in enumerate(tables):
+            # bulk = pymongo.bulk.BulkOperationBuilder(t, ordered=False)
+            # for task in data[i]:
+            #     logging.info(task)
+            #     bulk.insert(task)
+            # bulk.execute()
+            if len(data[i]) > 0:
+                logging.info(data[i][0])
+                t.insert(data[i])
+        block_num = data[0][len(data[0])-1]["blockNumber"]
+        logging.info(str(block_num))
         db.b_config.update({"key": sync_key}, {
             "$set": {"key": sync_key, "value": str(block_num)}})
 
@@ -237,7 +243,8 @@ class BTCCoinTxCollecter(CoinTxCollecter):
                 logging.debug("Transaction: %s" % trx_data)
                 pretty_trx_info = self.collect_pretty_transaction(self.db, trx_data, block.block_num)
             if count % 100 == 0:
-                logging.info(str(count) + " blocks processed")
+                logging.info(str(count) + " blocks processed, flush to db")
+                self.cache.flush_to_db(self.db)
 
         self.collect_thread.stop()
         self.collect_thread.join()
@@ -388,8 +395,8 @@ class BTCCoinTxCollecter(CoinTxCollecter):
                 }
                 self.cache.withdraw_transaction_cache.append(withdraw_data)
 
+        # logging.info("add raw transaction")
         self.cache.raw_transaction_cache.append(trx_data)
-
         return trx_data
 
 
