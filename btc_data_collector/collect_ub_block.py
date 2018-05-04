@@ -4,10 +4,10 @@
 
 from collector_conf import UBCollectorConfig
 from wallet_api import WalletApi
-from collect_btc_block import BTCCoinTxCollecter
+from collect_btc_block import BTCCoinTxCollector
 
 
-class UBCoinTxCollecter(BTCCoinTxCollecter):
+class UBCoinTxCollecter(BTCCoinTxCollector):
     def __init__(self, db):
         super(UBCoinTxCollecter, self).__init__(db)
         self.t_multisig_address = self.db.b_ub_multisig_address

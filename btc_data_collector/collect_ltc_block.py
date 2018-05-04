@@ -10,10 +10,10 @@ from wallet_api import WalletApi
 # import time
 # from block_btc import BlockInfoBtc
 # from datetime import datetime
-from collect_btc_block import BTCCoinTxCollecter
+from collect_btc_block import BTCCoinTxCollector
 
 
-class LTCCoinTxCollecter(BTCCoinTxCollecter):
+class LTCCoinTxCollecter(BTCCoinTxCollector):
     def __init__(self, db):
         super(LTCCoinTxCollecter, self).__init__(db)
         self.t_multisig_address = self.db.b_ltc_multisig_address
