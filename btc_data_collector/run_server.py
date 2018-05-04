@@ -4,9 +4,10 @@
 __author__ = 'ted'
 
 from collector_conf import CollectorConfig
-from collect_btc_block import BTCCoinTxCollecter
+from collect_btc_block import BTCCoinTxCollector
 from collect_ltc_block import LTCCoinTxCollecter
 from collect_ub_block import UBCoinTxCollecter
+from BKCoinTxCollector import BKCoinTxCollector
 import logging
 import sys
 from pymongo import MongoClient
@@ -29,11 +30,13 @@ if __name__ == '__main__':
         print "Please indicate which type of coin tx to collect [btc|ltc]"
         exit(1)
     elif sys.argv[1] == "btc":
-        collector = BTCCoinTxCollecter(db)
+        collector = BTCCoinTxCollector(db)
     elif sys.argv[1] == "ltc":
         collector = LTCCoinTxCollecter(db)
     elif sys.argv[1] == "ub":
         collector = UBCoinTxCollecter(db)
+    elif sys.argv[1] == "bk":
+        collector = BKCoinTxCollector(db)
     else:
         print "Please indicate correct type of coin tx to collect [btc|ltc]"
         exit(1)

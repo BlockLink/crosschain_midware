@@ -23,6 +23,15 @@ class CollectorConfig(object):
     # SYNC configure
     SYNC_BLOCK_PER_ROUND = 10000
 
+class BKCollectorConfig(CollectorConfig):
+    ASSET_SYMBOL = "BK"
+    RPC_HOST = '192.168.1.195'
+    RPC_PORT = 8093
+    SYNC_STATE_FIELD = "bksyncstate"
+    SYNC_BLOCK_NUM = "bksyncblocknum"
+    SAFE_BLOCK_FIELD = "bksafeblock"
+    CONTRACT_CALLER = "test1152557407583"
+
 class BTCCollectorConfig(CollectorConfig):
     ASSET_SYMBOL = "BTC"
     RPC_HOST = '192.168.1.123'

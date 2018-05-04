@@ -26,7 +26,7 @@ import pymongo
 import signal
 from block_btc import BlockInfoBtc
 from datetime import datetime
-from coin_tx_collector import CoinTxCollecter
+from coin_tx_collector import CoinTxCollector
 from collector_conf import BTCCollectorConfig
 from wallet_api import WalletApi
 from Queue import PriorityQueue
@@ -36,7 +36,7 @@ q = PriorityQueue()
 
 
 def signal_handler(signum, frame):
-    BTCCoinTxCollecter.stop_flag = True
+    BTCCoinTxCollector.stop_flag = True
 
 
 signal.signal(signal.SIGINT, signal_handler)
@@ -201,11 +201,11 @@ class CollectBlockThread(threading.Thread):
         return int(real_block_num) - safe_block
 
 
-class BTCCoinTxCollecter(CoinTxCollecter):
+class BTCCoinTxCollector(CoinTxCollector):
     stop_flag = False
 
     def __init__(self, db):
-        super(BTCCoinTxCollecter, self).__init__()
+        super(BTCCoinTxCollector, self).__init__()
 
         self.db = db
         self.t_multisig_address = self.db.b_btc_multisig_address

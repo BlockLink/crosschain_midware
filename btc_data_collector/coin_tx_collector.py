@@ -1,6 +1,6 @@
-class CoinTxCollecter(object):
+class CoinTxCollector(object):
     def __init__(self):
-        super(CoinTxCollecter, self).__init__()
+        super(CoinTxCollector, self).__init__()
         
 
     def do_collect_app(self):
