@@ -17,12 +17,15 @@ class BKCoinTxCollector(CoinTxCollector):
         "state"
     ]
 
+
     def __init__(self, db):
         super(BKCoinTxCollector, self).__init__()
         self.db = db
+        self.order_list = []
         self.config = BKCollectorConfig()
         conf = {"host": self.config.RPC_HOST, "port": self.config.RPC_PORT}
         self.wallet_api = WalletApi(self.config.ASSET_SYMBOL, conf)
+
 
     def do_collect_app(self):
         self.collect_token_contract()
@@ -30,13 +33,16 @@ class BKCoinTxCollector(CoinTxCollector):
 
 
     def collect_token_contract(self):
-        ret1 = self.wallet_api.http_request("get_contract_registered", [0])
-        if ret1['result'] == None:
-            raise Exception("get_contract_info error")
+        ret = self.wallet_api.http_request("get_contract_registered", [0])
+        if not ret.has_key('result') or ret['result'] == None:
+            logging.info("Get contract failed")
+            return
 
-        for c in ret1["result"]:
+        for c in ret["result"]:
             if self._check_contract_type(c["contract_address"]):
                 self._get_token_contract_info(c["contract_address"], c["block_num"])
+        self.db.b_exchange_contracts.insert_many(self.order_list, ordered=False)
+        self.order_list = []
 
 
     def _check_contract_type(self, contract_address):
@@ -63,7 +69,6 @@ class BKCoinTxCollector(CoinTxCollector):
     def _get_token_contract_info(self, contract_address, block_num):
         ret = self.wallet_api.http_request("invoke_contract_offline",
                                            [self.config.CONTRACT_CALLER, contract_address, "sell_orders", ""])
-        order_list = []
         if ret['result'] == None:
             logging.info("get_contract_order error")
             return
@@ -74,8 +79,9 @@ class BKCoinTxCollector(CoinTxCollector):
             for o in order_info['orderArray']:
                 logging.info(o)
                 [from_supply, to_supply, price] = o.split(',')
-                order_list.append({"from_asset": from_asset, "to_asset": to_asset,
+                self.order_list.append({"from_asset": from_asset, "to_asset": to_asset,
                                    "from_supply": from_supply, "to_supply": to_supply,
                                    "price": price, "contract_address": contract_address,
                                    "block_num": block_num})
-        return order_list
+        self.db.b_exchange_contracts.remove(
+                {"contract_address": contract_address, "block_num": {"$gte": block_num}})

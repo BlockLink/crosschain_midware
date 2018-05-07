@@ -111,30 +111,6 @@ def zchain_exchange_queryContracts(from_asset, to_asset, limit):
     }
 
 
-@jsonrpc.method('Zchain.Guarantee.queryOrders(provider_asset=str, price_limit=str, limit=int)')
-def zchain_exchange_queryContracts(provider_asset, price_limit, limit):
-    logger.info('Zchain.Guarantee.queryOrders')
-
-    try:
-        price = float(price_limit)
-    except:
-        return error_utils.mismatched_parameter_type('limit', 'FLOAT')
-    if type(limit) != int:
-        return error_utils.mismatched_parameter_type('limit', 'INTEGER')
-
-    contracts = db.b_exchange_contracts.find(
-        {
-            "provider_asset": provider_asset,
-            "price_limit": {"$gte": price}
-        },
-        {"_id": 0}
-    ).sort("price")
-
-    return {
-        'data': contracts
-    }
-
-
 @jsonrpc.method('Zchain.Trans.createTrx(chainId=str, from_addr=str,dest_info=dict)')
 def zchain_trans_createTrx(chainId, from_addr,dest_info):
     logger.info('Zchain.Trans.createTrx')
@@ -411,7 +387,7 @@ def zchain_configuration_set(chainId, key, value):
         }
 
 
-# TODO, 备份私钥功能暂时注释，正式上线要加回�?
+# TODO, 备份私钥功能暂时注释，正式上线要加回�?
 @jsonrpc.method('Zchain.Address.Create(chainId=String)')
 def zchain_address_create(chainId):
     logger.info('Create_address coin: %s' % (chainId))
@@ -443,7 +419,7 @@ def zchain_address_create(chainId):
 @jsonrpc.method('Zchain.Withdraw.GetInfo(chainId=str)')
 def zchain_withdraw_getinfo(chainId):
     """
-    查询提现账户的信�?
+    查询提现账户的信�?
     :param chainId:
     :return:
     """
@@ -490,3 +466,12 @@ def zchain_withdraw_getinfo(chainId):
     }
 
 
+@jsonrpc.method('Zchain.Address.GetBalance(chainId=str, addr=str)')
+def zchain_address_get_balance(chainId, addr):
+    record = db.b_balance.find_one({'chainId': chainId, 'address': addr})
+
+    return {
+        'chainId': chainId,
+        'address': addr,
+        'balance': record['balance'] if record is not None else 0
+    }
