@@ -53,7 +53,7 @@ class CacheManager(object):
         self.utxo_cache = {}
         self.utxo_spend_cache = set()
         try:
-            self.utxo_db_cache = leveldb.LevelDB('./cache_utxo_db')
+            self.utxo_db_cache = leveldb.LevelDB('./utxo_db')
         except Exception, ex:
             logging.error(ex)
 
@@ -109,7 +109,7 @@ class CacheManager(object):
         #TODO, need async flush
         batch = leveldb.WriteBatch()
         for key,value in self.utxo_cache.items():
-            logging.info("utxo_cache: " + str(key) + str(value))
+            # logging.debug("utxo_cache: " + str(key) + str(value))
             batch.Put(key, json.dumps(value))
         for key in self.utxo_spend_cache:
             batch.Delete(key)
@@ -128,10 +128,10 @@ class CacheManager(object):
             #     bulk.insert(task)
             # bulk.execute()
             if len(data[i]) > 0:
-                logging.info(data[i][0])
+                logging.debug(data[i][0])
                 t.insert(data[i])
         block_num = data[0][len(data[0])-1]["blockNumber"]
-        logging.info(str(block_num))
+        logging.info(sync_key + ": " + str(block_num))
         db.b_config.update({"key": sync_key}, {
             "$set": {"key": sync_key, "value": str(block_num)}})
 

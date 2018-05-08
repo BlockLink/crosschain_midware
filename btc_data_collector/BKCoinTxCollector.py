@@ -60,8 +60,7 @@ class BKCoinTxCollector(CoinTxCollector):
                 return False
         ret = self.wallet_api.http_request("invoke_contract_offline",
                                            [self.config.CONTRACT_CALLER, contract_address, "state", ""])
-        logging.info(ret)
-        if ret['result'] != None and ret['result'] == "COMMON":
+        if ret.has_key('result') and ret['result'] == "COMMON":
             logging.info("Contract state error")
             return True
         else:
@@ -79,7 +78,6 @@ class BKCoinTxCollector(CoinTxCollector):
             [from_asset, to_asset] = k.split(',')
             order_info = json.loads(v)
             for o in order_info['orderArray']:
-                logging.info(o)
                 [from_supply, to_supply, price] = o.split(',')
                 self.order_list.append({"from_asset": from_asset, "to_asset": to_asset,
                                    "from_supply": from_supply, "to_supply": to_supply,

@@ -4,7 +4,7 @@
 import logging
 import sys
 import traceback
-
+from collect_btc_block import CacheManager
 from collector_conf import LTCCollectorConfig
 from wallet_api import WalletApi
 # import time
@@ -20,3 +20,4 @@ class LTCCoinTxCollecter(BTCCoinTxCollector):
         self.config = LTCCollectorConfig()
         conf = {"host": self.config.RPC_HOST, "port": self.config.RPC_PORT}
         self.wallet_api = WalletApi(self.config.ASSET_SYMBOL, conf)
+        self.cache = CacheManager(self.config.SYNC_BLOCK_NUM)
