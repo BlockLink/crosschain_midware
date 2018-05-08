@@ -41,7 +41,8 @@ class BKCoinTxCollector(CoinTxCollector):
         for c in ret["result"]:
             if self._check_contract_type(c["contract_address"]):
                 self._get_token_contract_info(c["contract_address"], c["block_num"])
-        self.db.b_exchange_contracts.insert_many(self.order_list, ordered=False)
+        if len(self.order_list) > 0:
+            self.db.b_exchange_contracts.insert_many(self.order_list, ordered=False)
         self.order_list = []
 
 
@@ -59,6 +60,7 @@ class BKCoinTxCollector(CoinTxCollector):
                 return False
         ret = self.wallet_api.http_request("invoke_contract_offline",
                                            [self.config.CONTRACT_CALLER, contract_address, "state", ""])
+        logging.info(ret)
         if ret['result'] != None and ret['result'] == "COMMON":
             logging.info("Contract state error")
             return True

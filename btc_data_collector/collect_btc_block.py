@@ -22,7 +22,7 @@ import leveldb
 import time
 import threading
 import pybitcointools
-import pymongo
+import json
 import signal
 from block_btc import BlockInfoBtc
 from datetime import datetime
@@ -50,6 +50,35 @@ class CacheManager(object):
         self.block_cache = []
         self.withdraw_transaction_cache = []
         self.deposit_transaction_cache = []
+        self.utxo_cache = {}
+        self.utxo_spend_cache = set()
+        try:
+            self.utxo_db_cache = leveldb.LevelDB('./cache_utxo_db')
+        except Exception, ex:
+            logging.error(ex)
+
+
+    def get_utxo(self, utxo_id):
+        if self.utxo_cache.has_key(utxo_id):
+            return self.utxo_cache[utxo_id]
+        try:
+            db_data = self.utxo_db_cache.Get(utxo_id)
+        except KeyError:
+            db_data = None
+        if db_data is not None:
+            return json.loads(db_data)
+        else:
+            return None
+
+
+    def spend_utxo(self, utxo_id):
+        if self.utxo_cache.has_key(utxo_id):
+            self.utxo_cache.pop(utxo_id)
+        self.utxo_spend_cache.add(utxo_id)
+
+
+    def add_utxo(self, utxo_id, data):
+        self.utxo_cache[utxo_id] = data
 
 
     def flush_to_db(self, db):
@@ -76,6 +105,18 @@ class CacheManager(object):
         self.raw_transaction_cache = []
         self.withdraw_transaction_cache = []
         self.deposit_transaction_cache = []
+
+        #TODO, need async flush
+        batch = leveldb.WriteBatch()
+        for key,value in self.utxo_cache.items():
+            logging.info("utxo_cache: " + str(key) + str(value))
+            batch.Put(key, json.dumps(value))
+        for key in self.utxo_spend_cache:
+            batch.Delete(key)
+        try:
+            self.utxo_db_cache.Write(batch, sync=True)
+        except Exception,ex:
+            print "flush db", ex
 
 
     @staticmethod
@@ -211,11 +252,6 @@ class BTCCoinTxCollector(CoinTxCollector):
         self.t_multisig_address = self.db.b_btc_multisig_address
         self.multisig_address_cache = set()
         self.config = BTCCollectorConfig()
-        try:
-            self.utxo_db_cache = leveldb.LevelDB('./cache_utxo_db')
-        except Exception, ex:
-            logging.error(ex)
-        self.utxo_cached = {}
         conf = {"host": self.config.RPC_HOST, "port": self.config.RPC_PORT}
         self.wallet_api = WalletApi(self.config.ASSET_SYMBOL, conf)
         self.cache = CacheManager(self.config.SYNC_BLOCK_NUM)
@@ -298,38 +334,40 @@ class BTCCoinTxCollector(CoinTxCollector):
             if not trx_in.has_key("txid"):
                 continue
             #TODO, optimize db writting
-            in_trx = None #self.get_transaction_data(trx_in["txid"])
+            if not trx_in.has_key('vout'):
+                logging.error(trx_in)
+            utxo_id = self._cal_UTXO_prefix(trx_in['txid'], trx_in['vout'])
+            self.cache.spend_utxo(utxo_id)
+            in_trx = self.cache.get_utxo(utxo_id)
             if in_trx is None:
-                pass
-                #logging.error("Fail to get vin transaction [%s] of [%s]" % (trx_in["txid"], trx_data["trxid"]))
+                logging.error("Fail to get vin transaction [%s] of [%s]" % (trx_in["txid"], trx_data["trxid"]))
             else:
-                logging.debug(in_trx)
-                for t in in_trx["vout"]:
-                    if t["n"] == trx_in["vout"] and t["scriptPubKey"].has_key("addresses"):
-                        in_address = t["scriptPubKey"]["addresses"][0]
-                        if (in_set.has_key(in_address)):
-                            in_set[in_address] += t["value"]
-                        else:
-                            in_set[in_address] = t["value"]
-                        trx_data["vin"].append({"txid": trx_in["txid"], "vout": trx_in["vout"], "value": t["value"], "address": in_address})
-                        if in_address in self.multisig_address_cache:
-                            if multisig_in_addr == "":
-                                multisig_in_addr = in_address
-                            else:
-                                if multisig_in_addr != in_address:
-                                    is_valid_tx = False
-                        break
+                in_address = in_trx["address"]
+                if (in_set.has_key(in_address)):
+                    in_set[in_address] += in_trx["value"]
+                else:
+                    in_set[in_address] = in_trx["value"]
+                trx_data["vin"].append({"txid": trx_in["txid"], "vout": trx_in["vout"], "value": in_trx["value"], "address": in_address})
+                if in_address in self.multisig_address_cache:
+                    if multisig_in_addr == "":
+                        multisig_in_addr = in_address
+                    else:
+                        if multisig_in_addr != in_address:
+                            is_valid_tx = False
+                break
 
         for trx_out in vout:
             # Update UBXO cache
-            # if is_coinbase_trx and trx_out.has_key("scriptPubKey"):
-            #     if trx_out["scriptPubKey"]["type"] == "nonstandard":
-            #         self.utxo_cached[self._cal_UTXO_prefix(base_trx_data["txid"], trx_out["n"])] = \
-            #             {"address": "", "value": 0 if (not trx_out.has_key("value")) else trx_out["value"]}
-            #     elif trx_out["scriptPubKey"].has_key("addresses"):
-            #         address = self._get_vout_address(trx_out)
-            #         self.utxo_cached[self._cal_UTXO_prefix(base_trx_data["txid"], trx_out["n"])] = \
-            #             {"address": address, "value": 0 if (not trx_out.has_key("value")) else trx_out["value"]}
+            if trx_out["scriptPubKey"]["type"] == "nonstandard":
+                self.cache.add_utxo(
+                    self._cal_UTXO_prefix(base_trx_data["txid"], trx_out["n"]),
+                    {"address": "", "value": 0 if (not trx_out.has_key("value")) else trx_out["value"]})
+            elif trx_out["scriptPubKey"].has_key("addresses"):
+                address = self._get_vout_address(trx_out)
+                self.cache.add_utxo(
+                    self._cal_UTXO_prefix(base_trx_data["txid"], trx_out["n"]),
+                    {"address": address, "value": 0 if (not trx_out.has_key("value")) else trx_out["value"]})
+
             # Check vout
             if trx_out["scriptPubKey"].has_key("addresses"):
                 out_address = trx_out["scriptPubKey"]["addresses"][0]

@@ -30,7 +30,7 @@ class BKCollectorConfig(CollectorConfig):
     SYNC_STATE_FIELD = "bksyncstate"
     SYNC_BLOCK_NUM = "bksyncblocknum"
     SAFE_BLOCK_FIELD = "bksafeblock"
-    CONTRACT_CALLER = "test1152557407583"
+    CONTRACT_CALLER = "test115258982860"
 
 class BTCCollectorConfig(CollectorConfig):
     ASSET_SYMBOL = "BTC"
