@@ -146,21 +146,22 @@ class CacheManager(object):
 
 class CollectBlockThread(threading.Thread):
     # self.config.ASSET_SYMBOL.lower()
-    def __init__(self, db, config, wallet_api):
+    def __init__(self, db, config, wallet_api,sync_status):
         threading.Thread.__init__(self)
         self.stop_flag = False
         self.db = db
         self.config = config
         self.wallet_api = wallet_api
         self.last_sync_block_num = 0
+        self.sync_status = sync_status
 
 
     def run(self):
         # 清理上一轮的垃圾数据，包括块数据、交易数据以及合约数据
         self.last_sync_block_num = self.clear_last_garbage_data()
         self.process_blocks()
-
-
+    def get_sync_status(self):
+        return self.sync_status
     def stop(self):
         self.stop_flag = True
 
@@ -196,6 +197,7 @@ class CollectBlockThread(threading.Thread):
         while self.stop_flag is False :
             self.latest_block_num = self._get_latest_block_num()
             if  self.last_sync_block_num > self.latest_block_num :
+                self.sync_status = True
                 time.sleep(1)
                 continue
             try:
@@ -255,6 +257,7 @@ class CollectBlockThread(threading.Thread):
 
 class BTCCoinTxCollector(CoinTxCollector):
     stop_flag = False
+    sync_status = True
 
     def __init__(self, db):
         super(BTCCoinTxCollector, self).__init__()
@@ -275,7 +278,7 @@ class BTCCoinTxCollector(CoinTxCollector):
 
     def do_collect_app(self):
         self._update_cache()
-        self.collect_thread = CollectBlockThread(self.db, self.config, self.wallet_api)
+        self.collect_thread = CollectBlockThread(self.db, self.config, self.wallet_api,self.sync_status)
         self.collect_thread.start()
 
         count = 0
@@ -294,8 +297,11 @@ class BTCCoinTxCollector(CoinTxCollector):
             for trx_data in block.transactions:
                 logging.debug("Transaction: %s" % trx_data)
                 pretty_trx_info = self.collect_pretty_transaction(self.db, trx_data, block.block_num)
-            if count % 100 == 0:
+            self.sync_status = self.collect_thread.get_sync_status()
+            if count % 100 == 0 and self.sync_status:
                 logging.info(str(count) + " blocks processed, flush to db")
+                self.cache.flush_to_db(self.db)
+            elif self.sync_status is False :
                 self.cache.flush_to_db(self.db)
 
         self.collect_thread.stop()
