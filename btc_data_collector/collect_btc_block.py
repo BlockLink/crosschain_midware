@@ -427,8 +427,8 @@ class BTCCoinTxCollector(CoinTxCollector):
             logging.debug("Nothing to record")
             return
 
-        trx_data["trxTime"] = datetime.utcfromtimestamp(base_trx_data['time']).strftime("%Y-%m-%d %H:%M:%S")
-        trx_data["createtime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        #trx_data["trxTime"] = datetime.utcfromtimestamp(base_trx_data['time']).strftime("%Y-%m-%d %H:%M:%S")
+        #trx_data["createtime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         if trx_data['type'] == 2 or trx_data['type'] == 0:
             deposit_data = {
