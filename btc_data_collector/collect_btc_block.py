@@ -193,8 +193,11 @@ class CollectBlockThread(threading.Thread):
         config_db = self.db.b_config
         config_db.update({"key": self.config.SYNC_STATE_FIELD},
                          {"key": self.config.SYNC_STATE_FIELD, "value": "true"})
-        self.latest_block_num = self._get_latest_block_num()
-        while self.stop_flag is False and self.last_sync_block_num <= self.latest_block_num:
+        while self.stop_flag is False :
+            self.latest_block_num = self._get_latest_block_num()
+            if  self.last_sync_block_num > self.latest_block_num :
+                time.sleep(1)
+                continue
             try:
                 # 获取当前链上最新块号
                 logging.debug("latest_block_num: %d, last_sync_block_num: %d" %
@@ -293,7 +296,7 @@ class BTCCoinTxCollector(CoinTxCollector):
                 pretty_trx_info = self.collect_pretty_transaction(self.db, trx_data, block.block_num)
             if count % 100 == 0:
                 logging.info(str(count) + " blocks processed, flush to db")
-                # self.cache.flush_to_db(self.db)
+                self.cache.flush_to_db(self.db)
 
         self.collect_thread.stop()
         self.collect_thread.join()
