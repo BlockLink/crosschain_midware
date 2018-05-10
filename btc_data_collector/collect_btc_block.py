@@ -79,23 +79,14 @@ class CacheManager(object):
         # if self.utxo_cache.has_key(utxo_id):
         #     self.utxo_cache.pop(utxo_id)
         self.utxo_spend_cache.add(utxo_id)
-        data = self.get_utxo(utxo_id)
-        addr = data.get("address")
-        value = data.get("value")
-        if self.balance.has_key(addr):
-            self.balance[addr] -= round(float(value), 8)
-        else:
-            self.balance[addr] = 0.0 -round(float(value), 8)
-
     def add_utxo(self, utxo_id, data):
         logging.debug("Add utxo: " + utxo_id)
         self.utxo_cache[utxo_id] = data
         addr = data.get("address")
-        value = data.get("value")
         if self.balance.has_key(addr):
-            self.balance[addr] += round(value,8)
+            self.balance[addr].append(utxo_id)
         else:
-            self.balance[addr] = round(value, 8)
+            self.balance[addr] = [utxo_id]
 
 
     def flush_to_db(self, db):
@@ -128,6 +119,7 @@ class CacheManager(object):
         self.deposit_transaction_cache = []
         self.utxo_cache = {}
         self.utxo_spend_cache = set()
+        self.balance = {}
 
 
     @staticmethod
@@ -158,14 +150,14 @@ class CacheManager(object):
 
         db.b_config.update({"key": sync_key}, {
             "$set": {"key": sync_key, "value": str(block_num)}})
-
-        for addr,value in balance.items(): 
-            record = db.b_balance.find_one({'chainId': string.lowercase(symbol) , 'address': addr})
-            val = record['balance']  if record is not None else 0
-            temp =0.0
-            temp = round(float(val)+value,8)
-            db.b_balance.update({'chainId': string.lowercase(symbol) , 'address': addr},{"$set":{"balance":temp}})
-
+        for addr,value in balance.items() :
+            print "balance :",addr, value
+            record = db.b_balance.find_one_and_update({"chainId": symbol.lower(), "address": addr},
+                                                      {"$addToSet": {"trxdata": {"$each": value}}},
+                                                      {"chainId": 1})
+            if record is None:
+                continue
+            db.b_balance.insert({'chainId': symbol.lower() , 'address': addr,"trxdata":value})
 class CollectBlockThread(threading.Thread):
     # self.config.ASSET_SYMBOL.lower()
     def __init__(self, db, config, wallet_api,sync_status):

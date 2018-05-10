@@ -9,7 +9,7 @@ from service import sim_btc_plugin
 from utils import error_utils
 import pymongo
 from datetime import datetime
-
+import leveldb
 
 @jsonrpc.method('Zchain.Crypt.Sign(chainId=str, addr=str, message=str)')
 def zchain_crypt_sign(chainId, addr, message):
@@ -469,9 +469,26 @@ def zchain_withdraw_getinfo(chainId):
 @jsonrpc.method('Zchain.Address.GetBalance(chainId=str, addr=str)')
 def zchain_address_get_balance(chainId, addr):
     record = db.b_balance.find_one({'chainId': chainId, 'address': addr})
-
+    trxdata=None
+    balance = 0.0
+    utxo_db = None
+    if record is not None:
+        trxdata = record.get("trxdata")
+        utxo_db = leveldb.LevelDB('./utxo_db' + chainId.upper())
+    if utxo_db is None or trxdata is None :
+        return {
+            'chainId': chainId,
+            'address': addr,
+            'balance': 0
+        }
+    for trx in trxdata :
+        data = utxo_db.Get(trx)
+        if data is None :
+            continue
+        value = round (float(data.get("value")),8)
+        balance = round(balance+value,8)
     return {
-        'chainId': chainId,
-        'address': addr,
-        'balance': record['balance'] if record is not None else 0
-    }
+            'chainId': chainId,
+            'address': addr,
+            'balance': balance
+        }
