@@ -159,7 +159,7 @@ class CacheManager(object):
         db.b_config.update({"key": sync_key}, {
             "$set": {"key": sync_key, "value": str(block_num)}})
 
-        for addr,value in balance.items(): :
+        for addr,value in balance.items(): 
             record = db.b_balance.find_one({'chainId': string.lowercase(symbol) , 'address': addr})
             val = record['balance']  if record is not None else 0
             temp =0.0
