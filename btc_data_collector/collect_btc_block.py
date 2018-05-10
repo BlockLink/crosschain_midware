@@ -30,6 +30,7 @@ from coin_tx_collector import CoinTxCollector
 from collector_conf import BTCCollectorConfig
 from wallet_api import WalletApi
 from Queue import Queue
+import string
 
 
 q = Queue()
@@ -52,6 +53,8 @@ class CacheManager(object):
         self.deposit_transaction_cache = []
         self.utxo_cache = {}
         self.utxo_spend_cache = set()
+        self.balance ={}
+        self.symbol = symbol
         try:
             self.utxo_db_cache = leveldb.LevelDB('./utxo_db' + symbol)
         except Exception, ex:
@@ -76,11 +79,23 @@ class CacheManager(object):
         # if self.utxo_cache.has_key(utxo_id):
         #     self.utxo_cache.pop(utxo_id)
         self.utxo_spend_cache.add(utxo_id)
-
+        data = self.get_utxo(utxo_id)
+        addr = data.get("address")
+        value = data.get("value")
+        if self.balance.has_key(addr):
+            self.balance[addr] -= round(float(value), 8)
+        else:
+            self.balance[addr] = 0.0 -round(float(value), 8)
 
     def add_utxo(self, utxo_id, data):
         logging.debug("Add utxo: " + utxo_id)
         self.utxo_cache[utxo_id] = data
+        addr = data.get("address")
+        value = data.get("value")
+        if self.balance.has_key(addr):
+            self.balance[addr] += round(value,8)
+        else:
+            self.balance[addr] = round(value, 8)
 
 
     def flush_to_db(self, db):
@@ -89,7 +104,7 @@ class CacheManager(object):
         withdraw_transaction = self.withdraw_transaction_cache
         deposit_transaction = self.deposit_transaction_cache
         flush_thread = threading.Thread(target=CacheManager.flush_process,
-                                        args=(db, [
+                                        args=(self.symbol,db, [
                                                   db.b_block,
                                                   db.raw_transaction_db,
                                                   db.b_deposit_transaction,
@@ -104,7 +119,8 @@ class CacheManager(object):
                                               self.utxo_cache,
                                               self.utxo_spend_cache,
                                               self.utxo_db_cache,
-                                              self.sync_key))
+                                              self.sync_key,
+                                              self.balance))
         flush_thread.start()
         self.block_cache = []
         self.raw_transaction_cache = []
@@ -115,7 +131,7 @@ class CacheManager(object):
 
 
     @staticmethod
-    def flush_process(db, tables, data, utxo_cache, utxo_spend_cache, utxo_db, sync_key):
+    def flush_process(symbol,db, tables, data, utxo_cache, utxo_spend_cache, utxo_db, sync_key,balance):
         for i, t in enumerate(tables):
             # bulk = pymongo.bulk.BulkOperationBuilder(t, ordered=False)
             # for task in data[i]:
@@ -143,6 +159,12 @@ class CacheManager(object):
         db.b_config.update({"key": sync_key}, {
             "$set": {"key": sync_key, "value": str(block_num)}})
 
+        for addr,value in balance :
+            record = db.b_balance.find_one({'chainId': string.lowercase(symbol) , 'address': addr})
+            val = record['balance']  if record is not None else 0
+            temp =0.0
+            temp = round(float(val)+value,8)
+            db.b_balance.update({'chainId': string.lowercase(symbol) , 'address': addr},{"$set":{"balance":temp}})
 
 class CollectBlockThread(threading.Thread):
     # self.config.ASSET_SYMBOL.lower()
