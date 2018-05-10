@@ -20,4 +20,4 @@ class LTCCoinTxCollecter(BTCCoinTxCollector):
         self.config = LTCCollectorConfig()
         conf = {"host": self.config.RPC_HOST, "port": self.config.RPC_PORT}
         self.wallet_api = WalletApi(self.config.ASSET_SYMBOL, conf)
-        self.cache = CacheManager(self.config.SYNC_BLOCK_NUM)
+        self.cache = CacheManager(self.config.SYNC_BLOCK_NUM, self.config.ASSET_SYMBOL)
