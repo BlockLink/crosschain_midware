@@ -163,14 +163,14 @@ class CacheManager(object):
             record = db.b_balance_unspent.find_one_and_update({"chainId": symbol.lower(), "address": addr},
                                                       {"$addToSet": {"trxdata": {"$each": value}}},
                                                       {"chainId": 1})
-            if record is None:
+            if record is not None:
                 continue
             db.b_balance_unspent.insert({'chainId': symbol.lower() , 'address': addr,"trxdata":value})
         for addr,value in balance_spent.items() :
             record = db.b_balance_spent.find_one_and_update({"chainId": symbol.lower(), "address": addr},
                                                       {"$addToSet": {"trxdata": {"$each": value}}},
                                                       {"chainId": 1})
-            if record is None:
+            if record is not None:
                 continue
             db.b_balance_spent.insert({'chainId': symbol.lower() , 'address': addr,"trxdata":value})
 class CollectBlockThread(threading.Thread):
