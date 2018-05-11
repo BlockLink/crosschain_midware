@@ -160,7 +160,6 @@ class CacheManager(object):
         db.b_config.update({"key": sync_key}, {
             "$set": {"key": sync_key, "value": str(block_num)}})
         for addr,value in balance_unspent.items() :
-            print "balance :",addr, value
             record = db.b_balance_unspent.find_one_and_update({"chainId": symbol.lower(), "address": addr},
                                                       {"$addToSet": {"trxdata": {"$each": value}}},
                                                       {"chainId": 1})
@@ -168,7 +167,6 @@ class CacheManager(object):
                 continue
             db.b_balance_unspent.insert({'chainId': symbol.lower() , 'address': addr,"trxdata":value})
         for addr,value in balance_spent.items() :
-            print "balance :",addr, value
             record = db.b_balance_spent.find_one_and_update({"chainId": symbol.lower(), "address": addr},
                                                       {"$addToSet": {"trxdata": {"$each": value}}},
                                                       {"chainId": 1})
