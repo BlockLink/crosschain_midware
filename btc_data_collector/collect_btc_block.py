@@ -30,6 +30,7 @@ from coin_tx_collector import CoinTxCollector
 from collector_conf import BTCCollectorConfig
 from wallet_api import WalletApi
 from Queue import Queue
+import string
 
 
 gLock = threading.Lock()
@@ -55,6 +56,9 @@ class CacheManager(object):
         self.utxo_flush_cache = {}
         self.utxo_spend_cache = set()
         self.flush_thread = None
+        self.balance_unspent ={}
+        self.balance_spent = {}
+        self.symbol = symbol
         try:
             self.utxo_db_cache = leveldb.LevelDB('./utxo_db' + symbol)
         except Exception, ex:
@@ -87,16 +91,23 @@ class CacheManager(object):
         # if self.utxo_cache.has_key(utxo_id):
         #     self.utxo_cache.pop(utxo_id)
         self.utxo_spend_cache.add(utxo_id)
-
-
+        data = self.get_utxo(utxo_id)
+        addr = data.get("address")
+        if self.balance_spent.has_key(addr) :
+            self.balance_spent[addr].append(utxo_id)
+        else:
+            self.balance_spent[addr]=[utxo_id]
     def add_utxo(self, utxo_id, data):
         logging.debug("Add utxo: " + utxo_id)
         # logging.info('lock in add')
         # global gLock
         # gLock.acquire()
         self.utxo_cache[utxo_id] = data
-        # gLock.release()
-        # logging.info('unlock in add')
+        addr = data.get("address")
+        if self.balance_unspent.has_key(addr):
+            self.balance_unspent[addr].append(utxo_id)
+        else:
+            self.balance_unspent[addr] = [utxo_id]
 
 
     def flush_to_db(self, db):
@@ -109,7 +120,7 @@ class CacheManager(object):
             self.flush_thread.join()
             self.flush_thread = None
         self.flush_thread = threading.Thread(target=CacheManager.flush_process,
-                                        args=(db, [
+                                        args=(self.symbol,db, [
                                                   db.b_block,
                                                   db.raw_transaction_db,
                                                   db.b_deposit_transaction,
@@ -124,7 +135,9 @@ class CacheManager(object):
                                               self.utxo_flush_cache,
                                               self.utxo_spend_cache,
                                               self.utxo_db_cache,
-                                              self.sync_key))
+                                              self.sync_key,
+                                              self.balance_unspent,
+                                              self.balance_spent))
         self.flush_thread.start()
         self.block_cache = []
         self.raw_transaction_cache = []
@@ -132,10 +145,12 @@ class CacheManager(object):
         self.deposit_transaction_cache = []
         self.utxo_cache = {}
         self.utxo_spend_cache = set()
+        self.balance_unspent = {}
+        self.balance_spent = {}
 
 
     @staticmethod
-    def flush_process(db, tables, data, utxo_cache, utxo_spend_cache, utxo_db, sync_key):
+    def flush_process(symbol,db, tables, data, utxo_cache, utxo_spend_cache, utxo_db, sync_key,balance_unspent,balance_spent):
         for i, t in enumerate(tables):
             # bulk = pymongo.bulk.BulkOperationBuilder(t, ordered=False)
             # for task in data[i]:
@@ -167,25 +182,38 @@ class CacheManager(object):
 
         db.b_config.update({"key": sync_key}, {
             "$set": {"key": sync_key, "value": str(block_num)}})
-
-
+        for addr,value in balance_unspent.items() :
+            record = db.b_balance_unspent.find_one_and_update({"chainId": symbol.lower(), "address": addr},
+                                                      {"$addToSet": {"trxdata": {"$each": value}}},
+                                                      {"chainId": 1})
+            if record is not None:
+                continue
+            db.b_balance_unspent.insert({'chainId': symbol.lower() , 'address': addr,"trxdata":value})
+        for addr,value in balance_spent.items() :
+            record = db.b_balance_spent.find_one_and_update({"chainId": symbol.lower(), "address": addr},
+                                                      {"$addToSet": {"trxdata": {"$each": value}}},
+                                                      {"chainId": 1})
+            if record is not None:
+                continue
+            db.b_balance_spent.insert({'chainId': symbol.lower() , 'address': addr,"trxdata":value})
 class CollectBlockThread(threading.Thread):
     # self.config.ASSET_SYMBOL.lower()
-    def __init__(self, db, config, wallet_api):
+    def __init__(self, db, config, wallet_api,sync_status):
         threading.Thread.__init__(self)
         self.stop_flag = False
         self.db = db
         self.config = config
         self.wallet_api = wallet_api
         self.last_sync_block_num = 0
+        self.sync_status = sync_status
 
 
     def run(self):
         # 清理上一轮的垃圾数据，包括块数据、交易数据以及合约数据
         self.last_sync_block_num = self.clear_last_garbage_data()
         self.process_blocks()
-
-
+    def get_sync_status(self):
+        return self.sync_status
     def stop(self):
         self.stop_flag = True
 
@@ -221,6 +249,7 @@ class CollectBlockThread(threading.Thread):
         while self.stop_flag is False :
             self.latest_block_num = self._get_latest_block_num()
             if  self.last_sync_block_num > self.latest_block_num :
+                self.sync_status = False
                 time.sleep(1)
                 continue
             try:
@@ -280,6 +309,7 @@ class CollectBlockThread(threading.Thread):
 
 class BTCCoinTxCollector(CoinTxCollector):
     stop_flag = False
+    sync_status = True
 
     def __init__(self, db):
         super(BTCCoinTxCollector, self).__init__()
@@ -300,7 +330,7 @@ class BTCCoinTxCollector(CoinTxCollector):
 
     def do_collect_app(self):
         self._update_cache()
-        self.collect_thread = CollectBlockThread(self.db, self.config, self.wallet_api)
+        self.collect_thread = CollectBlockThread(self.db, self.config, self.wallet_api,self.sync_status)
         self.collect_thread.start()
 
         count = 0
@@ -319,8 +349,11 @@ class BTCCoinTxCollector(CoinTxCollector):
             for trx_data in block.transactions:
                 logging.debug("Transaction: %s" % trx_data)
                 pretty_trx_info = self.collect_pretty_transaction(self.db, trx_data, block.block_num)
-            if count % 100 == 0:
+            self.sync_status = self.collect_thread.get_sync_status()
+            if count % 100 == 0 and self.sync_status:
                 logging.info(str(count) + " blocks processed, flush to db")
+                self.cache.flush_to_db(self.db)
+            elif self.sync_status is False :
                 self.cache.flush_to_db(self.db)
 
         self.collect_thread.stop()
@@ -454,8 +487,8 @@ class BTCCoinTxCollector(CoinTxCollector):
             logging.debug("Nothing to record")
             return
 
-        trx_data["trxTime"] = datetime.utcfromtimestamp(base_trx_data['time']).strftime("%Y-%m-%d %H:%M:%S")
-        trx_data["createtime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        #trx_data["trxTime"] = datetime.utcfromtimestamp(base_trx_data['time']).strftime("%Y-%m-%d %H:%M:%S")
+        #trx_data["createtime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         if trx_data['type'] == 2 or trx_data['type'] == 0:
             deposit_data = {

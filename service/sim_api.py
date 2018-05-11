@@ -9,7 +9,7 @@ from service import sim_btc_plugin
 from utils import error_utils
 import pymongo
 from datetime import datetime
-
+import leveldb
 
 @jsonrpc.method('Zchain.Crypt.Sign(chainId=str, addr=str, message=str)')
 def zchain_crypt_sign(chainId, addr, message):
@@ -468,10 +468,42 @@ def zchain_withdraw_getinfo(chainId):
 
 @jsonrpc.method('Zchain.Address.GetBalance(chainId=str, addr=str)')
 def zchain_address_get_balance(chainId, addr):
-    record = db.b_balance.find_one({'chainId': chainId, 'address': addr})
+    logger.info('Zchain.Address.GetBalance')
+    record_unspent = db.b_balance_unspent.find_one({'chainId': chainId, 'address': addr})
+    trx_unspent=[]
+    trx_spent = []
+    balance = 0.0
+    record_spent = None
+    if record_unspent is not None:
+        trx_unspent = record_unspent.get("trxdata")
+        record_spent = db.b_balance_spent.find_one({'chainId': chainId, 'address': addr})
+        if record_spent is not None :
+            trx_spent = record_spent.get("trxdata")
+
+    else:
+        return {
+            'chainId': chainId,
+            'address': addr,
+            'balance': 0
+        }
+    unspent = []
+    for trx in trx_unspent :
+        if trx  not in trx_spent:
+            unspent.append(trx)
+    for id in unspent:
+        pos1 = len(chainId)
+        id = id[pos1:]
+        pos2 = id.find('I')
+        index = id[pos2 + 1:]
+        id = id[0:pos2]
+        result = sim_btc_plugin[chainId].sim_btc_get_transaction(id)
+        if result is "":
+            continue
+        vout = round(float(result.get("vout")[int(index)].get("value")), 8)
+        balance = round(vout + balance, 8)
 
     return {
-        'chainId': chainId,
-        'address': addr,
-        'balance': record['balance'] if record is not None else 0
-    }
+            'chainId': chainId,
+            'address': addr,
+            'balance': balance
+        }
