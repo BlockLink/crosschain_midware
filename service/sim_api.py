@@ -468,6 +468,7 @@ def zchain_withdraw_getinfo(chainId):
 
 @jsonrpc.method('Zchain.Address.GetBalance(chainId=str, addr=str)')
 def zchain_address_get_balance(chainId, addr):
+    logger.info('Zchain.Address.GetBalance')
     record_unspent = db.b_balance_unspent.find_one({'chainId': chainId, 'address': addr})
     trx_unspent=[]
     trx_spent = []
@@ -489,17 +490,17 @@ def zchain_address_get_balance(chainId, addr):
     for trx in trx_unspent :
         if trx  not in trx_spent:
             unspent.append(trx)
-    for id in unspent :
+    for id in unspent:
         pos1 = len(chainId)
-        id = id[pos1:-1]
+        id = id[pos1:]
         pos2 = id.find('I')
-        index = id[pos2+1:-1]
+        index = id[pos2 + 1:]
         id = id[0:pos2]
         result = sim_btc_plugin[chainId].sim_btc_get_transaction(id)
         if result is "":
             continue
-        vout = round(float(result.get("result").get("vount")[index].get("value")),8)
-        balance = round(vout+balance,8)
+        vout = round(float(result.get("vout")[int(index)].get("value")), 8)
+        balance = round(vout + balance, 8)
 
     return {
             'chainId': chainId,
