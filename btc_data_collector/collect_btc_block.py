@@ -53,7 +53,8 @@ class CacheManager(object):
         self.deposit_transaction_cache = []
         self.utxo_cache = {}
         self.utxo_spend_cache = set()
-        self.balance ={}
+        self.balance_unspent ={}
+        self.balance_spent = {}
         self.symbol = symbol
         try:
             self.utxo_db_cache = leveldb.LevelDB('./utxo_db' + symbol)
@@ -79,14 +80,20 @@ class CacheManager(object):
         # if self.utxo_cache.has_key(utxo_id):
         #     self.utxo_cache.pop(utxo_id)
         self.utxo_spend_cache.add(utxo_id)
+        data = self.get_utxo(utxo_id)
+        addr = data.get("address")
+        if self.balance_spent.has_key(addr) :
+            self.balance_spent[addr].append(utxo_id)
+        else:
+            self.balance_spent[addr]=[utxo_id]
     def add_utxo(self, utxo_id, data):
         logging.debug("Add utxo: " + utxo_id)
         self.utxo_cache[utxo_id] = data
         addr = data.get("address")
-        if self.balance.has_key(addr):
-            self.balance[addr].append(utxo_id)
+        if self.balance_unspent.has_key(addr):
+            self.balance_unspent[addr].append(utxo_id)
         else:
-            self.balance[addr] = [utxo_id]
+            self.balance_unspent[addr] = [utxo_id]
 
 
     def flush_to_db(self, db):
@@ -111,7 +118,8 @@ class CacheManager(object):
                                               self.utxo_spend_cache,
                                               self.utxo_db_cache,
                                               self.sync_key,
-                                              self.balance))
+                                              self.balance_unspent,
+                                              self.balance_spent))
         flush_thread.start()
         self.block_cache = []
         self.raw_transaction_cache = []
@@ -119,11 +127,12 @@ class CacheManager(object):
         self.deposit_transaction_cache = []
         self.utxo_cache = {}
         self.utxo_spend_cache = set()
-        self.balance = {}
+        self.balance_unspent = {}
+        self.balance_spent = {}
 
 
     @staticmethod
-    def flush_process(symbol,db, tables, data, utxo_cache, utxo_spend_cache, utxo_db, sync_key,balance):
+    def flush_process(symbol,db, tables, data, utxo_cache, utxo_spend_cache, utxo_db, sync_key,balance_unspent,balance_spent):
         for i, t in enumerate(tables):
             # bulk = pymongo.bulk.BulkOperationBuilder(t, ordered=False)
             # for task in data[i]:
@@ -150,14 +159,22 @@ class CacheManager(object):
 
         db.b_config.update({"key": sync_key}, {
             "$set": {"key": sync_key, "value": str(block_num)}})
-        for addr,value in balance.items() :
+        for addr,value in balance_unspent.items() :
             print "balance :",addr, value
-            record = db.b_balance.find_one_and_update({"chainId": symbol.lower(), "address": addr},
+            record = db.b_balance_unspent.find_one_and_update({"chainId": symbol.lower(), "address": addr},
                                                       {"$addToSet": {"trxdata": {"$each": value}}},
                                                       {"chainId": 1})
             if record is None:
                 continue
-            db.b_balance.insert({'chainId': symbol.lower() , 'address': addr,"trxdata":value})
+            db.b_balance_unspent.insert({'chainId': symbol.lower() , 'address': addr,"trxdata":value})
+        for addr,value in balance_spent.items() :
+            print "balance :",addr, value
+            record = db.b_balance_spent.find_one_and_update({"chainId": symbol.lower(), "address": addr},
+                                                      {"$addToSet": {"trxdata": {"$each": value}}},
+                                                      {"chainId": 1})
+            if record is None:
+                continue
+            db.b_balance_spent.insert({'chainId': symbol.lower() , 'address': addr,"trxdata":value})
 class CollectBlockThread(threading.Thread):
     # self.config.ASSET_SYMBOL.lower()
     def __init__(self, db, config, wallet_api,sync_status):
