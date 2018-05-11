@@ -32,6 +32,7 @@ from wallet_api import WalletApi
 from Queue import Queue
 
 
+gLock = threading.Lock()
 q = Queue()
 
 
@@ -51,7 +52,9 @@ class CacheManager(object):
         self.withdraw_transaction_cache = []
         self.deposit_transaction_cache = []
         self.utxo_cache = {}
+        self.utxo_flush_cache = {}
         self.utxo_spend_cache = set()
+        self.flush_thread = None
         try:
             self.utxo_db_cache = leveldb.LevelDB('./utxo_db' + symbol)
         except Exception, ex:
@@ -59,8 +62,16 @@ class CacheManager(object):
 
 
     def get_utxo(self, utxo_id):
+        # logging.info('lock in get')
+        # utxo_value = None
+        # global gLock
+        # gLock.acquire()
         if self.utxo_cache.has_key(utxo_id):
             return self.utxo_cache[utxo_id]
+        if self.utxo_flush_cache.has_key(utxo_id):
+            return self.utxo_flush_cache[utxo_id]
+        # gLock.release()
+        # logging.info('unlock in get')
         try:
             db_data = self.utxo_db_cache.Get(utxo_id)
         except KeyError:
@@ -80,7 +91,12 @@ class CacheManager(object):
 
     def add_utxo(self, utxo_id, data):
         logging.debug("Add utxo: " + utxo_id)
+        # logging.info('lock in add')
+        # global gLock
+        # gLock.acquire()
         self.utxo_cache[utxo_id] = data
+        # gLock.release()
+        # logging.info('unlock in add')
 
 
     def flush_to_db(self, db):
@@ -88,7 +104,11 @@ class CacheManager(object):
         raw_trasaction = self.raw_transaction_cache
         withdraw_transaction = self.withdraw_transaction_cache
         deposit_transaction = self.deposit_transaction_cache
-        flush_thread = threading.Thread(target=CacheManager.flush_process,
+        self.utxo_flush_cache = self.utxo_cache
+        if self.flush_thread is not None:
+            self.flush_thread.join()
+            self.flush_thread = None
+        self.flush_thread = threading.Thread(target=CacheManager.flush_process,
                                         args=(db, [
                                                   db.b_block,
                                                   db.raw_transaction_db,
@@ -101,11 +121,11 @@ class CacheManager(object):
                                                   withdraw_transaction,
                                                   deposit_transaction
                                               ],
-                                              self.utxo_cache,
+                                              self.utxo_flush_cache,
                                               self.utxo_spend_cache,
                                               self.utxo_db_cache,
                                               self.sync_key))
-        flush_thread.start()
+        self.flush_thread.start()
         self.block_cache = []
         self.raw_transaction_cache = []
         self.withdraw_transaction_cache = []
@@ -130,15 +150,20 @@ class CacheManager(object):
 
         # need async flush
         batch = leveldb.WriteBatch()
-        for key,value in utxo_cache.items():
-            # logging.debug("utxo_cache: " + str(key) + str(value))
-            batch.Put(key, json.dumps(value))
         for key in utxo_spend_cache:
             batch.Delete(key)
+        # logging.info('lock in flush')
+        # global gLock
+        # gLock.acquire()
+        for key,value in utxo_cache.items():
+            batch.Put(key, json.dumps(value))
         try:
             utxo_db.Write(batch, sync=True)
         except Exception,ex:
             print "flush db", ex
+        # utxo_cache.clear()
+        # gLock.release()
+        # logging.info('unlock in flush')
 
         db.b_config.update({"key": sync_key}, {
             "$set": {"key": sync_key, "value": str(block_num)}})
@@ -354,22 +379,30 @@ class BTCCoinTxCollector(CoinTxCollector):
             in_trx = self.cache.get_utxo(utxo_id)
             self.cache.spend_utxo(utxo_id)
             if in_trx is None:
-                logging.error("Fail to get vin transaction [%s:%d] of [%s]" % (trx_in["txid"], trx_in['vout'], trx_data["trxid"]))
-                exit(0)
+                logging.info(
+                    "Fail to get vin transaction [%s:%d] of [%s]" % (trx_in["txid"], trx_in['vout'], trx_data["trxid"]))
+                ret1 = self.wallet_api.http_request("getrawtransaction", [trx_in['txid'], True])
+                if not ret1.has_key('result'):
+                    logging.error("Fail to get vin transaction [%s:%d] of [%s]" % (trx_in["txid"], trx_in['vout'], trx_data["trxid"]))
+                    exit(0)
+                for t in ret1['result']['vout']:
+                    if t['n'] == trx_in['vout']:
+                        in_trx = {'address': self._get_vout_address(t), 'value': t['value']}
+                        break
+
+            in_address = in_trx["address"]
+            if (in_set.has_key(in_address)):
+                in_set[in_address] += in_trx["value"]
             else:
-                in_address = in_trx["address"]
-                if (in_set.has_key(in_address)):
-                    in_set[in_address] += in_trx["value"]
+                in_set[in_address] = in_trx["value"]
+            trx_data["vin"].append({"txid": trx_in["txid"], "vout": trx_in["vout"], "value": in_trx["value"], "address": in_address})
+            if in_address in self.multisig_address_cache:
+                if multisig_in_addr == "":
+                    multisig_in_addr = in_address
                 else:
-                    in_set[in_address] = in_trx["value"]
-                trx_data["vin"].append({"txid": trx_in["txid"], "vout": trx_in["vout"], "value": in_trx["value"], "address": in_address})
-                if in_address in self.multisig_address_cache:
-                    if multisig_in_addr == "":
-                        multisig_in_addr = in_address
-                    else:
-                        if multisig_in_addr != in_address:
-                            is_valid_tx = False
-                break
+                    if multisig_in_addr != in_address:
+                        is_valid_tx = False
+            break
 
         for trx_out in vout:
             # Update UBXO cache
@@ -461,10 +494,12 @@ class BTCCoinTxCollector(CoinTxCollector):
         if vout_data["scriptPubKey"]["type"] == "multisig":
             address = pybitcointools.bin_to_b58check(pybitcointools.hash160(vout_data["scriptPubKey"]["hex"]),
                                                      self.config.MULTISIG_VERSION)
+        elif vout_data["scriptPubKey"]["type"] == "witness_v0_scripthash" or vout_data["scriptPubKey"]["type"] == "witness_v0_keyhash":
+            address = vout_data["scriptPubKey"]["hex"]
         else:
             if not vout_data["scriptPubKey"].has_key("addresses"):
                 #ToDo: OP_ADD and other OP_CODE may add exectuing function
-                return ""
+                raise vout_data
             elif len(vout_data["scriptPubKey"]["addresses"]) > 1:
                 logging.error("error data: ", vout_data)
                 pass

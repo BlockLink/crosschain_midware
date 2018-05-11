@@ -16,7 +16,7 @@ class CollectorConfig(object):
     MONGO_PASS = 'yqr.1010'
 
     # LOG configure
-    LOG_LEVEL = logging.DEBUG
+    LOG_LEVEL = logging.INFO
     LOG_FORMAT = '%(asctime)-15s %(levelname)s %(funcName)s %(message)s'
     LOG_FILENAME = "btc_data_collector.log"
 
@@ -34,8 +34,8 @@ class BKCollectorConfig(CollectorConfig):
 
 class BTCCollectorConfig(CollectorConfig):
     ASSET_SYMBOL = "BTC"
-    RPC_HOST = '192.168.1.123'
-    RPC_PORT = 60012
+    RPC_HOST = '192.168.1.121'
+    RPC_PORT = 60019
     SYNC_STATE_FIELD = "btcsyncstate"
     SYNC_BLOCK_NUM = "btcsyncblocknum"
     SAFE_BLOCK_FIELD = "btcsafeblock"

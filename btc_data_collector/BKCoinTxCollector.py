@@ -28,7 +28,8 @@ class BKCoinTxCollector(CoinTxCollector):
 
 
     def do_collect_app(self):
-        self.collect_token_contract()
+        while True:
+            self.collect_token_contract()
         return ""
 
 
