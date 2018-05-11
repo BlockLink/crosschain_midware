@@ -116,7 +116,7 @@ def zchain_trans_createTrx(chainId, from_addr,dest_info):
     logger.info('Zchain.Trans.createTrx')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
-
+    chainId = chainId.lower()
     result = {}
     if sim_btc_plugin.has_key(chainId):
         result = sim_btc_plugin[chainId].sim_btc_create_transaction(from_addr,dest_info)
