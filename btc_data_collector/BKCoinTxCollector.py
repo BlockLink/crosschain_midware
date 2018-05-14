@@ -85,4 +85,4 @@ class BKCoinTxCollector(CoinTxCollector):
                                    "price": price, "contract_address": contract_address,
                                    "block_num": block_num})
         self.db.b_exchange_contracts.remove(
-                {"contract_address": contract_address, "block_num": {"$gte": block_num}})
+                {"contract_address": contract_address})
