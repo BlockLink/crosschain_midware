@@ -37,7 +37,7 @@ class BKCoinTxCollector(CoinTxCollector):
 
 
     def collect_token_contract(self):
-        ret = self.wallet_api.http_request("get_contract_registered", [0])
+        ret = self.wallet_api.http_request("get_contract_storage_changed", [0])
         if not ret.has_key('result') or ret['result'] == None:
             logging.info("Get contract failed")
             return
@@ -65,7 +65,7 @@ class BKCoinTxCollector(CoinTxCollector):
         ret = self.wallet_api.http_request("invoke_contract_offline",
                                            [self.config.CONTRACT_CALLER, contract_address, "state", ""])
         if ret.has_key('result') and ret['result'] == "COMMON":
-            logging.info("Contract state is good: " + contract_address + " | " + ret['result'])
+            logging.debug("Contract state is good: " + contract_address + " | " + ret['result'])
             return True
         else:
             logging.info("Contract state error: " + contract_address + " | " + ret['result'])
