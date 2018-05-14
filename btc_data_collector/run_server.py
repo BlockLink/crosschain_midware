@@ -10,6 +10,7 @@ from collect_ub_block import UBCoinTxCollecter
 from BKCoinTxCollector import BKCoinTxCollector
 import logging
 import sys
+import signal
 from pymongo import MongoClient
 
 if __name__ == '__main__':
@@ -41,4 +42,9 @@ if __name__ == '__main__':
         print "Please indicate correct type of coin tx to collect [btc|ltc]"
         exit(1)
 
+    def signal_handler(signum, frame):
+        collector.stop_flag = True
+
+
+    signal.signal(signal.SIGINT, signal_handler)
     collector.do_collect_app()

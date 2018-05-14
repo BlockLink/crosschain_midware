@@ -23,25 +23,16 @@ import time
 import threading
 import pybitcointools
 import json
-import signal
 from block_btc import BlockInfoBtc
 from datetime import datetime
 from coin_tx_collector import CoinTxCollector
 from collector_conf import BTCCollectorConfig
 from wallet_api import WalletApi
 from Queue import Queue
-import string
 
 
 gLock = threading.Lock()
 q = Queue()
-
-
-def signal_handler(signum, frame):
-    BTCCoinTxCollector.stop_flag = True
-
-
-signal.signal(signal.SIGINT, signal_handler)
 
 
 class CacheManager(object):
@@ -66,16 +57,10 @@ class CacheManager(object):
 
 
     def get_utxo(self, utxo_id):
-        # logging.info('lock in get')
-        # utxo_value = None
-        # global gLock
-        # gLock.acquire()
         if self.utxo_cache.has_key(utxo_id):
             return self.utxo_cache[utxo_id]
         if self.utxo_flush_cache.has_key(utxo_id):
             return self.utxo_flush_cache[utxo_id]
-        # gLock.release()
-        # logging.info('unlock in get')
         try:
             db_data = self.utxo_db_cache.Get(utxo_id)
         except KeyError:
@@ -88,8 +73,6 @@ class CacheManager(object):
 
     def spend_utxo(self, utxo_id):
         logging.debug("Spend utxo: " + utxo_id)
-        # if self.utxo_cache.has_key(utxo_id):
-        #     self.utxo_cache.pop(utxo_id)
         self.utxo_spend_cache.add(utxo_id)
         data = self.get_utxo(utxo_id)
         if data is None:
@@ -103,9 +86,6 @@ class CacheManager(object):
 
     def add_utxo(self, utxo_id, data):
         logging.debug("Add utxo: " + utxo_id)
-        # logging.info('lock in add')
-        # global gLock
-        # gLock.acquire()
         self.utxo_cache[utxo_id] = data
         addr = data.get("address")
         if self.balance_unspent.has_key(addr):
@@ -305,12 +285,12 @@ class CollectBlockThread(threading.Thread):
 
 
 class BTCCoinTxCollector(CoinTxCollector):
-    stop_flag = False
     sync_status = True
 
     def __init__(self, db):
         super(BTCCoinTxCollector, self).__init__()
 
+        self.stop_flag = False
         self.db = db
         self.t_multisig_address = self.db.b_btc_multisig_address
         self.multisig_address_cache = set()
