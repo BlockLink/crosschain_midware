@@ -92,11 +92,15 @@ class CacheManager(object):
         #     self.utxo_cache.pop(utxo_id)
         self.utxo_spend_cache.add(utxo_id)
         data = self.get_utxo(utxo_id)
+        if data is None:
+            return
         addr = data.get("address")
         if self.balance_spent.has_key(addr) :
             self.balance_spent[addr].append(utxo_id)
         else:
             self.balance_spent[addr]=[utxo_id]
+
+
     def add_utxo(self, utxo_id, data):
         logging.debug("Add utxo: " + utxo_id)
         # logging.info('lock in add')
@@ -152,36 +156,24 @@ class CacheManager(object):
     @staticmethod
     def flush_process(symbol,db, tables, data, utxo_cache, utxo_spend_cache, utxo_db, sync_key,balance_unspent,balance_spent):
         for i, t in enumerate(tables):
-            # bulk = pymongo.bulk.BulkOperationBuilder(t, ordered=False)
-            # for task in data[i]:
-            #     logging.info(task)
-            #     bulk.insert(task)
-            # bulk.execute()
             if len(data[i]) > 0:
                 logging.debug(data[i][0])
                 t.insert(data[i])
         block_num = data[0][len(data[0])-1]["blockNumber"]
         logging.info(sync_key + ": " + str(block_num))
 
-        # need async flush
+        #Flush utxo to leveldb
         batch = leveldb.WriteBatch()
         for key in utxo_spend_cache:
             batch.Delete(key)
-        # logging.info('lock in flush')
-        # global gLock
-        # gLock.acquire()
         for key,value in utxo_cache.items():
             batch.Put(key, json.dumps(value))
         try:
             utxo_db.Write(batch, sync=True)
         except Exception,ex:
             print "flush db", ex
-        # utxo_cache.clear()
-        # gLock.release()
-        # logging.info('unlock in flush')
 
-        db.b_config.update({"key": sync_key}, {
-            "$set": {"key": sync_key, "value": str(block_num)}})
+        #Flush balance to mongodb.
         for addr,value in balance_unspent.items() :
             record = db.b_balance_unspent.find_one_and_update({"chainId": symbol.lower(), "address": addr},
                                                       {"$addToSet": {"trxdata": {"$each": value}}},
@@ -196,6 +188,11 @@ class CacheManager(object):
             if record is not None:
                 continue
             db.b_balance_spent.insert({'chainId': symbol.lower() , 'address': addr,"trxdata":value})
+        #Update sync block number finally.
+        db.b_config.update({"key": sync_key}, {
+            "$set": {"key": sync_key, "value": str(block_num)}})
+
+
 class CollectBlockThread(threading.Thread):
     # self.config.ASSET_SYMBOL.lower()
     def __init__(self, db, config, wallet_api,sync_status):
