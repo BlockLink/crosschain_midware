@@ -412,7 +412,6 @@ class BTCCoinTxCollector(CoinTxCollector):
                 else:
                     if multisig_in_addr != in_address:
                         is_valid_tx = False
-            break
 
         for trx_out in vout:
             # Update UBXO cache
