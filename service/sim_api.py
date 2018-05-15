@@ -135,6 +135,7 @@ def zchain_trans_createTrx(chainId, from_addr,dest_info):
 @jsonrpc.method('Zchain.Trans.CombineTrx(chainId=str, transactions=list)')
 def zchain_trans_CombineTrx(chainId, transactions):
     logger.info('Zchain.Trans.CombineTrx')
+    chainId = chainId.lower()
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
 
@@ -155,6 +156,7 @@ def zchain_trans_CombineTrx(chainId, transactions):
 
 @jsonrpc.method('Zchain.Trans.DecodeTrx(chainId=str, trx_hex=str)')
 def zchain_trans_decodeTrx(chainId, trx_hex):
+    chainId = chainId.lower()
     logger.info('Zchain.Trans.DecodeTrx')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
@@ -176,6 +178,7 @@ def zchain_trans_decodeTrx(chainId, trx_hex):
 
 @jsonrpc.method('Zchain.Trans.queryTrans(chainId=str, trxid=str)')
 def zchain_trans_queryTrx(chainId, trxid):
+    chainId = chainId.lower()
     logger.info('Zchain.Trans.queryTrans')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
@@ -196,6 +199,7 @@ def zchain_trans_queryTrx(chainId, trxid):
 
 @jsonrpc.method('Zchain.Trans.getTrxOuts(chainId=str, addr=str)')
 def zchain_trans_getTrxOuts(chainId, addr):
+    chainId = chainId.lower()
     logger.info('Zchain.Trans.getTrxOuts')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
@@ -214,6 +218,7 @@ def zchain_trans_getTrxOuts(chainId, addr):
 
 @jsonrpc.method('Zchain.Crypt.VerifyMessage(chainId=str, addr=str, message=str, signature=str)')
 def zchain_crypt_verify_message(chainId, addr, message, signature):
+    chainId = chainId.lower()
     logger.info('Zchain.Crypt.VerifyMessage')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
@@ -232,6 +237,7 @@ def zchain_crypt_verify_message(chainId, addr, message, signature):
 
 @jsonrpc.method('Zchain.Multisig.Create(chainId=str, addrs=list, amount=int)')
 def zchain_multisig_create(chainId, addrs, amount):
+    chainId = chainId.lower()
     logger.info('Zchain.Multisig.Create')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
@@ -262,6 +268,7 @@ def zchain_multisig_create(chainId, addrs, amount):
     }
 @jsonrpc.method('Zchain.Address.validate(chainId=str, addr=str)')
 def zchain_address_validate(chainId,addr):
+    chainId = chainId.lower()
     logger.info("Zchain.Address.validate")
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
@@ -281,6 +288,7 @@ def zchain_address_validate(chainId,addr):
 @jsonrpc.method('Zchain.Multisig.Add(chainId=str, addrs=list, amount=int, addrType=int)')
 def zchain_multisig_add(chainId, addrs, amount, addrType):
     logger.info('Zchain.Multisig.Add')
+    chainId = chainId.lower()
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
     if type(addrs) != list:
@@ -313,6 +321,7 @@ def zchain_multisig_add(chainId, addrs, amount, addrType):
 
 @jsonrpc.method('Zchain.Transaction.Withdraw.History(chainId=str, account=str, blockNum=int, limit=int)')
 def zchain_transaction_withdraw_history(chainId,account ,blockNum, limit):
+    chainId = chainId.lower()
     logger.info('Zchain.Transaction.Withdraw.History')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
@@ -339,6 +348,7 @@ def zchain_transaction_withdraw_history(chainId,account ,blockNum, limit):
 
 @jsonrpc.method('Zchain.Transaction.Deposit.History(chainId=str, account=str, blockNum=int, limit=int)')
 def zchain_transaction_deposit_history(chainId,account ,blockNum, limit):
+    chainId = chainId.lower()
     logger.info('Zchain.Transaction.Deposit.History')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
@@ -366,6 +376,7 @@ def zchain_transaction_deposit_history(chainId,account ,blockNum, limit):
 
 @jsonrpc.method('Zchain.Configuration.Set(chainId=str, key=str, value=str)')
 def zchain_configuration_set(chainId, key, value):
+    chainId = chainId.lower()
     logger.info('Zchain.Configure')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
@@ -390,6 +401,7 @@ def zchain_configuration_set(chainId, key, value):
 # TODO, 备份私钥功能暂时注释，正式上线要加回�?
 @jsonrpc.method('Zchain.Address.Create(chainId=String)')
 def zchain_address_create(chainId):
+    chainId = chainId.lower()
     logger.info('Create_address coin: %s' % (chainId))
     if chainId == 'eth':
         address = eth_utils.eth_create_address()
@@ -423,6 +435,7 @@ def zchain_withdraw_getinfo(chainId):
     :param chainId:
     :return:
     """
+    chainId = chainId.lower()
     logger.info('Zchain.Withdraw.GetInfo')
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
@@ -469,6 +482,7 @@ def zchain_withdraw_getinfo(chainId):
 @jsonrpc.method('Zchain.Address.GetBalance(chainId=str, addr=str)')
 def zchain_address_get_balance(chainId, addr):
     logger.info('Zchain.Address.GetBalance')
+    chainId = chainId.lower()
     record_unspent = db.b_balance_unspent.find_one({'chainId': chainId, 'address': addr})
     trx_unspent=[]
     trx_spent = []
