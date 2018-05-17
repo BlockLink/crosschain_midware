@@ -80,7 +80,7 @@ def zchain_addr_importaddr(chainId, addr):
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
     if sim_btc_plugin.has_key(chainId):
-        sim_btc_plugin[chainId].btc_import_addr(addr)
+        sim_btc_plugin[chainId].sim_btc_import_addr(addr)
     else:
         return error_utils.invalid_chainid_type()
     return {
