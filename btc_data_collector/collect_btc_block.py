@@ -51,7 +51,7 @@ class CacheManager(object):
         self.balance_spent = {}
         self.symbol = symbol
         try:
-            self.utxo_db_cache = leveldb.LevelDB('./utxo_db' + symbol)
+            self.utxo_db_cache = leveldb.LevelDB('./utxo_db' + self.symbol)
         except Exception, ex:
             logging.error(ex)
 
@@ -113,8 +113,8 @@ class CacheManager(object):
                                               [
                                                   blocks,
                                                   raw_trasaction,
-                                                  withdraw_transaction,
-                                                  deposit_transaction
+                                                  deposit_transaction,
+                                                  withdraw_transaction
                                               ],
                                               self.utxo_flush_cache,
                                               self.utxo_spend_cache,
