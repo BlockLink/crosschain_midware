@@ -395,7 +395,7 @@ class BTCCoinTxCollector(CoinTxCollector):
                 if not ret1.has_key('result'):
                     logging.error("Fail to get vin transaction [%s:%d] of [%s]" % (trx_in["txid"], trx_in['vout'], trx_data["trxid"]))
                     exit(0)
-                addr =  self._get_vout_address(ret1.get("vout")[int(trx_in['vout'])])
+                addr =  self._get_vout_address(ret1.get("result").get("vout")[int(trx_in['vout'])])
                 if self.cache.balance_spent.has_key(addr):
                     self.cache.balance_spent[addr].append(utxo_id)
                 else:
