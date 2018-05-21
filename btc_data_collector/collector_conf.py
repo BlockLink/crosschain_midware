@@ -39,7 +39,7 @@ class BTCCollectorConfig(CollectorConfig):
     SYNC_STATE_FIELD = "btcsyncstate"
     SYNC_BLOCK_NUM = "btcsyncblocknum"
     SAFE_BLOCK_FIELD = "btcsafeblock"
-
+    MULTISIG_VERSION = 196
 class LTCCollectorConfig(CollectorConfig):
     ASSET_SYMBOL = "LTC"
     RPC_HOST = '192.168.1.123'
@@ -47,7 +47,7 @@ class LTCCollectorConfig(CollectorConfig):
     SYNC_STATE_FIELD = "ltcsyncstate"
     SYNC_BLOCK_NUM = "ltcsyncblocknum"
     SAFE_BLOCK_FIELD = "ltcsafeblock"
-
+    MULTISIG_VERSION = 196
 class UBCollectorConfig(CollectorConfig):
     ASSET_SYMBOL = "UB"
     RPC_HOST = '192.168.1.124'

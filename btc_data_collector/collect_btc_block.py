@@ -327,7 +327,7 @@ class BTCCoinTxCollector(CoinTxCollector):
                 logging.debug("Transaction: %s" % trx_data)
                 pretty_trx_info = self.collect_pretty_transaction(self.db, trx_data, block.block_num)
             self.sync_status = self.collect_thread.get_sync_status()
-            if count % 100 == 0 and self.sync_status:
+            if count % 10 == 0 and self.sync_status:
                 logging.info(str(count) + " blocks processed, flush to db")
                 self.cache.flush_to_db(self.db)
             elif self.sync_status is False :
@@ -395,6 +395,11 @@ class BTCCoinTxCollector(CoinTxCollector):
                 if not ret1.has_key('result'):
                     logging.error("Fail to get vin transaction [%s:%d] of [%s]" % (trx_in["txid"], trx_in['vout'], trx_data["trxid"]))
                     exit(0)
+                addr =  self._get_vout_address(ret1.get("vout")[int(trx_in['vout'])])
+                if self.cache.balance_spent.has_key(addr):
+                    self.cache.balance_spent[addr].append(utxo_id)
+                else:
+                    self.cache.balance_spent[addr] = [utxo_id]
                 for t in ret1['result']['vout']:
                     if t['n'] == trx_in['vout']:
                         in_trx = {'address': self._get_vout_address(t), 'value': t['value']}
