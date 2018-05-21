@@ -225,7 +225,7 @@ class CollectBlockThread(threading.Thread):
                          {"key": self.config.SYNC_STATE_FIELD, "value": "true"})
         while self.stop_flag is False :
             self.latest_block_num = self._get_latest_block_num()
-            if  self.last_sync_block_num > self.latest_block_num :
+            if  self.last_sync_block_num >= self.latest_block_num :
                 self.sync_status = False
                 time.sleep(1)
                 continue
