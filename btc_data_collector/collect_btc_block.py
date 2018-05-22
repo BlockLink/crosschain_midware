@@ -309,10 +309,10 @@ class BTCCoinTxCollector(CoinTxCollector):
         self._update_cache()
         self.collect_thread = CollectBlockThread(self.db, self.config, self.wallet_api,self.sync_status)
         self.collect_thread.start()
-
         count = 0
         last_block = 0
         while self.stop_flag is False:
+
             count += 1
             block = q.get()
             if last_block >= block.block_num:
@@ -327,11 +327,13 @@ class BTCCoinTxCollector(CoinTxCollector):
                 logging.debug("Transaction: %s" % trx_data)
                 pretty_trx_info = self.collect_pretty_transaction(self.db, trx_data, block.block_num)
             self.sync_status = self.collect_thread.get_sync_status()
-            if count % 10 == 0 and self.sync_status:
-                logging.info(str(count) + " blocks processed, flush to db")
+            if  self.sync_status:
+                logging.debug(str(count) + " blocks processed, flush to db")
                 self.cache.flush_to_db(self.db)
             elif self.sync_status is False :
                 self.cache.flush_to_db(self.db)
+                self._update_cache()
+                time.sleep(2)
 
         self.collect_thread.stop()
         self.collect_thread.join()
