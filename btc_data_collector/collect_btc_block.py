@@ -100,6 +100,8 @@ class CacheManager(object):
         withdraw_transaction = self.withdraw_transaction_cache
         deposit_transaction = self.deposit_transaction_cache
         self.utxo_flush_cache = self.utxo_cache
+        balance_unspent = self.balance_unspent
+        balance_spent = self.balance_spent
         if self.flush_thread is not None:
             self.flush_thread.join()
             self.flush_thread = None
@@ -120,8 +122,8 @@ class CacheManager(object):
                                               self.utxo_spend_cache,
                                               self.utxo_db_cache,
                                               self.sync_key,
-                                              self.balance_unspent,
-                                              self.balance_spent))
+                                              balance_unspent,
+                                              balance_spent))
         self.flush_thread.start()
         self.block_cache = []
         self.raw_transaction_cache = []
@@ -152,22 +154,28 @@ class CacheManager(object):
             utxo_db.Write(batch, sync=True)
         except Exception,ex:
             print "flush db", ex
-
+        bulk_unspent = db.b_balance_unspent.initialize_ordered_bulk_op();
+        bulk_spent = db.b_balance_spent.initialize_ordered_bulk_op();
         #Flush balance to mongodb.
         for addr,value in balance_unspent.items() :
-            record = db.b_balance_unspent.find_one_and_update({"chainId": symbol.lower(), "address": addr},
-                                                      {"$addToSet": {"trxdata": {"$each": value}}},
-                                                      {"chainId": 1})
-            if record is not None:
-                continue
-            db.b_balance_unspent.insert({'chainId': symbol.lower() , 'address': addr,"trxdata":value})
+            record = db.b_balance_unspent.find_one({"chainId": symbol.lower(), "address": addr},{"_id":0,"chainId": 1})
+            if record is None:
+                bulk_unspent.insert({'chainId': symbol.lower(), 'address': addr, "trxdata": value})
+            else:
+                bulk_unspent.find({"chainId": symbol.lower(), "address": addr}).update_one(
+                                                         {"$addToSet": {"trxdata": {"$each": value}}})
+        if len(balance_unspent):
+            bulk_unspent.execute()
         for addr,value in balance_spent.items() :
-            record = db.b_balance_spent.find_one_and_update({"chainId": symbol.lower(), "address": addr},
-                                                      {"$addToSet": {"trxdata": {"$each": value}}},
-                                                      {"chainId": 1})
-            if record is not None:
-                continue
-            db.b_balance_spent.insert({'chainId': symbol.lower() , 'address': addr,"trxdata":value})
+            record = db.b_balance_spent.find_one({"chainId": symbol.lower(), "address": addr},
+                                                   {"_id": 0, "chainId": 1})
+            if record is None:
+                bulk_spent.insert({'chainId': symbol.lower(), 'address': addr, "trxdata": value})
+            else:
+                bulk_spent.find({"chainId": symbol.lower(), "address": addr}).update_one(
+                    {"$addToSet": {"trxdata": {"$each": value}}})
+        if len(balance_spent):
+            bulk_spent.execute()
         #Update sync block number finally.
         db.b_config.update({"key": sync_key}, {
             "$set": {"key": sync_key, "value": str(block_num)}})
@@ -233,7 +241,7 @@ class CollectBlockThread(threading.Thread):
                 # 获取当前链上最新块号
                 logging.debug("latest_block_num: %d, last_sync_block_num: %d" %
                               (self.latest_block_num, self.last_sync_block_num))
-                if q.qsize() > 100:
+                if q.qsize() > 10:
                     logging.info(q.qsize())
                     time.sleep(1)
                     continue

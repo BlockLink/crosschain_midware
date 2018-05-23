@@ -31,8 +31,11 @@ if (db.auth("dbAdmin", "admin12#$%") != 1) {
     db.createCollection("b_withdraw_transaction");
     db.createCollection("b_exchange_contracts");
     db.createCollection("b_fee_providers");
-
+    db.createCollection("b_balance_unspent")
+    db.createCollection("b_balance_spent")
     db.b_chain_account.ensureIndex({"chainId": 1, "address": 1}, {"unique": true});
+    db.b_balance_unspent.ensureIndex({"chainId": 1, "address": 2});
+    db.b_balance_spent.ensureIndex({"chainId": 1, "address": 2});
     db.s_user.ensureIndex({'email': 1}, {"unique": true});
     db.s_user.ensureIndex({'username': 1}, {"unique": true});
     db.b_block.ensureIndex({'chainId': 1});
