@@ -1,9 +1,18 @@
 # -*- coding: utf-8 -*-
 
+import os
 from service import jsonrpc
-from config import logger
+from config import logger, config
 from utils import error_utils
+from flask import Flask, send_from_directory
+from . import app
 from datetime import datetime
+
+
+@app.route("/download/<filename>", methods=['GET'])
+def download_file(filename):
+    filePath = os.path.join(config['DOWNLOAD_PATH'], filename)
+    return app.send_static_file(filePath)
 
 
 @jsonrpc.method('Client.Upgrade.checkNewVersion(clientId=str, localVersion=str)')
@@ -14,10 +23,8 @@ def client_upgrade_check_new_version(clientId, localVersion):
     if type(localVersion) != unicode:
         return error_utils.mismatched_parameter_type('localVersion', 'STRING')
 
+
     return {
         'clientId': clientId,
-        'latestVersion': "1.0.5",
-        'hasNewVersion': True,
-        'downloadUrl': "",
-        'checksum': ""
+        'downloadUrl': "/download/blocklink_wallet_upgrade.xml"
     }
