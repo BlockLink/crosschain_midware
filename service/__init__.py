@@ -37,3 +37,4 @@ for value in sim_btc_utils_all:
         sim_btc_plugin[value] = sim_btc_utils(value, sim_btc_config)
 
 from service import sim_api
+from service import client_api
