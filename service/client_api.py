@@ -11,8 +11,7 @@ from datetime import datetime
 
 @app.route("/download/<filename>", methods=['GET'])
 def download_file(filename):
-    filePath = os.path.join(config['DOWNLOAD_PATH'], filename)
-    return app.send_static_file(filePath)
+    return send_from_directory(app.config["DOWNLOAD_PATH"], filename, as_attachment=True)
 
 
 @jsonrpc.method('Client.Upgrade.checkNewVersion(clientId=str, localVersion=str)')
