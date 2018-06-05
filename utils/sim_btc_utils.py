@@ -98,9 +98,9 @@ class sim_btc_utils:
     
 
     def sim_btc_get_transaction(self, trxid):
-        resp = self.http_request("getrawtransaction", [trxid])
+        resp = self.http_request("getrawtransaction", [trxid,True])
         if resp["result"] != None:
-            return self.sim_btc_decode_hex_transaction(resp["result"])
+            return resp["result"]
         return ""
     def sim_btc_import_addr(self, addr):
         self.http_request("importaddress",[addr,"",False])
