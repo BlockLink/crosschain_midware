@@ -6,6 +6,7 @@ from utils import eth_utils
 from utils import etp_utils
 from service import db
 from service import sim_btc_plugin
+from service import hc_plugin
 from utils import error_utils
 import pymongo
 from datetime import datetime
@@ -20,6 +21,8 @@ def zchain_crypt_sign(chainId, addr, message):
     signed_message = ""
     if sim_btc_plugin.has_key(chainId):
         signed_message = sim_btc_plugin[chainId].sim_btc_sign_message(addr, message)
+    elif chainId == "hc":
+        signed_message = hc_plugin.hc_sign_message(addr, message)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -41,6 +44,8 @@ def zchain_Trans_sign(chainId,addr, trx_hex, redeemScript):
     signed_trx = ""
     if sim_btc_plugin.has_key(chainId):
         signed_trx = sim_btc_plugin[chainId].sim_btc_sign_transaction(addr, redeemScript,trx_hex)
+    elif chainId == "hc":
+        signed_trx = hc_plugin.hc_sign_transaction(addr, redeemScript,trx_hex)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -62,6 +67,8 @@ def zchain_trans_broadcastTrx(chainId, trx):
     result = ""
     if sim_btc_plugin.has_key(chainId):
         result = sim_btc_plugin[chainId].sim_btc_broadcaset_trx(trx)
+    elif chainId == "hc":
+        result = hc_plugin.hc_broadcaset_trx(trx)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -81,6 +88,8 @@ def zchain_addr_importaddr(chainId, addr):
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
     if sim_btc_plugin.has_key(chainId):
         sim_btc_plugin[chainId].sim_btc_import_addr(addr)
+    elif chainId == "hc":
+        hc_plugin.hc_import_addr(addr)
     else:
         return error_utils.invalid_chainid_type()
     return {
@@ -120,6 +129,8 @@ def zchain_trans_createTrx(chainId, from_addr,dest_info):
     result = {}
     if sim_btc_plugin.has_key(chainId):
         result = sim_btc_plugin[chainId].sim_btc_create_transaction(from_addr,dest_info)
+    elif chainId == "hc":
+        result = hc_plugin.hc_create_transaction(from_addr, dest_info)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -142,6 +153,8 @@ def zchain_trans_CombineTrx(chainId, transactions):
     result = ""
     if sim_btc_plugin.has_key(chainId):
         result = sim_btc_plugin[chainId].sim_btc_combine_trx(transactions)
+    elif chainId == "hc":
+        result = hc_plugin.hc_combine_trx(transactions)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -164,6 +177,8 @@ def zchain_trans_decodeTrx(chainId, trx_hex):
     result = ""
     if sim_btc_plugin.has_key(chainId):
         result = sim_btc_plugin[chainId].sim_btc_decode_hex_transaction(trx_hex)
+    elif chainId == "hc":
+        result = hc_plugin.hc_decode_hex_transaction(trx_hex)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -186,6 +201,8 @@ def zchain_trans_queryTrx(chainId, trxid):
     result = ""
     if sim_btc_plugin.has_key(chainId):
         result = sim_btc_plugin[chainId].sim_btc_get_transaction(trxid)
+    elif chainId == "hc":
+        result = hc_plugin.hc_get_transaction(trxid)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -207,6 +224,8 @@ def zchain_trans_getTrxOuts(chainId, addr):
     result = False
     if sim_btc_plugin.has_key(chainId):
         result = sim_btc_plugin[chainId].sim_btc_query_tx_out(addr)
+    elif chainId == "hc":
+        result = hc_plugin.hc_query_tx_out(addr)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -226,6 +245,8 @@ def zchain_crypt_verify_message(chainId, addr, message, signature):
     result = False
     if sim_btc_plugin.has_key(chainId):
         result = sim_btc_plugin[chainId].sim_btc_verify_signed_message(addr, message, signature)
+    elif chainId == "hc":
+        result = hc_plugin.hc_verify_signed_message(addr, message, signature)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -258,6 +279,16 @@ def zchain_multisig_create(chainId, addrs, amount):
                 db.get_collection("b_"+chainId+"_multisig_address").remove({"address": address})
             data = {"address": address, "redeemScript": redeemScript, "addr_type":0}
             db.get_collection("b_"+chainId+"_multisig_address").insert_one(data)
+    elif chainId == "hc":
+        result = hc_plugin.hc_create_multisig(addrs, amount)
+        if result is not None:
+            address = result["address"]
+            redeemScript = result["redeemScript"]
+            mutisig_record = db.get_collection("b_hc_multisig_address").find_one({"address": address})
+            if mutisig_record is not None:
+                db.get_collection("b_hc_multisig_address").remove({"address": address})
+            data = {"address": address, "redeemScript": redeemScript, "addr_type":0}
+            db.get_collection("b_hc_multisig_address").insert_one(data)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -277,6 +308,8 @@ def zchain_address_validate(chainId,addr):
     result = None
     if sim_btc_plugin.has_key(chainId):
         result = sim_btc_plugin[chainId].sim_btc_validate_address(addr)
+    elif chainId == "hc":
+        result = hc_plugin.hc_validate_address(addr)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -310,6 +343,16 @@ def zchain_multisig_add(chainId, addrs, amount, addrType):
                 data = {"address": addr_info["address"], "redeemScript": addr_info["hex"], "addr_type": addrType}
                 db.get_collection("b_"+chainId+"_multisig_address").insert_one(data)
                 address = addr_info["address"]
+    elif chainId == "hc":
+        multisig_addr = hc_plugin.hc_add_multisig(addrs, amount)
+        if multisig_addr is not None:
+            addr_info = hc_plugin.hc_validate_address(multisig_addr)
+            if addr_info is not None:
+                multisig_record = db.get_collection("b_hc_multisig_address").find_one({"address": multisig_addr})
+                if multisig_record is not None:
+                    db.get_collection("b_hc_multisig_address").remove({"address": multisig_addr})
+                data = {"address": addr_info["address"], "redeemScript": addr_info["hex"], "addr_type": addrType}
+                db.get_collection("b_hc_multisig_address").insert_one(data)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -407,6 +450,8 @@ def zchain_address_create(chainId):
         address = eth_utils.eth_create_address()
     elif sim_btc_plugin.has_key(chainId):
         address = sim_btc_plugin[chainId].sim_btc_create_address()
+    elif chainId == "hc":
+        address = hc_plugin.hc_create_address()
     else:
         return error_utils.invalid_chainid_type(chainId)
     if address != "":
@@ -458,6 +503,10 @@ def zchain_withdraw_getinfo(chainId):
             address = sim_btc_plugin[chainId].sim_btc_create_withdraw_address()
             sim_btc_plugin.sim_btc_backup_wallet()
             records["value"].append({"chainId": chainId, "address": address})
+        elif chainId == "hc":
+            address = hc_plugin.hc_create_withdraw_address()
+            hc_plugin.hc_backup_wallet()
+            records["value"].append({"chainId": chainId, "address": address})
         elif chainId == "etp":
             address = etp_utils.etp_create_withdraw_address()
             records["value"].append({"chainId": "etp", "address": address})
@@ -467,6 +516,8 @@ def zchain_withdraw_getinfo(chainId):
         balance = eth_utils.eth_get_base_balance(address)
     elif sim_btc_plugin.has_key(chainId):
         balance = sim_btc_plugin.sim_btc_get_withdraw_balance()
+    elif chainId == "hc":
+         balance = hc_plugin.hc_get_withdraw_balance()
     elif chainId == "etp":
         balance = etp_utils.etp_get_addr_balance(address)
     else:
