@@ -10,7 +10,7 @@ class hc_utils:
         self.config = conf
 
     def http_request(self, method, args):
-        url = "http://%s:%s" % (self.config["host"], self.config["port"])
+        url = "https://%s:%s" % (self.config["host"], self.config["port"])
         #print(url)
         user = 'a'
         passwd = 'b'
@@ -23,7 +23,9 @@ class hc_utils:
             'cache-control': "no-cache",
         }
         #print(payload)
-        response = requests.request("POST", url, data=payload, headers=headers)
+        #response = requests.request("POST", url, data=payload, headers=headers)
+        requests.packages.urllib3.disable_warnings()
+        response = requests.request("POST", url, data=payload, headers=headers, verify=False)
         rep = response.json()
         #print(rep)
         return rep
