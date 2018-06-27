@@ -157,6 +157,7 @@ class CacheManager(object):
         bulk_unspent = db.b_balance_unspent.initialize_ordered_bulk_op();
         bulk_spent = db.b_balance_spent.initialize_ordered_bulk_op();
         #Flush balance to mongodb.
+        nCount=0
         for addr,value in balance_unspent.items() :
             record = db.b_balance_unspent.find_one({"chainId": symbol.lower(), "address": addr},{"_id":0,"chainId": 1})
             if record is None:
@@ -164,8 +165,13 @@ class CacheManager(object):
             else:
                 bulk_unspent.find({"chainId": symbol.lower(), "address": addr}).update_one(
                                                          {"$addToSet": {"trxdata": {"$each": value}}})
+            nCount+=1
+            if nCount == 30 :
+                bulk_unspent.execute()
+                nCount = 0
         if len(balance_unspent):
             bulk_unspent.execute()
+            nCount=0
         for addr,value in balance_spent.items() :
             record = db.b_balance_spent.find_one({"chainId": symbol.lower(), "address": addr},
                                                    {"_id": 0, "chainId": 1})
@@ -174,8 +180,13 @@ class CacheManager(object):
             else:
                 bulk_spent.find({"chainId": symbol.lower(), "address": addr}).update_one(
                     {"$addToSet": {"trxdata": {"$each": value}}})
+            nCount += 1
+            if nCount == 30:
+                bulk_unspent.execute()
+                nCount = 0
         if len(balance_spent):
             bulk_spent.execute()
+            nCount = 0
         #Update sync block number finally.
         db.b_config.update({"key": sync_key}, {
             "$set": {"key": sync_key, "value": str(block_num)}})
