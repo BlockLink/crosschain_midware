@@ -154,7 +154,7 @@ class CacheManager(object):
             utxo_db.Write(batch, sync=True)
         except Exception,ex:
             print "flush db", ex
-        bulk_unspent = db.b_balance_unspent.initialize_ordered_bulk_op();
+        bulk_unspent = db.b_balance_unspent.initialize_ordered_bulk_op()
         bulk_spent = db.b_balance_spent.initialize_ordered_bulk_op();
         #Flush balance to mongodb.
         nCount=0
@@ -168,6 +168,7 @@ class CacheManager(object):
             nCount+=1
             if nCount == 30 :
                 bulk_unspent.execute()
+                bulk_unspent = db.b_balance_unspent.initialize_ordered_bulk_op()
                 nCount = 0
         if len(balance_unspent):
             bulk_unspent.execute()
@@ -182,7 +183,8 @@ class CacheManager(object):
                     {"$addToSet": {"trxdata": {"$each": value}}})
             nCount += 1
             if nCount == 30:
-                bulk_unspent.execute()
+                bulk_spent.execute()
+                bulk_spent = db.b_balance_unspent.initialize_ordered_bulk_op()
                 nCount = 0
         if len(balance_spent):
             bulk_spent.execute()
