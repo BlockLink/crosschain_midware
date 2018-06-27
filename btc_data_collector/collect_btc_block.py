@@ -170,7 +170,7 @@ class CacheManager(object):
                 bulk_unspent.execute()
                 bulk_unspent = db.b_balance_unspent.initialize_ordered_bulk_op()
                 nCount = 0
-        if len(balance_unspent):
+        if nCount != 0:
             bulk_unspent.execute()
             nCount=0
         for addr,value in balance_spent.items() :
@@ -186,7 +186,7 @@ class CacheManager(object):
                 bulk_spent.execute()
                 bulk_spent = db.b_balance_unspent.initialize_ordered_bulk_op()
                 nCount = 0
-        if len(balance_spent):
+        if nCount != 0:
             bulk_spent.execute()
             nCount = 0
         #Update sync block number finally.
