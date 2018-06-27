@@ -276,7 +276,10 @@ class CollectBlockThread(threading.Thread):
         if ret1['result'] == None:
             raise Exception("blockchain_get_block error")
         block_hash = ret1['result']
-        ret2 = self.wallet_api.http_request("getblock", [str(block_hash), 2])
+        if self.config.ASSET_SYMBOL == "HC":
+            ret2 = self.wallet_api.http_request("getblock", [str(block_hash)])
+        else:
+            ret2 = self.wallet_api.http_request("getblock", [str(block_hash), 2])
         if ret2['result'] == None:
             raise Exception("blockchain_get_block error")
         json_data = ret2['result']
@@ -344,6 +347,10 @@ class BTCCoinTxCollector(CoinTxCollector):
             # Process each transaction
             for trx_data in block.transactions:
                 logging.debug("Transaction: %s" % trx_data)
+                if self.config.ASSET_SYMBOL == "HC":
+                    if block.block_num == 0:
+                        continue
+                    trx_data = self.get_transaction_data(trx_data)
                 pretty_trx_info = self.collect_pretty_transaction(self.db, trx_data, block.block_num)
             self.sync_status = self.collect_thread.get_sync_status()
             if  self.sync_status:
@@ -412,7 +419,10 @@ class BTCCoinTxCollector(CoinTxCollector):
             if in_trx is None:
                 logging.info(
                     "Fail to get vin transaction [%s:%d] of [%s]" % (trx_in["txid"], trx_in['vout'], trx_data["trxid"]))
-                ret1 = self.wallet_api.http_request("getrawtransaction", [trx_in['txid'], True])
+                if self.config.ASSET_SYMBOL == "HC":
+                    ret1 = self.wallet_api.http_request("getrawtransaction", [trx_in['txid'], 2])
+                else:
+                    ret1 = self.wallet_api.http_request("getrawtransaction", [trx_in['txid'], True])
                 if not ret1.has_key('result'):
                     logging.error("Fail to get vin transaction [%s:%d] of [%s]" % (trx_in["txid"], trx_in['vout'], trx_data["trxid"]))
                     exit(0)
@@ -438,7 +448,6 @@ class BTCCoinTxCollector(CoinTxCollector):
                 else:
                     if multisig_in_addr != in_address:
                         is_valid_tx = False
-
         for trx_out in vout:
             # Update UBXO cache
             if trx_out["scriptPubKey"]["type"] == "nonstandard":
@@ -450,7 +459,6 @@ class BTCCoinTxCollector(CoinTxCollector):
                 self.cache.add_utxo(
                     self._cal_UTXO_prefix(base_trx_data["txid"], trx_out["n"]),
                     {"address": address, "value": 0 if (not trx_out.has_key("value")) else trx_out["value"]})
-
             # Check vout
             if trx_out["scriptPubKey"].has_key("addresses"):
                 out_address = trx_out["scriptPubKey"]["addresses"][0]
@@ -491,7 +499,6 @@ class BTCCoinTxCollector(CoinTxCollector):
 
         #trx_data["trxTime"] = datetime.utcfromtimestamp(base_trx_data['time']).strftime("%Y-%m-%d %H:%M:%S")
         #trx_data["createtime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
         if trx_data['type'] == 2 or trx_data['type'] == 0:
             deposit_data = {
                 "txid": base_trx_data["txid"],

@@ -107,6 +107,18 @@ if (db.auth("dbAdmin", "admin12#$%") != 1) {
         'key': 'ubsyncstate',
         'value': 'false'
     });
+     db.b_config.insert({
+        'key': 'hcsyncblocknum',
+        'value': '0'
+    });
+    db.b_config.insert({
+        'key': 'hcsafeblock',
+        'value': '2'
+    });
+    db.b_config.insert({
+        'key': 'hcsyncstate',
+        'value': 'false'
+    });
     db.b_config.insert({
         'key': 'etpsyncblocknum',
         'value': '0'

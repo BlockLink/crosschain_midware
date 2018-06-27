@@ -43,6 +43,9 @@ class DevelopmentConfig(Config):
     ETP_URL = 'etp_wallet'
     LTC_HOST = 'btc_wallet'
     LTC_PORT = 60011
+    HC_HOST = "127.0.0.1"
+    HC_PORT = 19012
+    HC_FEE = 0.001
 
 
 class DaConfig(Config):
@@ -60,6 +63,9 @@ class DaConfig(Config):
     MONGO_PORT = 27017
     MONGO_PASS = 'yqr.1010'
     MONGO_NAME = 'chaindb'
+    HC_HOST = "127.0.0.1"
+    HC_PORT = 19012
+    HC_FEE = 0.001
 
 
 

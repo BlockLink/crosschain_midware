@@ -55,6 +55,14 @@ class UBCollectorConfig(CollectorConfig):
     SYNC_STATE_FIELD = "ubsyncstate"
     SYNC_BLOCK_NUM = "ubsyncblocknum"
     SAFE_BLOCK_FIELD = "ubsafeblock"
+class HCCollectorConfig(CollectorConfig):
+    ASSET_SYMBOL = "HC"
+    RPC_HOST = '127.0.0.1'
+    RPC_PORT = 19012
+    SYNC_STATE_FIELD = "hcsyncstate"
+    SYNC_BLOCK_NUM = "hcsyncblocknum"
+    SAFE_BLOCK_FIELD = "hcsafeblock"
+    MULTISIG_VERSION = 196
 
 
 

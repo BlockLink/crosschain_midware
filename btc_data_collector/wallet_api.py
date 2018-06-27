@@ -10,7 +10,10 @@ class WalletApi:
         self.config = conf
 
     def http_request(self, method, args):
-        url = "http://%s:%s" % (self.config["host"], self.config["port"])
+        if self.name == 'HC':
+            url = "https://%s:%s" % (self.config["host"], self.config["port"])
+        else:
+            url = "http://%s:%s" % (self.config["host"], self.config["port"])
         user = 'a'
         passwd = 'b'
         basestr = encodestring('%s:%s' % (user, passwd))[:-1]
@@ -21,6 +24,10 @@ class WalletApi:
             'authorization': "Basic %s" % (basestr),
             'cache-control': "no-cache",
         }
-        response = requests.request("POST", url, data=payload, headers=headers)
+        if self.name == "HC":
+            requests.packages.urllib3.disable_warnings()
+            response = requests.request("POST", url, data=payload, headers=headers, verify=False)
+        else:
+            response = requests.request("POST", url, data=payload, headers=headers)
         rep = response.json()
         return rep
