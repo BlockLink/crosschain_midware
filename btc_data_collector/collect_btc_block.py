@@ -184,7 +184,7 @@ class CacheManager(object):
             nCount += 1
             if nCount == 30:
                 bulk_spent.execute()
-                bulk_spent = db.b_balance_unspent.initialize_ordered_bulk_op()
+                bulk_spent = db.b_balance_spent.initialize_ordered_bulk_op()
                 nCount = 0
         if nCount != 0:
             bulk_spent.execute()

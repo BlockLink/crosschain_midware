@@ -2,7 +2,9 @@
 import requests
 import json
 from base64 import encodestring
+import logging
 
+logging.getLogger("requests").setLevel(logging.WARNING)
 
 class WalletApi:
     def __init__(self, name, conf):
