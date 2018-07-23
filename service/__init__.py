@@ -25,7 +25,7 @@ client = MongoClient(app.config['MONGO_HOST'], app.config['MONGO_PORT'])
 client[app.config['MONGO_NAME']].authenticate(app.config['MONGO_USER'], app.config['MONGO_PASS'])
 
 db = client[app.config['MONGO_NAME']]
-sim_btc_utils_all = ["btc", "ltc", "ub"]
+sim_btc_utils_all = ["btc", "ltc", "ub","hc"]
 sim_btc_plugin = {}
 for value in sim_btc_utils_all:
     upper = value.upper()
