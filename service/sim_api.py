@@ -561,14 +561,18 @@ def zchain_address_get_balance(chainId, addr):
         pos2 = id.find('I')
         index = id[pos2 + 1:]
         id = id[0:pos2]
-        result = sim_btc_plugin[chainId].sim_btc_get_transaction(id)
+        result = ""
+        if sim_btc_plugin.has_key(chainId):
+            result = sim_btc_plugin[chainId].sim_btc_get_transaction(id)
+        elif chainId == "hc":
+            result = hc_plugin.hc_get_transaction(id)
         if result is "":
             continue
         vout = round(float(result.get("vout")[int(index)].get("value")), 8)
         balance = round(vout + balance, 8)
 
     return {
-            'chainId': chainId,
-            'address': addr,
-            'balance': balance
-        }
+        'chainId': chainId,
+        'address': addr,
+        'balance': balance
+    }
