@@ -429,6 +429,8 @@ class BTCCoinTxCollector(CoinTxCollector):
                     logging.error("Fail to get vin transaction [%s:%d] of [%s]" % (trx_in["txid"], trx_in['vout'], trx_data["trxid"]))
                     exit(0)
                 addr =  self._get_vout_address(ret1.get("result").get("vout")[int(trx_in['vout'])])
+                if addr == "" :
+                    continue
                 if self.cache.balance_spent.has_key(addr):
                     self.cache.balance_spent[addr].append(utxo_id)
                 else:
@@ -543,7 +545,7 @@ class BTCCoinTxCollector(CoinTxCollector):
         else:
             if not vout_data["scriptPubKey"].has_key("addresses"):
                 #ToDo: OP_ADD and other OP_CODE may add exectuing function
-                raise vout_data
+                return ""
             elif len(vout_data["scriptPubKey"]["addresses"]) > 1:
                 logging.error("error data: ", vout_data)
                 pass
