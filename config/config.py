@@ -46,6 +46,8 @@ class DevelopmentConfig(Config):
     HC_HOST = "127.0.0.1"
     HC_PORT = 19012
     HC_FEE = 0.001
+    QUERY_SERVICE_HOST = "192.168.1.142"
+    QUERY_SERVICE_PORT = 5444
 
 
 class DaConfig(Config):
