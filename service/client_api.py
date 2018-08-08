@@ -9,7 +9,7 @@ from . import app
 from datetime import datetime
 
 
-@app.route("/download/<filename>", methods=['GET'])
+@app.route("/download/<path:filename>", methods=['GET'])
 def download_file(filename):
     return send_from_directory(app.config["DOWNLOAD_PATH"], filename, as_attachment=True)
 
