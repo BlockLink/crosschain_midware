@@ -3,6 +3,7 @@
 import requests
 import json
 from base64 import encodestring
+from service import db
 
 class hc_utils:
     def __init__(self, name, conf):
@@ -92,12 +93,41 @@ class hc_utils:
         if resp["result"] != None:
             return self.hc_decode_hex_transaction(resp["result"])
         return ""
+
+    def sim_hc_get_trx_out(self, addr):
+        result = []
+        chainId = self.name.lower()
+        record_unspent = db.b_balance_unspent.find_one({'chainId': chainId, 'address': addr})
+        if record_unspent is None:
+            return result
+        trx_unspent = record_unspent.get("trxdata")
+        trx_spent = []
+        record_spent = db.b_balance_spent.find_one({'chainId': chainId, 'address': addr})
+        if record_spent is not None:
+            trx_spent = record_spent.get("trxdata")
+        unspent = []
+        for trx in trx_unspent:
+            if trx not in trx_spent:
+                unspent.append(trx)
+        for id in unspent:
+            pos1 = len(chainId)
+            id = id[pos1:]
+            pos2 = id.find('I')
+            index = id[pos2 + 1:]
+            id = id[0:pos2]
+            tx = self.hc_get_transaction(id)
+            vout = round(float(tx.get("vout")[int(index)].get("value")), 8)
+            scriptPubKey = tx.get("vout")[int(index)].get("scriptPubKey").get("hex")
+            result.append({"amount": vout, "txid": id, "vout": index, "scriptPubKey": scriptPubKey})
+        return result
+
+
     def hc_import_addr(self, addr):
         self.http_request("importaddress", [addr, False])
 
     def hc_create_transaction(self, from_addr, dest_info):
         txout = self.hc_query_tx_out(from_addr)
-        if txout == None:
+        if len(txout) == 0:
             return ""
         sum = 0.0
         vin_need = []
