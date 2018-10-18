@@ -94,7 +94,7 @@ class hc_utils:
             return self.hc_decode_hex_transaction(resp["result"])
         return ""
 
-    def sim_hc_get_trx_out(self, addr):
+    def hc_get_trx_out(self, addr):
         result = []
         chainId = self.name.lower()
         record_unspent = db.b_balance_unspent.find_one({'chainId': chainId, 'address': addr})
@@ -126,7 +126,7 @@ class hc_utils:
         self.http_request("importaddress", [addr, False])
 
     def hc_create_transaction(self, from_addr, dest_info):
-        txout = self.hc_query_tx_out(from_addr)
+        txout = self.hc_get_trx_out(from_addr)
         if len(txout) == 0:
             return ""
         sum = 0.0
