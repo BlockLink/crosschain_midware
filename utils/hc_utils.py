@@ -3,7 +3,8 @@
 import requests
 import json
 from base64 import encodestring
-from service import db
+from config import Db
+db =Db
 
 class hc_utils:
     def __init__(self, name, conf):

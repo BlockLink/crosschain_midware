@@ -4,8 +4,8 @@ import requests
 import json
 from base64 import encodestring
 from service import logger
-from service import db
-
+from config import Db
+db = Db
 class sim_btc_utils:
     def __init__(self, name, conf):
         self.name = name
