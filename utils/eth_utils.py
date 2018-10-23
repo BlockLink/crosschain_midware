@@ -15,18 +15,19 @@ import traceback
 temp_config = config["development"]
 
 def eth_request(method, args):
-    url = "http://%s:%s/rpc" % (temp_config.ETH_URL, temp_config.ETH_PORT)
-    request_template = '''{"jsonrpc":"2.0","id":"1","method":"%s","params":%s}'''
+    url = "http://%s:%s" % (temp_config.ETH_URL, temp_config.ETH_PORT)
+    request_template = '''{"id":"1","method":"%s","params":%s}'''
     args_str = json.dumps(args)
     data_to_send = request_template % (method, args_str)
     print data_to_send
 
     payload = ""
     headers = {
-        'content-type': "application/x-www-form-urlencoded"
+        'Content-Type': "application/json"
     }
     response = requests.request("POST", url, data=data_to_send, headers=headers)
     test = response.text
+    print test
     response.close()
     return response.text
 
@@ -148,8 +149,88 @@ def eth_send_transaction(from_address,to_address,value,gasPrice="0x1dcd6500",gas
         return ""
     else:
         return json_data.get("result")
+def get_contract_address(trxId):
+    ret = eth_request("Service.GetTrxReceipt", [trxId])
+    if json.loads(ret).get("result") != None:
+        receipt = json.loads(ret).get("result")
+        return receipt["contractAddress"]
+    else:
+        return ''
+def checkHex(ch):
+    if ch >='0'and ch<='9':
+        return True
+    if ch >='A'and ch<='F':
+        return True
+    if ch >='a'and ch<='f':
+        return True
+    return False
+def eth_validate_address(addr):
+    if len(addr) != 42:
+        return False
+    ret = True
+    i = 0
+    for item in addr:
+        if i == 0:
+            if item != '0':
+                ret = False
+                break
+        if i == 1:
+            if item != 'x':
+                ret = False
+                break
+        if i > 1:
+            if checkHex(item) == False:
+                ret = False
+                break
+        i = i+1
+    return ret
+def eth_get_address_balance(address,chainId):
+    if chainId == "eth":
+        real_precision = 18
+        ret = eth_request("Service.GetNormalBalance", [address])
+    elif 'erc' in chainId:
+        contract_addr = address['contract_addr']
+        addr = address['addr']
+        real_precision = address['precison']
+        ret = eth_request("Service.GetErc20Balance", [[contract_addr,addr]])
+        print ret
+    json_data = json.loads(ret)
+    if json_data.get("result") is None:
+        return '0'
+    else:
+        return str(float(int(json_data.get("result"), 16)) / pow(10, int(real_precision)))
+def eth_get_trx_count(address,indexFormat):
+    ret = eth_request("Service.GetTransactionCount",[[address,indexFormat]])
+    json_data = json.loads(ret)
+    if json_data.get("result") is None:
+        return {}
+    else:
+        return json_data.get("result")
 
+def add_guard_address(addr):
+    if "erc" in addr:
+        pos = addr.find("erc")
+        handle_addr = addr[0:pos]
+        eth_request("Service.AddNormalAddress",[handle_addr])
+        eth_request("Service.AddErc20Address",[handle_addr])
+    else:
+        eth_request("Service.AddNormalAddress", [addr])
+def eth_send_raw_transaction(param):
+    ret = eth_request("Service.BroadcastRawTransaction",[param])
+    json_data = json.loads(ret)
+    print ret
+    if json_data.get("result") is None:
+        return ''
+    else:
+        return json_data.get("result")
+def eth_verify_signed_message(addr, message, signature):
+    ret = eth_request("Service.Personal_ecRecover",[[message,signature]])
+    json_data = json.loads(ret)
+    if json_data.get("result") != None:
+        return json_data['result'].upper() == addr.upper()
 
+    else:
+        return False
 def get_latest_block_num():
     ret = eth_request("eth_blockNumber",[])
     json_data = json.loads(ret)
@@ -219,12 +300,9 @@ def eth_get_collect_money(accountList):
 
 
 if __name__ == '__main__':
+    add_guard_address("0x66c69ce0515edbd2ed7f299fb05a25065c3608d7erc")
     # get_account_list_from_wallet()
     # eth_create_address()
     # get_account_list_from_db()
     # eth_collect_money(2,"0x085aa94b764316d5e608335d13d926c6c6911e56")
-    account = "0x268be647f2fa7134486cf34121c7cba15fea994e"
-    cash_sweep_account = "0xaf5d9e0b647d775a2f951bc4b34b84f6a301f381"
-
-    eth_send_transaction(account,"0x3feae514dfe11a5b009898bb9e22403515768afa",0.5)
 

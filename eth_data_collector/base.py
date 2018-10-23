@@ -38,6 +38,8 @@ FOREVER_STATE = 2
 
 
 class GlobalVariable(object):
+    contract_account = []
+    guard_account = []
     last_sync_block_num = 0
     sync_start_per_round = 0
     sync_end_per_round = 0

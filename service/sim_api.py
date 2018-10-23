@@ -56,7 +56,21 @@ def zchain_Trans_sign(chainId,addr, trx_hex, redeemScript):
         'chainId': chainId,
         'data': signed_trx
     }
+@jsonrpc.method('Zchain.Addr.GetAddErc(chainId=str)')
+def zchain_Addr_GetAddErc(chainId,addr,precison):
+    logger.info('Zchain.Addr.GetAddErc')
 
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+    asset = db.b_erc_address.find_one({"chainId": chainId})
+    if asset == None:
+        return {}
+    else:
+        return{
+            'chainId':asset['chainId'],
+            'address':asset['address'],
+            'precision':asset['precison']
+        }
 
 @jsonrpc.method('Zchain.Trans.broadcastTrx(chainId=str, trx=str)')
 def zchain_trans_broadcastTrx(chainId, trx):
@@ -69,6 +83,10 @@ def zchain_trans_broadcastTrx(chainId, trx):
         result = sim_btc_plugin[chainId].sim_btc_broadcaset_trx(trx)
     elif chainId == "hc":
         result = hc_plugin.hc_broadcaset_trx(trx)
+    elif chainId.lower() == "eth":
+        result = eth_utils.eth_send_raw_transaction(trx)
+    elif 'erc' in chainId.lower():
+        result = eth_utils.eth_send_raw_transaction(trx)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -90,6 +108,34 @@ def zchain_addr_importaddr(chainId, addr):
         sim_btc_plugin[chainId].sim_btc_import_addr(addr)
     elif chainId == "hc":
         hc_plugin.hc_import_addr(addr)
+    elif chainId.lower() == 'eth':
+        if "erc" in addr:
+            temp_chainId = chainId.lower()
+            pos = addr.find("erc")
+            handle_addr = addr[0:pos]
+            asset = db.b_eths_address.find_one({'chainId':temp_chainId,'address':handle_addr})
+            if asset == None:
+                db.b_eths_address.insert({'chainId': temp_chainId, 'address': handle_addr, 'isContractAddress': True})
+            else:
+                db.b_eths_address.update({'chainId': temp_chainId, 'address': handle_addr, 'isContractAddress': True})
+        else:
+            temp_chainId = chainId.lower()
+            asset = db.b_eths_address.find_one({'chainId': temp_chainId, 'address': addr})
+            if asset == None:
+                db.b_eths_address.insert({'chainId': temp_chainId, 'address': addr, 'isContractAddress': False})
+            else:
+                db.b_eths_address.update({'chainId': temp_chainId, 'address': addr, 'isContractAddress': False})
+        eth_utils.add_guard_address(addr)
+    elif ('erc' in chainId.lower()):
+        erc_asset = db.b_erc_address.find_one({"chainId":chainId})
+        if erc_asset != None:
+            if "erc" in addr:
+                pos = addr.find("erc")
+                handle_addr = addr[0:pos]
+                db.b_eths_address.insert({'chainId': chainId, 'address': handle_addr, 'isContractAddress': True})
+            else:
+                db.b_eths_address.insert({'chainId': chainId, 'address': addr, 'isContractAddress': False})
+            eth_utils.add_guard_address(addr)
     else:
         return error_utils.invalid_chainid_type()
     return {
@@ -119,7 +165,23 @@ def zchain_exchange_queryContracts(from_asset, to_asset, limit):
         'data': list(contracts)
     }
 
-
+@jsonrpc.method('Zchain.Trans.getEthTrxCount(chainId=str,addr=str,indexFormat=str)')
+def zchain_trans_getEthTrxCount(chainId, addr, indexFormat):
+    logger.info('Zchain.Trans.getEthTrxCount')
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+    chainId = chainId.lower()
+    result = {}
+    if 'erc' in chainId:
+        result = eth_utils.eth_get_trx_count(addr,indexFormat)
+    elif 'eth' == chainId:
+        result = eth_utils.eth_get_trx_count(addr, indexFormat)
+    else:
+        return error_utils.invalid_chainid_type()
+    if result == {}:
+        return error_utils.error_response("Cannot eth trx count.")
+    print result
+    return result
 @jsonrpc.method('Zchain.Trans.createTrx(chainId=str, from_addr=str,dest_info=dict)')
 def zchain_trans_createTrx(chainId, from_addr,dest_info):
     logger.info('Zchain.Trans.createTrx')
@@ -247,6 +309,10 @@ def zchain_crypt_verify_message(chainId, addr, message, signature):
         result = sim_btc_plugin[chainId].sim_btc_verify_signed_message(addr, message, signature)
     elif chainId == "hc":
         result = hc_plugin.hc_verify_signed_message(addr, message, signature)
+
+    elif (chainId == 'eth') or ('erc' in chainId):
+        print 1
+        result = eth_utils.eth_verify_signed_message(addr, message, signature)
     else:
         return error_utils.invalid_chainid_type()
 
@@ -310,6 +376,12 @@ def zchain_address_validate(chainId,addr):
         result = sim_btc_plugin[chainId].sim_btc_validate_address(addr)
     elif chainId == "hc":
         result = hc_plugin.hc_validate_address(addr)
+    elif chainId == "eth" or 'erc'in chainId:
+        result = eth_utils.eth_validate_address(addr)
+        return {
+            "chainId": chainId,
+            "valid": result
+        }
     else:
         return error_utils.invalid_chainid_type()
 
@@ -361,6 +433,35 @@ def zchain_multisig_add(chainId, addrs, amount, addrType):
         'data': address
     }
 
+@jsonrpc.method('Zchain.Transaction.GuardCall.History(chainId=str, account=str, blockNum=int, limit=int)')
+def zchain_transaction_guardcall_history(chainId,account ,blockNum, limit):
+    chainId = chainId.lower()
+    logger.info('Zchain.Transaction.GuardCall.History')
+    if type(chainId) != unicode:
+        return error_utils.mismatched_parameter_type('chainId', 'STRING')
+    if type(account) != unicode:
+        return error_utils.mismatched_parameter_type('account', 'STRING')
+    if type(blockNum) != int:
+        return error_utils.mismatched_parameter_type('blockNum', 'INTEGER')
+    if type(limit) != int:
+        return error_utils.mismatched_parameter_type('limit', 'INTEGER')
+
+    guardcallTrxs = db.b_guardcall_transaction.find({"chainId": chainId, "blockNum": {"$gte": blockNum}}, {"_id": 0}).sort(
+        "blockNum", pymongo.DESCENDING)
+    trxs = list(guardcallTrxs)
+    if len(trxs) == 0:
+        blockNum = 0
+    else:
+        blockNum = trxs[0]['blockNum']
+    return {
+        'chainId': chainId,
+        'blockNum': blockNum,
+        'data': trxs
+    }
+@jsonrpc.method('Zchain.Trans.getContractAddress(trxId=str)')
+def zchain_trans_get_contract_address(trxId):
+    logger.info('Zchain.Trans.getContractAddress')
+    return eth_utils.get_contract_address(trxId)
 
 @jsonrpc.method('Zchain.Transaction.Withdraw.History(chainId=str, account=str, blockNum=int, limit=int)')
 def zchain_transaction_withdraw_history(chainId,account ,blockNum, limit):
@@ -441,7 +542,7 @@ def zchain_configuration_set(chainId, key, value):
         }
 
 
-# TODO, 备份私钥功能暂时注释，正式上线要加回�?
+# TODO, 备份私钥功能暂时注释，正式上线要加回�?
 @jsonrpc.method('Zchain.Address.Create(chainId=String)')
 def zchain_address_create(chainId):
     chainId = chainId.lower()
@@ -476,7 +577,7 @@ def zchain_address_create(chainId):
 @jsonrpc.method('Zchain.Withdraw.GetInfo(chainId=str)')
 def zchain_withdraw_getinfo(chainId):
     """
-    查询提现账户的信�?
+    查询提现账户的信�?
     :param chainId:
     :return:
     """
@@ -533,7 +634,33 @@ def zchain_withdraw_getinfo(chainId):
 @jsonrpc.method('Zchain.Address.GetBalance(chainId=str, addr=str)')
 def zchain_address_get_balance(chainId, addr):
     logger.info('Zchain.Address.GetBalance')
-    chainId = chainId.lower()
+    chainIdLower = chainId.lower()
+    print chainId
+    print addr
+    if (chainIdLower == 'eth'):
+        result = eth_utils.eth_get_address_balance(addr, chainIdLower)
+        return {
+            'chainId': chainIdLower,
+            'address': addr,
+            'balance': result
+        }
+    elif ('erc' in chainIdLower):
+       print addr
+       asset = db.b_erc_address.find_one({"chainId": chainId})
+       if asset == None:
+           error_utils.invalid_chainid_type(chainId)
+
+       temp = {
+           'precison':asset['precison'],
+           'addr':addr,
+           'contract_addr':asset['address']
+       }
+       result = eth_utils.eth_get_address_balance(temp,chainIdLower)
+       return {
+           'chainId': chainId,
+           'address': addr,
+           'balance': result
+       }
     record_unspent = db.b_balance_unspent.find_one({'chainId': chainId, 'address': addr})
     trx_unspent=[]
     trx_spent = []
