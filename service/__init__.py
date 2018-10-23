@@ -5,26 +5,17 @@ monkey.patch_all()
 
 import os
 from config import logger
-from flask import Flask
-from config import config
-from pymongo import MongoClient
-from flask_jsonrpc import JSONRPC
+from config import App
+from config import Db
+from config import Client
+from config import Jsonrpc
 from utils.sim_btc_utils import sim_btc_utils
 from utils.hc_utils import hc_utils
 logger.info('Start app...')
-
-app = Flask(__name__, template_folder=os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates'))
-jsonrpc = JSONRPC(app, '/api', enable_web_browsable_api=True)
-
-app.config.from_object(config['development'])   # 载入配置文件
-
-
-client = MongoClient(app.config['MONGO_HOST'], app.config['MONGO_PORT'])
-
-
-client[app.config['MONGO_NAME']].authenticate(app.config['MONGO_USER'], app.config['MONGO_PASS'])
-
-db = client[app.config['MONGO_NAME']]
+app = App
+db = Db
+client = Client
+jsonrpc = Jsonrpc
 sim_btc_utils_all = ["btc", "ltc", "ub"]
 sim_btc_plugin = {}
 for value in sim_btc_utils_all:
