@@ -157,7 +157,7 @@ class sim_btc_utils:
         for need in vin_need :
             pubkey=need.get('scriptPubKey')
             script.append(pubkey)
-            vin = {'txid': need.get('txid'), 'vout': need.get('vout'), 'scriptPubKey': pubkey}
+            vin = {'txid': need.get('txid'), 'vout': int(need.get('vout')), 'scriptPubKey': pubkey}
             vins.append(vin)
         #set a fee
         resp = ""
