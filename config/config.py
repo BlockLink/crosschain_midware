@@ -36,13 +36,16 @@ class DevelopmentConfig(Config):
     ETH_SECRET_KEY = 'Q!wert123@'
     ETH_URL = 'eth_wallet'
     ETH_PORT = 8545
+    ETH_FEE = 0.025
     ETH_Minimum = 0.5
     BTC_HOST = 'btc_wallet'
     BTC_PORT = 60011
+    BTC_FEE =0.001
     ETP_PORT = 8820
     ETP_URL = 'etp_wallet'
     LTC_HOST = 'btc_wallet'
     LTC_PORT = 60011
+    LTC_FEE =0.001
     HC_HOST = "127.0.0.1"
     HC_PORT = 19012
     HC_FEE = 0.001
