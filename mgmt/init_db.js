@@ -31,8 +31,12 @@ if (db.auth("dbAdmin", "admin12#$%") != 1) {
     db.createCollection("b_withdraw_transaction");
     db.createCollection("b_exchange_contracts");
     db.createCollection("b_fee_providers");
-    db.createCollection("b_balance_unspent")
-    db.createCollection("b_balance_spent")
+    db.createCollection("b_balance_unspent");
+    db.createCollection("b_balance_spent");
+    db.createCollection("b_eths_address");
+    db.createCollection("b_guardcall_transaction");
+    db.createCollection("b_erc_address");
+    db.b_eths_address.ensureIndex({"chainId": 1, "address": 1}, {"unique": true});
     db.b_chain_account.ensureIndex({"chainId": 1, "address": 1}, {"unique": true});
     db.b_balance_unspent.ensureIndex({"chainId": 1, "address": 2});
     db.b_balance_spent.ensureIndex({"chainId": 1, "address": 2});
@@ -54,6 +58,7 @@ if (db.auth("dbAdmin", "admin12#$%") != 1) {
     db.b_chain_account.ensureIndex({'creatorUserId': 1});
     db.b_chain_account.ensureIndex({'chainId': 1, 'address': 1}, {'unique': true});
     db.b_deposit_transaction.ensureIndex({'chainId': 1});
+    db.b_deposit_transaction.ensureIndex({'txid':1})
     db.b_deposit_transaction.ensureIndex({'fromAddress': 1});
     db.b_withdraw_transaction.ensureIndex({'chainId': 1});
     db.b_withdraw_transaction.ensureIndex({'toAddress': 1});
