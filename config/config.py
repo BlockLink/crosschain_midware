@@ -43,11 +43,11 @@ class DevelopmentConfig(Config):
     BTC_FEE =0.001
     ETP_PORT = 8820
     ETP_URL = 'etp_wallet'
-    LTC_HOST = 'btc_wallet'
-    LTC_PORT = 60011
+    LTC_HOST = 'ltc_wallet'
+    LTC_PORT = 50001
     LTC_FEE =0.001
     HC_HOST = "127.0.0.1"
-    HC_PORT = 19012
+    HC_PORT = 19020
     HC_FEE = 0.001
     QUERY_SERVICE_HOST = "192.168.1.142"
     QUERY_SERVICE_PORT = 5444
