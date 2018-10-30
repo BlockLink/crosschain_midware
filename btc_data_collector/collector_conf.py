@@ -35,7 +35,7 @@ class BKCollectorConfig(CollectorConfig):
 class BTCCollectorConfig(CollectorConfig):
     ASSET_SYMBOL = "BTC"
     RPC_HOST = '192.168.1.121'
-    RPC_PORT = 60019
+    RPC_PORT = 60011
     SYNC_STATE_FIELD = "btcsyncstate"
     SYNC_BLOCK_NUM = "btcsyncblocknum"
     SAFE_BLOCK_FIELD = "btcsafeblock"
@@ -58,7 +58,7 @@ class UBCollectorConfig(CollectorConfig):
 class HCCollectorConfig(CollectorConfig):
     ASSET_SYMBOL = "HC"
     RPC_HOST = '127.0.0.1'
-    RPC_PORT = 19012
+    RPC_PORT = 19020
     SYNC_STATE_FIELD = "hcsyncstate"
     SYNC_BLOCK_NUM = "hcsyncblocknum"
     SAFE_BLOCK_FIELD = "hcsafeblock"
