@@ -58,7 +58,7 @@ def eth_request_from_db(method,args):
 
         d.addCallback(cbResponse)
     #response = requests.request("POST", url, data=data_to_send, headers=headers)
-    return d
+        return d
     except Exception,ex:
         print ex
 

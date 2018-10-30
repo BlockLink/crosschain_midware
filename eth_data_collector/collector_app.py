@@ -186,7 +186,7 @@ def collect_block(block_num_fetch):
         if json.loads(trx_ids_json).get("result") == None:
             trx_ids = []
 
-    else:
+        else:
             trx_ids = json.loads(trx_ids_json).get("result")
 
         erc_ids_json = yield eth_request_from_db("Service.GetErc20History",[block_num_fetch])
