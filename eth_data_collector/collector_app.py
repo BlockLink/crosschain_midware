@@ -142,6 +142,24 @@ def init_account_info(db):
 #    GlobalVariable.all_care_account.extend(GlobalVariable.db_account_list)
 #    GlobalVariable.all_care_account.extend(GlobalVariable.withdraw_account)
 
+def TurnAmountFromEth(source,precision):
+    ret = ''
+    if len(source) <= int(precision):
+        ret += '0.'
+        temp_precision = '0' * (precision - len(source))
+        ret += temp_precision
+        amount = source.rstrip('0')
+        if amount == '':
+            amount = source
+        ret += amount
+    else:
+        ret += source[0: (len(source) - precision)]
+        amountFloat = source[len(source) - precision:]
+        amount = amountFloat.rstrip('0')
+        if amount != '':
+            ret += '.'
+        ret += amount
+    return ret
 @inlineCallbacks
 def get_latest_block_num():
     ret =yield eth_request_from_db("Service.GetBlockHeight", [])
@@ -385,8 +403,10 @@ def trx_store_eth(db_pool,base_trx):
         trx_data["input"] = base_trx["input"]
         trx_data["fromAddress"] = base_trx["from"]
         trx_data["toAddress"] = base_trx["to"]
-        trx_data["amount"] = "%.18lf"%(float(int(base_trx["value"], 16)) / pow(10, 18))
-        trx_data["trxFee"] = "%.18lf"%(float((int(base_trx["gas"], 16)) * (int(base_trx["gasPrice"], 16))) / pow(10, 18))
+        trx_data["amount"] = str(TurnAmountFromEth(str(int(base_trx["value"], 16)),18))
+         #   str("%.18f"%(float(int(base_trx["value"], 16)) / pow(10, 18))).rstrip('0')
+        trx_data["trxFee"] = str(TurnAmountFromEth(str((int(base_trx["gas"], 16)) * (int(base_trx["gasPrice"], 16))),18))
+            #str("%.18f"%(float((int(base_trx["gas"], 16)) * (int(base_trx["gasPrice"], 16))) / pow(10, 18))).rstrip('0')
         trx_data["isErc20"] = False
         multi_account = yield db_pool.b_eths_address.find_one({"address":trx_data["toAddress"],"isContractAddress":True})
         guard_account = yield db_pool.b_eths_address.find_one({"address": trx_data["fromAddress"], "isContractAddress": False})
@@ -454,7 +474,8 @@ def trx_store_eth(db_pool,base_trx):
                                                 "from_account": trx_data["toAddress"],
                                                 "to_account": ("0x" + datas[1][24:]),
                                                 "prefixhash":datas[0],
-                                                "amount": "%18lf"%(float(int(datas[2],16)) / pow(10, 18)),
+                                                "amount": str(TurnAmountFromEth(str(int(datas[2],16)),18)),
+                                                  #  str("%.18lf"%(float(int(datas[2],16)) / pow(10, 18))).rstrip('0'),
                                                 "index":int(datas[4],16),
                                                 "asset_symbol": trx_data["chainId"],
                                                 "blockNum": trx_data["blocknum"],
@@ -491,11 +512,12 @@ def trx_store_erc(db_pool,erc_trxs):
                     "txid": erc_trx["txid"],
                     "from_account": erc_trx["from"],
                     "to_account": erc_trx["to"],
-                    "amount": str(float(int(erc_trx["value"], 16)) / pow(10, int(asset_account["precison"]))),
+                    "amount": TurnAmountFromEth(str(int(erc_trx["value"], 16)),int(asset_account["precison"])),
+                        #str("%."+asset_account["precison"]+"lf"%(float(int(erc_trx["value"], 16)) / pow(10, int(asset_account["precison"])))).rstrip('0'),
                     "asset_symbol": asset_account["chainId"],
                     "blockNum": erc_trx["blockNumber"],
                     "chainId": asset_account["chainId"].lower(),
-                    "input": "",
+                    "input": "0x",
                     "index":erc_trx["logIndex"],
                     "fee": "0"
                 }
@@ -520,7 +542,7 @@ def trx_store_erc(db_pool,erc_trxs):
                     "asset_symbol": "",
                     "blockNum": erc_trx["blockNumber"],
                     "chainId": "",
-                    "input": "",
+                    "input": "0x",
                     "index": erc_trx["logIndex"],
                     "fee": "0"
                 }
@@ -549,7 +571,8 @@ def trx_store_erc(db_pool,erc_trxs):
                                                     print erc_contract["chainId"]
                                                     erc_out['chainId'] = erc_contract["chainId"].lower()
                                                     erc_out['asset_symbol'] = erc_contract["chainId"]
-                                                    erc_out['amount'] = str(float(int(erc_trx["value"], 16)) / pow(10, int(erc_contract["precison"])))
+                                                    erc_out['amount'] = str(TurnAmountFromEth(str(int(erc_trx["value"], 16)),int(erc_contract["precison"])))
+                                                        #str("%."+asset_account["precison"]+"lf"%(float(int(erc_trx["value"], 16)) / pow(10, int(erc_contract["precison"])))).rstrip('0')
                                                     eth_out_data = yield db_pool.b_withdraw_transaction.find_one(
                                                         {"txid": erc_out["txid"], "index": erc_out["index"], "asset_symbol": erc_out["asset_symbol"]})
                                                     if eth_out_data == None:

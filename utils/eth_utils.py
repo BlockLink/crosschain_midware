@@ -97,36 +97,16 @@ def get_account_list_from_wallet():
 
 def get_transaction_data(trx_id):
     # print "\ntrx_id:",trx_id
-    ret = eth_request("eth_getTransactionByHash", [str(trx_id)])
+    ret = eth_request("Service.GetTrx", [str(trx_id)])
     # print ret
     json_data = json.loads(ret)
     if json_data.get("result") is None:
         return None, None
-
-    while True:
-        if not json_data["blockNumber"] is None:
-            break
-        ret = eth_request("eth_getTransactionByHash", [str(trx_id)])
-        # print ret
-        json_data = json.loads(ret)
-        if json_data.get("result") is None:
-            return None, None
-        time.sleep(1)
     resp_data = json_data.get("result")
-    ret = eth_request("eth_getTransactionReceipt", [str(trx_id)])
+    ret = eth_request("Service.GetTrxReceipt", [str(trx_id)])
     json_data = json.loads(ret)
     if json_data.get("result") is None:
         return None, None
-
-    while True:
-        if not json_data["blockNumber"] is None:
-            break
-        ret = eth_request("eth_getTransactionReceipt", [str(trx_id)])
-        # print ret
-        json_data = json.loads(ret)
-        if json_data.get("result") is None:
-            return None, None
-        time.sleep(1)
     receipt_data = json_data.get("result")
     return resp_data, receipt_data
 
