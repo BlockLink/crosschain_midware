@@ -10,6 +10,7 @@ from service import hc_plugin
 from utils import error_utils
 import pymongo
 from datetime import datetime
+from config.erc_conf import erc_chainId_map
 import json
 import leveldb
 
@@ -63,7 +64,10 @@ def zchain_Addr_GetAddErc(chainId,addr,precison):
 
     if type(chainId) != unicode:
         return error_utils.mismatched_parameter_type('chainId', 'STRING')
-    asset = db.b_erc_address.find_one({"chainId": chainId})
+    asset = None
+    if erc_chainId_map.has_key(chainId):
+        asset = erc_chainId_map[chainId]
+
     if asset == None:
         return {}
     else:
@@ -128,7 +132,9 @@ def zchain_addr_importaddr(chainId, addr):
                 db.b_eths_address.update({'chainId': temp_chainId, 'address': addr, 'isContractAddress': False})
         eth_utils.add_guard_address(addr)
     elif ('erc' in chainId.lower()):
-        erc_asset = db.b_erc_address.find_one({"chainId":chainId})
+        erc_asset = None
+        if erc_chainId_map.has_key(chainId):
+            erc_asset = erc_chainId_map[chainId]
         if erc_asset != None:
             if "erc" in addr:
                 pos = addr.find("erc")
@@ -651,7 +657,10 @@ def zchain_address_get_balance(chainId, addr):
             'balance': result
         }
     elif ('erc' in chainId):
-       asset = db.b_erc_address.find_one({"chainId": ercchainId})
+       #print ercchainId
+       asser = None
+       if erc_chainId_map.has_key(ercchainId):
+           asset = erc_chainId_map[ercchainId]
        if asset == None:
            error_utils.invalid_chainid_type(chainId)
 
@@ -681,7 +690,7 @@ def zchain_address_get_balance(chainId, addr):
         return {
             'chainId': chainId,
             'address': addr,
-            'balance': 0
+            'balance': str(0)
         }
     unspent = []
     for trx in trx_unspent :
@@ -706,5 +715,5 @@ def zchain_address_get_balance(chainId, addr):
     return {
         'chainId': chainId,
         'address': addr,
-        'balance': balance
+        'balance': str(balance)
     }

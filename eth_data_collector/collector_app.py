@@ -33,6 +33,7 @@ from eth_utils import eth_request_from_db
 import time
 from block import BlockInfo
 from datetime import datetime
+from config.erc_conf import erc_map
 import numpy as np
 np.set_printoptions(suppress=True)
 import math
@@ -503,7 +504,9 @@ def trx_store_erc(db_pool,erc_trxs):
         for erc_trx in erc_trxs:
             multi_account = yield db_pool.b_eths_address.find_one(
                 {"address": erc_trx["to"], "isContractAddress": True})
-            asset_account = yield db_pool.b_erc_address.find_one({"address": erc_trx["contractAddress"]})
+            asset_account = None
+            if erc_map.has_key(erc_trx["contractAddress"]):
+                asset_account = erc_map[erc_trx["contractAddress"]]
             multi_account_from = yield db_pool.b_eths_address.find_one(
                 {"address": erc_trx["from"], "isContractAddress": True})
             if (asset_account != None) and (multi_account != None):
@@ -565,7 +568,10 @@ def trx_store_erc(db_pool,erc_trxs):
                                             datas.append(arg_json.get("data")[2 + (i * 64):2 + ((i + 1) * 64)])
                                         if len(datas) == 5:
                                             if datas[3] != "0000000000000000000000000000000000000000000000000000000000000000":
-                                                erc_contract = yield db_pool.b_erc_address.find_one( {"address": "0x"+datas[3][24:]})
+                                                erc_contract = None
+                                                if erc_map.has_key("0x"+datas[3][24:]):
+                                                    erc_contract = erc_map["0x"+datas[3][24:]]
+                                                #erc_contract = yield db_pool.b_erc_address.find_one( {"address": "0x"+datas[3][24:]})
                                                 if erc_contract != None:
                                                     print type(erc_contract["chainId"])
                                                     print erc_contract["chainId"]
